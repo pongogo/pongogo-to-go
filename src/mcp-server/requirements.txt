@@ -1,0 +1,16 @@
+# Pongogo Knowledge MCP Server Dependencies
+
+# MCP Framework
+fastmcp>=1.0.0
+
+# YAML parsing for Enhanced MDC frontmatter
+pyyaml>=6.0
+
+# Type checking and validation
+pydantic>=2.0.0
+
+# File watching for automatic reindexing
+watchdog>=3.0.0
+
+# Logging (standard library, but listed for documentation)
+# logging (built-in)
