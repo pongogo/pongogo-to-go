@@ -19,65 +19,102 @@ This multi-pass analysis examines 108 instruction files across 26 folders to det
 
 ---
 
-## Pass 0: Dimension Discovery
+## Pass 0: Dimension Discovery ✅ COMPLETE
 
 ### Goal
 Sample files across categories to identify and validate the dimensions by which we should evaluate portability.
 
-### Procedure
+### Sample Files Read (12 files, ~5,000 lines total)
 
-**Sample Selection** (10-15 files across different categories):
+1. `_foundational.instructions.md` (91 lines) - Root meta file
+2. `multi_pass_iterative_analysis.instructions.md` (400 lines) - Analysis methodology
+3. `architecture_principles.instructions.md` (180 lines) - Core principles
+4. `commit_message_format.instructions.md` (808 lines) - Git standards
+5. `github_project_status_workflow.instructions.md` (470 lines) - GitHub integration
+6. `retrospective_triggers.instructions.md` (986 lines) - Learning loops
+7. `time_free_project_management.instructions.md` (413 lines) - PM philosophy
+8. `git_safety.instructions.md` (381 lines) - Safety protocols
+9. `routing_engine_versioning.instructions.md` (393 lines) - Internal infrastructure
+10. `ground_truth_tagging_methodology.instructions.md` (376 lines) - Eval methodology
+11. `documentation_placement.instructions.md` (349 lines) - Doc structure
+12. `validation_essentials.instructions.md` (360 lines) - Quality standards
 
-1. **Read each sample file COMPLETELY** - every line, every section
-2. **Document observations**:
-   - What external systems does this file assume? (GitHub, Docker, specific tools)
-   - What concepts/methodologies does this assume? (Pongogo-specific, generic agile)
-   - What terminology requires insider knowledge?
-   - What file/folder structure does this assume?
-   - Who is the intended audience? (AI agents, humans, both)
-   - Are there other dependency types not captured above?
+### Validated Dimensions (5 dimensions confirmed)
 
-3. **Synthesize dimensions**:
-   - Confirm or refine the proposed dimensions
-   - Add any new dimensions discovered
-   - Define scoring criteria for each dimension
+All proposed dimensions validated with evidence from sample files:
 
-### Proposed Dimensions (to validate)
+| Dimension | What It Measures | Validated Evidence |
+|-----------|------------------|-------------------|
+| **System Dependencies** | External systems assumed | Clear gradation: NONE → STANDARD (Git) → SPECIFIC (Docker, MCP) → PONGOGO (routing, eval) |
+| **Conceptual Dependencies** | Methodology/framework assumed | Distinct levels: UNIVERSAL (any project) → INDUSTRY (agile) → PONGOGO-METHOD (10 principles) |
+| **Terminology Dependencies** | Jargon requiring translation | Clear internal terms: PI, IMP, durian, Pongogo-specific paths |
+| **Structural Dependencies** | File/folder assumptions | Range from self-contained to Pongogo-specific paths |
+| **Audience Assumptions** | Who is this written for | From UNIVERSAL to PONGOGO-AGENT specific |
 
-| Dimension | What It Measures | Scoring Criteria |
-|-----------|------------------|------------------|
-| **System Dependencies** | External systems assumed | NONE / STANDARD (Git, GitHub) / SPECIFIC (Docker, MCP) / PONGOGO (routing, eval) |
-| **Conceptual Dependencies** | Methodology/framework assumed | UNIVERSAL / INDUSTRY (agile, PM) / PONGOGO-METHOD |
-| **Terminology Dependencies** | Jargon requiring translation | NONE / STANDARD / PONGOGO (PI, IMP, durian) |
-| **Structural Dependencies** | File/folder assumptions | NONE / GENERIC / PONGOGO-SPECIFIC |
-| **Audience Assumptions** | Who is this written for | UNIVERSAL / AGENT-PRIMARY / PONGOGO-AGENT |
+### Refined Scoring Criteria
 
-### Sample Files to Read (one from each major category type)
+**System Dependencies** (numeric for aggregation):
+| Score | Level | Description | Examples |
+|-------|-------|-------------|----------|
+| 0 | `NONE` | No external system required | Self-contained concepts |
+| 1 | `STANDARD` | Git, GitHub, common tools | Widely used, industry standard |
+| 2 | `PLATFORM-SPECIFIC` | Docker, MCP, Claude Code | Specific platforms/tools |
+| 3 | `PONGOGO-INTERNAL` | Routing engine, eval system, PI system | Pongogo infrastructure |
 
-1. `_foundational.instructions.md` (root - meta)
-2. `agentic_workflows/multi_pass_iterative_analysis.instructions.md` (workflow)
-3. `architecture/architecture_principles.instructions.md` (architecture)
-4. `development_standards/commit_message_format.instructions.md` (standards)
-5. `github_integration/github_project_status_workflow.instructions.md` (integration)
-6. `learning/retrospective_triggers.instructions.md` (learning)
-7. `project_management/time_free_project_management.instructions.md` (PM)
-8. `safety_prevention/git_safety.instructions.md` (safety)
-9. `routing/routing_engine_versioning.instructions.md` (routing - likely Pongogo-specific)
-10. `evaluation/ground_truth_tagging_methodology.instructions.md` (eval - likely Pongogo-specific)
-11. `documentation/documentation_placement.instructions.md` (docs)
-12. `validation/validation_essentials.instructions.md` (validation)
+**Conceptual Dependencies**:
+| Score | Level | Description | Examples |
+|-------|-------|-------------|----------|
+| 0 | `UNIVERSAL` | Applies to any software project | Git safety, commit format |
+| 1 | `INDUSTRY` | Standard agile/PM/engineering | Retrospectives, validation |
+| 2 | `PONGOGO-METHOD` | Pongogo's specific methodology | 10 principles, time-free PM |
 
-### Output
-- Validated/refined dimension framework
-- Scoring criteria for each dimension
-- Any new dimensions discovered
-- Updated procedure for Pass 1-3
+**Terminology Dependencies**:
+| Score | Level | Description | Examples |
+|-------|-------|-------------|----------|
+| 0 | `PLAIN` | No jargon, plain language | Simple English |
+| 1 | `INDUSTRY` | Standard terms (PR, CI/CD, agile) | Industry vocabulary |
+| 2 | `PONGOGO-JARGON` | Internal terms (PI, IMP, durian) | Needs translation |
 
-### Completion Criteria
-- [ ] All 12 sample files read completely
-- [ ] Each dimension validated or refined
-- [ ] Scoring criteria defined
-- [ ] User review of dimension framework before Pass 1
+**Structural Dependencies**:
+| Score | Level | Description | Examples |
+|-------|-------|-------------|----------|
+| 0 | `SELF-CONTAINED` | No path references | Standalone content |
+| 1 | `GENERIC-PATTERNS` | Generic docs/, wiki/, instructions/ | Transferable structure |
+| 2 | `PONGOGO-PATHS` | Specific Pongogo paths | `pongogo-knowledge-server/`, `knowledge/instructions/pongogo/` |
+
+**Audience Assumptions**:
+| Score | Level | Description | Examples |
+|-------|-------|-------------|----------|
+| 0 | `UNIVERSAL` | Any developer/team | General guidance |
+| 1 | `AGENT-AWARE` | Assumes AI agent but broadly applicable | Agent patterns |
+| 2 | `PONGOGO-AGENT` | Specific to Pongogo's agent config | Pongogo-specific agents |
+
+### Sample File Quick Classification (Preview)
+
+Based on Pass 0 reading, preliminary classification:
+
+| File | Likely Decision | Key Observation |
+|------|-----------------|-----------------|
+| `_foundational.instructions.md` | Don't Ship | Meta file for Pongogo context |
+| `multi_pass_iterative_analysis.instructions.md` | Needs Abstraction | Universal methodology, has PI references |
+| `architecture_principles.instructions.md` | Needs Abstraction | Good principles, heavy Pongogo branding |
+| `commit_message_format.instructions.md` | Ship As-Is | Universal git practices |
+| `github_project_status_workflow.instructions.md` | System-Specific (GitHub) | GitHub-specific but valuable |
+| `retrospective_triggers.instructions.md` | Needs Abstraction | Universal learning, Pongogo terminology |
+| `time_free_project_management.instructions.md` | Ship As-Is / Minor Abstraction | Universal PM philosophy |
+| `git_safety.instructions.md` | Ship As-Is | Universal git safety |
+| `routing_engine_versioning.instructions.md` | Don't Ship | Pongogo internal infrastructure |
+| `ground_truth_tagging_methodology.instructions.md` | Needs Abstraction | Universal methodology, Pongogo references |
+| `documentation_placement.instructions.md` | Needs Abstraction | Universal patterns, Pongogo paths |
+| `validation_essentials.instructions.md` | Needs Abstraction | Universal validation, Pongogo references |
+
+### Pass 0 Completion Criteria ✅
+
+- [x] All 12 sample files read completely (~5,000 lines total)
+- [x] Each dimension validated with evidence
+- [x] Scoring criteria defined with numeric values
+- [x] Preliminary classification preview created
+- [ ] **USER REVIEW** of dimension framework before Pass 1
 
 ---
 
@@ -172,7 +209,7 @@ Process folders alphabetically:
 ## Pass 2: Multi-Dimensional Portability Scoring
 
 ### Goal
-Read every file again to score each dimension discovered in Pass 0.
+Read every file again to score each dimension validated in Pass 0.
 
 ### Procedure
 
@@ -180,44 +217,45 @@ Read every file again to score each dimension discovered in Pass 0.
 
 1. **Read the ENTIRE file again** - fresh eyes, dimension-focused
 
-2. **Score each dimension**:
+2. **Score each dimension** (using validated scoring from Pass 0):
 
-   **System Dependencies** (what external systems are assumed?):
-   - `NONE`: No external system dependencies
-   - `STANDARD`: Only Git/GitHub (widely used)
-   - `SPECIFIC`: Docker, MCP, Claude Code, specific tools
-   - `PONGOGO`: Routing engine, eval system, PI system
+   **System Dependencies** (0-3):
+   - `0 NONE`: No external system dependencies
+   - `1 STANDARD`: Only Git/GitHub (widely used)
+   - `2 PLATFORM-SPECIFIC`: Docker, MCP, Claude Code, specific tools
+   - `3 PONGOGO-INTERNAL`: Routing engine, eval system, PI system
 
-   **Conceptual Dependencies** (what methodology is assumed?):
-   - `UNIVERSAL`: Applies to any software project
-   - `INDUSTRY`: Standard industry concepts (agile, PM, etc.)
-   - `PONGOGO-METHOD`: Pongogo-specific methodology/approach
+   **Conceptual Dependencies** (0-2):
+   - `0 UNIVERSAL`: Applies to any software project
+   - `1 INDUSTRY`: Standard industry concepts (agile, PM, etc.)
+   - `2 PONGOGO-METHOD`: Pongogo-specific methodology/approach
 
-   **Terminology Dependencies** (what jargon is used?):
-   - `NONE`: Plain language throughout
-   - `STANDARD`: Industry-standard terms (PR, CI/CD, etc.)
-   - `PONGOGO`: Internal terms (PI, IMP, durian, etc.)
+   **Terminology Dependencies** (0-2):
+   - `0 PLAIN`: Plain language throughout
+   - `1 INDUSTRY`: Industry-standard terms (PR, CI/CD, etc.)
+   - `2 PONGOGO-JARGON`: Internal terms (PI, IMP, durian, etc.)
 
-   **Structural Dependencies** (what file/folder structure assumed?):
-   - `NONE`: Self-contained, no path references
-   - `GENERIC`: References generic patterns (docs/, wiki/, etc.)
-   - `PONGOGO-SPECIFIC`: References Pongogo paths/structure
+   **Structural Dependencies** (0-2):
+   - `0 SELF-CONTAINED`: Self-contained, no path references
+   - `1 GENERIC-PATTERNS`: References generic patterns (docs/, wiki/, etc.)
+   - `2 PONGOGO-PATHS`: References Pongogo-specific paths/structure
 
-   **Audience Assumptions** (who is this written for?):
-   - `UNIVERSAL`: Any developer/team
-   - `AGENT-PRIMARY`: Assumes AI agent reader but applicable
-   - `PONGOGO-AGENT`: Specific to Pongogo's agent system
+   **Audience Assumptions** (0-2):
+   - `0 UNIVERSAL`: Any developer/team
+   - `1 AGENT-AWARE`: Assumes AI agent reader but applicable
+   - `2 PONGOGO-AGENT`: Specific to Pongogo's agent system
 
 3. **Count specific references**:
-   - Pongogo name references
-   - PI- references
-   - IMP- references
-   - durian references
-   - Pongogo-specific file paths
-   - Total count
+   - Pongogo name references (count)
+   - PI- references (count)
+   - IMP- references (count)
+   - durian references (count)
+   - Pongogo-specific file paths (count)
+   - **Total internal references** (sum)
 
 4. **List jargon requiring translation**:
    - Each internal term that would need explanation/replacement
+   - Suggested generic replacement
 
 5. **Record in Pass 2 table**
 
@@ -226,17 +264,22 @@ Read every file again to score each dimension discovered in Pass 0.
 ```markdown
 ### `filename.instructions.md`
 
-| Dimension | Score | Evidence |
-|-----------|-------|----------|
-| System Dependencies | STANDARD | References GitHub, Git |
-| Conceptual Dependencies | UNIVERSAL | Generic project management |
-| Terminology Dependencies | PONGOGO | Uses "PI" 5x, "IMP" 2x |
-| Structural Dependencies | PONGOGO-SPECIFIC | References knowledge/instructions/ |
-| Audience Assumptions | AGENT-PRIMARY | "When Claude Code..." |
+| Dimension | Score | Level | Evidence |
+|-----------|-------|-------|----------|
+| System Dependencies | 1 | STANDARD | References GitHub, Git |
+| Conceptual Dependencies | 0 | UNIVERSAL | Generic project management |
+| Terminology Dependencies | 2 | PONGOGO-JARGON | Uses "PI" 5x, "IMP" 2x |
+| Structural Dependencies | 2 | PONGOGO-PATHS | References knowledge/instructions/ |
+| Audience Assumptions | 1 | AGENT-AWARE | "When Claude Code..." |
+
+**Portability Score**: 6/11 (lower = more portable)
 
 **Reference Counts**: Pongogo: 3, PI-: 5, IMP-: 2, durian: 0, paths: 4, **Total: 14**
 
-**Jargon to Translate**: PI→improvement, IMP→implementation, specific paths→generic
+**Jargon to Translate**: 
+- PI → improvement pattern
+- IMP → implementation
+- knowledge/instructions/ → {project}/instructions/
 ```
 
 ### Completion Criteria
@@ -259,30 +302,35 @@ Synthesize dimension scores into final shipping decisions for each file.
 
 1. **Review all Pass 1 and Pass 2 data** for the file
 
-2. **Apply classification matrix**:
+2. **Apply classification matrix** (based on dimension scores):
 
    **Ship As-Is** (portable immediately):
-   - System: NONE or STANDARD
-   - Conceptual: UNIVERSAL or INDUSTRY
-   - Terminology: NONE or STANDARD
-   - Structural: NONE or GENERIC
-   - Audience: UNIVERSAL or AGENT-PRIMARY
-   - Reference count: ≤ 2
+   - Portability Score: ≤ 3 (all dimensions low)
+   - System: 0-1 (NONE or STANDARD)
+   - Conceptual: 0-1 (UNIVERSAL or INDUSTRY)
+   - Terminology: 0-1 (PLAIN or INDUSTRY)
+   - Structural: 0-1 (SELF-CONTAINED or GENERIC)
+   - Audience: 0-1 (UNIVERSAL or AGENT-AWARE)
+   - Total internal references: ≤ 2
 
    **System-Specific Ship** (portable to users of that system):
-   - System: SPECIFIC (e.g., GitHub-specific, Docker-specific)
+   - System: 2 (PLATFORM-SPECIFIC like GitHub, Docker)
+   - Other dimensions: 0-1
    - Content valuable for users of that system
    - May need minor terminology cleanup
 
    **Needs Abstraction** (valuable but requires work):
-   - Any dimension at PONGOGO level but core concept is universal
-   - Reference count: 3+
-   - Terminology needs translation
+   - Any dimension at level 2 (PONGOGO/JARGON/PATHS/AGENT)
+   - But core concept is universal (Conceptual ≤ 1)
+   - Total internal references: 3+
+   - Terminology translation needed
 
    **Don't Ship** (Pongogo-internal only):
-   - Multiple dimensions at PONGOGO level
-   - Core concept is Pongogo-specific
-   - No value without Pongogo infrastructure
+   - Multiple dimensions at level 2
+   - System: 3 (PONGOGO-INTERNAL)
+   - Conceptual: 2 (PONGOGO-METHOD with no universal value)
+   - Core concept requires Pongogo infrastructure
+   - No value without routing/eval/PI system
 
 3. **Assign target category** (for files that ship):
    - `core/` - Fundamental system mechanics
@@ -296,7 +344,7 @@ Synthesize dimension scores into final shipping decisions for each file.
    - `agentic/` - Agent-specific patterns and compliance
 
 4. **Document abstraction requirements** (if needed):
-   - Specific terminology changes
+   - Specific terminology changes with counts
    - Sections to remove or generalize
    - Structural changes needed
    - Estimated effort: SMALL (< 30 min) / MEDIUM (30-60 min) / LARGE (> 60 min)
@@ -307,6 +355,8 @@ Synthesize dimension scores into final shipping decisions for each file.
 
 ```markdown
 ### `filename.instructions.md`
+
+**Portability Score**: 6/11
 
 **Decision**: Ship As-Is / System-Specific Ship / Needs Abstraction / Don't Ship
 
@@ -332,10 +382,10 @@ Synthesize dimension scores into final shipping decisions for each file.
 
 ## Quality Gates
 
-### After Pass 0 (Dimension Discovery)
-- [ ] All sample files (12) read completely
-- [ ] Dimension framework validated/refined
-- [ ] Scoring criteria clear and usable
+### After Pass 0 (Dimension Discovery) ✅ COMPLETE
+- [x] All sample files (12) read completely
+- [x] Dimension framework validated/refined
+- [x] Scoring criteria clear and usable
 - [ ] **USER REVIEW REQUIRED** before Pass 1
 
 ### After Pass 1 (Inventory & Overview)
