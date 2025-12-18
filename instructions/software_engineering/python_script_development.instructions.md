@@ -2,7 +2,7 @@
 title: "Python Script Development Standards"
 description: "Comprehensive standards for writing, testing, and maintaining Python scripts with type hints, argparse patterns, error handling, and systematic prevention"
 version: "1.0.0"
-last_updated: "2025-12-18"
+last_updated: "2025-12-18T17:52:00-05:00"
 applies_to:
   - "scripts/**/*.py"
   - "**/*.py"

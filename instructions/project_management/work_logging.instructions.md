@@ -2,7 +2,7 @@
 title: "Work Logging"
 description: "Work logging, progress tracking, and institutional knowledge capture through wiki integration"
 version: "1.0.0"
-last_updated: "2025-12-18"
+last_updated: "2025-12-18T17:52:00-05:00"
 applies_to:
   - "{wiki_path}/Work-Log*.md"
   - "{wiki_path}/_Sidebar.md"
