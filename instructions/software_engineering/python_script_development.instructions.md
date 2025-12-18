@@ -22,16 +22,16 @@ routing:
   priority: 1
   triggers:
     keywords:
-      - python script
+      - python_script
       - argparse
-      - type hints
+      - type_hints
       - pathlib
-      - python logging
+      - python_logging
       - mypy
       - pytest
-      - python error handling
-      - python cli
-      - python template
+      - python_error_handling
+      - python_cli
+      - python_template
     nlp: "Python script development with type hints, argparse CLI, pathlib file operations, logging module, pytest testing"
 ---
 

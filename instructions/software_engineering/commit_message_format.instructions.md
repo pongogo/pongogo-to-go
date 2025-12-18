@@ -18,16 +18,16 @@ routing:
   priority: 1
   triggers:
     keywords:
-      - commit message
-      - commit format
-      - git commit
-      - model attribution
+      - commit_message
+      - commit_format
+      - git_commit
+      - model_attribution
       - Co-Authored-By
       - archaeological
-      - context-rich commit
-      - What Changed
-      - Why section
-      - imperative mood
+      - context-rich_commit
+      - What_Changed
+      - Why_section
+      - imperative_mood
     nlp: "Creating context-rich commit messages with model attribution and archaeological value for future decision understanding"
 ---
 

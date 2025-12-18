@@ -17,16 +17,16 @@ routing:
   priority: 1
   triggers:
     keywords:
-      - git safety
-      - destructive git
-      - git reset
-      - force push
-      - mass deletion
-      - backup branch
-      - git stash
-      - protected branch
-      - pre-commit hook
-      - content deletion
+      - git_safety
+      - destructive_git
+      - git_reset
+      - force_push
+      - mass_deletion
+      - backup_branch
+      - git_stash
+      - protected_branch
+      - pre-commit_hook
+      - content_deletion
     nlp: "Preventing destructive git operations, mass content deletion, force push protection, backup creation before risky operations"
 ---
 
