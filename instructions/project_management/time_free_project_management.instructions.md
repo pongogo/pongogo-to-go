@@ -2,7 +2,7 @@
 title: "Time-Free Project Management"
 description: "Time-free project management principles enabling sustainable development through complexity-based scoping without time estimates or deadlines"
 version: "1.0.0"
-last_updated: "2025-12-18"
+last_updated: "2025-12-18T17:52:00-05:00"
 applies_to:
   - "**/*.yml"
   - "**/*.md"
