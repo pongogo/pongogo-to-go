@@ -19,13 +19,13 @@ routing:
   priority: 1
   triggers:
     keywords:
-      - work log
-      - work logging
-      - add work log entry
-      - work log entry
-      - progress tracking
-      - institutional knowledge
-      - two-level learning
+      - work_log
+      - work_logging
+      - add_work_log_entry
+      - work_log_entry
+      - progress_tracking
+      - institutional_knowledge
+      - two-level_learning
     nlp: "Work logging, progress tracking, and institutional knowledge capture through wiki integration"
 ---
 

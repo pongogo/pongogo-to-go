@@ -19,13 +19,13 @@ routing:
   priority: 1
   triggers:
     keywords:
-      - time free
-      - no estimates
-      - no deadlines
-      - complexity based
-      - scope boundaries
-      - time estimate
-      - commit driven
+      - time_free
+      - no_estimates
+      - no_deadlines
+      - complexity_based
+      - scope_boundaries
+      - time_estimate
+      - commit_driven
     nlp: "Time-free project management using complexity-based scoping instead of time estimates, sustainable development"
 ---
 
