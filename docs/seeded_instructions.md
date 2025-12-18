@@ -52,6 +52,67 @@ ADAPT files use placeholders that are resolved during `pongogo init`:
 | `knowledge/instructions/` | `{instructions_path}` | User's instruction path |
 | Specific URLs | `https://github.com/{org}/{repo}/...` | User's repo URLs |
 
+## Keyword Format Convention
+
+**IMPORTANT**: Multi-word keywords use underscores, not spaces.
+
+### Why Underscores?
+
+The Pongogo routing engine tokenizes user queries into individual words. Space-separated keywords cause false positives:
+
+```
+Query: "free trial setup"
+Tokenizes to: ["free", "trial", "setup"]
+
+Problem with space-separated keywords:
+- Keyword "time free" → "free" matches → FALSE POSITIVE!
+- Keyword "free trial" → "free" matches → CORRECT
+
+Solution with underscore keywords:
+- Keyword "time_free" → "free" does NOT match → NO false positive
+- Router generates n-grams: "free_trial" → EXACT MATCH
+```
+
+### Keyword Format Rules
+
+| ❌ Wrong | ✅ Correct |
+|----------|-----------|
+| `time free` | `time_free` |
+| `work log entry` | `work_log_entry` |
+| `no estimates` | `no_estimates` |
+| `git commit` | `git_commit` |
+
+### Example Frontmatter
+
+```yaml
+routing:
+  priority: 1
+  triggers:
+    keywords:
+      - time_free           # Multi-word: use underscores
+      - no_estimates        # Multi-word: use underscores
+      - complexity_based    # Multi-word: use underscores
+      - planning            # Single word: no underscore needed
+    nlp: "Time-free project management using complexity-based scoping"
+```
+
+### Router Behavior (IMP-013)
+
+The durian routing engine (0.6.1+):
+1. Extracts individual words from query
+2. Generates underscore-joined n-grams (2-grams, 3-grams)
+3. Matches n-grams against underscore keywords EXACTLY
+4. Single-word keywords still use substring matching
+
+Example query processing:
+```
+Query: "how do I use time free project management"
+Extracted: ["how", "use", "time", "free", "project", "management"]
+Generated n-grams: ["time_free", "free_project", "project_management", 
+                    "time_free_project", "free_project_management"]
+Matches: "time_free" keyword → EXACT MATCH (score +15)
+```
+
 ## Versioning Format
 
 ### Two-Level Versioning
@@ -85,8 +146,8 @@ routing:
   priority: 1
   triggers:
     keywords:
-      - keyword1
-      - keyword2
+      - keyword_one      # Use underscores for multi-word
+      - keyword_two
     nlp: "Natural language description for semantic matching"
 ---
 ```
@@ -130,7 +191,7 @@ placeholders:
 
 compatibility:
   min_pongogo_version: "0.1.0"
-  routing_engine_version: "durian-0.5+"
+  routing_engine_version: "durian-0.6.1+"  # IMP-013 keyword matching
 
 stats:
   total_files: 5
@@ -152,12 +213,14 @@ The update mechanism is designed but not yet implemented:
 
 1. **Classify** the source file (ADOPT/ADAPT/INSPIRE/SKIP)
 2. **Scrub** according to rules above
-3. **Add versioning** frontmatter with `version` and `last_updated`
-4. **Update manifest** with file entry
-5. **Test routing** to ensure keywords trigger correctly
+3. **Format keywords** with underscores for multi-word terms
+4. **Add versioning** frontmatter with `version` and `last_updated`
+5. **Update manifest** with file entry
+6. **Test routing** to ensure keywords trigger correctly
 
 ## Related
 
 - [Spike #304](https://github.com/pongogo/pongogo/issues/304): Seeded Instructions Update Flow
 - [Task #300](https://github.com/pongogo/pongogo/issues/300): Define Seeded Instructions
+- [Task #305](https://github.com/pongogo/pongogo/issues/305): Underscore Keyword Convention
 - [Task #293 Analysis](https://github.com/pongogo/pongogo/blob/main/experiments/task_293_seeded_instructions/analysis.md): Classification methodology
