@@ -1,0 +1,79 @@
+# Pongogo Seeded Instructions Manifest
+#
+# This manifest tracks the version and contents of seeded instruction files.
+# Pongogo uses this to check for updates and manage instruction file versions.
+#
+# Version Scheme:
+#   - Bundle version: SemVer (major.minor.patch) for the entire instruction set
+#   - File versions: Individual SemVer tracking per file
+#
+# Update Flow:
+#   1. User runs `pongogo update --check` to see available updates
+#   2. System compares local manifest.bundle_version with remote
+#   3. If newer version available, shows diff of changed files
+#   4. User approves update, system downloads and replaces files
+
+bundle_version: "1.0.0"
+created_date: "2025-12-18"
+description: "Seeded instruction files for Pongogo - foundational development patterns and workflows"
+
+# Categories and their enablement status
+# Users can disable entire categories via .pongogo/config.yaml
+categories:
+  software_engineering:
+    description: "Development standards, git safety, commit formats"
+    enabled_by_default: true
+    files:
+      - path: "software_engineering/python_script_development.instructions.md"
+        version: "1.0.0"
+        title: "Python Script Development Standards"
+        domains: ["scripting", "python", "safety_prevention"]
+        priority: "P2"
+
+      - path: "software_engineering/commit_message_format.instructions.md"
+        version: "1.0.0"
+        title: "Commit Message Format Standards"
+        domains: ["development_standards", "git_workflow", "documentation"]
+        priority: "P1"
+
+      - path: "software_engineering/git_safety.instructions.md"
+        version: "1.0.0"
+        title: "Git Safety Protocols"
+        domains: ["safety_prevention", "systematic_prevention"]
+        priority: "P1"
+
+  project_management:
+    description: "Time-free PM, work logging, learning capture"
+    enabled_by_default: true
+    files:
+      - path: "project_management/time_free_project_management.instructions.md"
+        version: "1.0.0"
+        title: "Time-Free Project Management"
+        domains: ["project_management"]
+        priority: "P0"
+
+      - path: "project_management/work_logging.instructions.md"
+        version: "1.0.0"
+        title: "Work Logging"
+        domains: ["project_management", "documentation", "knowledge_management"]
+        priority: "P1"
+
+# Placeholders that need to be resolved during `pongogo init`
+# These are replaced with actual project paths when files are installed
+placeholders:
+  "{wiki_path}": "Path to project wiki (e.g., wiki/ or docs/wiki/)"
+  "{docs_path}": "Path to project docs (e.g., docs/)"
+  "{org}/{repo}": "GitHub org and repo name (e.g., acme/myproject)"
+  "{instructions_path}": "Path where user instruction files live"
+
+# Metadata for update checking
+compatibility:
+  min_pongogo_version: "0.1.0"
+  routing_engine_version: "durian-0.5+"
+
+# Statistics for this bundle
+stats:
+  total_files: 5
+  total_lines: ~2400
+  categories: 2
+  sample_batch: true  # This is a sample batch, not full set
