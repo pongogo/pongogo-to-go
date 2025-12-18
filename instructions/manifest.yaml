@@ -14,7 +14,7 @@
 #   4. User approves update, system downloads and replaces files
 
 bundle_version: "1.0.0"
-created_date: "2025-12-18"
+created_date: "2025-12-18T17:52:00-05:00"
 description: "Seeded instruction files for Pongogo - foundational development patterns and workflows"
 
 # Categories and their enablement status
