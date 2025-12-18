@@ -2,7 +2,7 @@
 title: "Commit Message Format Standards"
 description: "Context-rich commit message format with structured breakdown, metrics, and model identification for comprehensive archaeological trail"
 version: "1.0.0"
-last_updated: "2025-12-18"
+last_updated: "2025-12-18T17:52:00-05:00"
 applies_to:
   - "**"
 domains:

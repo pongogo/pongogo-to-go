@@ -2,7 +2,7 @@
 title: "Git Safety Protocols"
 description: "Comprehensive git safety protocols preventing destructive operations, mass content deletion, and data loss through systematic safeguards"
 version: "1.0.0"
-last_updated: "2025-12-18"
+last_updated: "2025-12-18T17:52:00-05:00"
 applies_to:
   - "**/*"
 domains:
