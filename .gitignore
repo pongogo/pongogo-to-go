@@ -39,3 +39,5 @@ Thumbs.db
 
 # Pongogo runtime (created by MCP server, not init)
 .pongogo/*.db
+.observability_db/
+logs/
