@@ -13,15 +13,30 @@
 #   3. If newer version available, shows diff of changed files
 #   4. User approves update, system downloads and replaces files
 
-bundle_version: "1.0.0"
+bundle_version: "1.1.0"
 created_date: "2025-12-18T17:52:00-05:00"
+updated_date: "2025-12-19T01:21:00-05:00"
 description: "Seeded instruction files for Pongogo - foundational development patterns and workflows"
+source: "Extracted from Super Pongogo (Task #300)"
 
-# Categories and their enablement status
+# Placeholder schema - replaced during `pongogo init`
+placeholder_schema:
+  "{wiki_path}": "Path to project wiki (e.g., wiki/ or docs/wiki/)"
+  "{docs_path}": "Path to project docs (e.g., docs/)"
+  "{org}/{repo}": "GitHub org and repo name (e.g., acme/myproject)"
+  "{owner}/{repo}": "GitHub owner and repo name (e.g., acme/myproject)"
+  "{instructions_path}": "Path where user instruction files live"
+  "{project_root}": "Root path of the project"
+  "{project}": "Project name identifier"
+  "{package}": "Package or module name"
+  "{service_name}": "Service name identifier"
+
+# Categories and their files
 # Users can disable entire categories via .pongogo/config.yaml
 categories:
   software_engineering:
     description: "Development standards, git safety, commit formats"
+    classification: "ADOPT"
     enabled_by_default: true
     files:
       - path: "software_engineering/python_script_development.instructions.md"
@@ -43,7 +58,8 @@ categories:
         priority: "P1"
 
   project_management:
-    description: "Time-free PM, work logging, learning capture"
+    description: "Time-free PM, work logging, scope prevention, glossary maintenance"
+    classification: "ADAPT"
     enabled_by_default: true
     files:
       - path: "project_management/time_free_project_management.instructions.md"
@@ -58,13 +74,211 @@ categories:
         domains: ["project_management", "documentation", "knowledge_management"]
         priority: "P1"
 
-# Placeholders that need to be resolved during `pongogo init`
-# These are replaced with actual project paths when files are installed
-placeholders:
-  "{wiki_path}": "Path to project wiki (e.g., wiki/ or docs/wiki/)"
-  "{docs_path}": "Path to project docs (e.g., docs/)"
-  "{org}/{repo}": "GitHub org and repo name (e.g., acme/myproject)"
-  "{instructions_path}": "Path where user instruction files live"
+      - path: "project_management/scope_creep_prevention.instructions.md"
+        version: "1.0.0"
+        title: "Scope Creep Prevention"
+        domains: ["project_management", "systematic_prevention"]
+        priority: "P1"
+
+      - path: "project_management/glossary_maintenance.instructions.md"
+        version: "1.0.0"
+        title: "Glossary Maintenance"
+        domains: ["project_management", "knowledge_management"]
+        priority: "P1"
+
+      - path: "project_management/work_log_monthly_summary.instructions.md"
+        version: "1.0.0"
+        title: "Work Log Monthly Summary"
+        domains: ["project_management", "documentation", "knowledge_management"]
+        priority: "P1"
+
+      - path: "project_management/work_log_weekly_summary.instructions.md"
+        version: "1.0.0"
+        title: "Work Log Weekly Summary"
+        domains: ["project_management", "documentation", "knowledge_management"]
+        priority: "P1"
+
+  agentic_workflows:
+    description: "Agent decision making, compliance, multi-pass analysis"
+    classification: "ADOPT"
+    enabled_by_default: true
+    files:
+      - path: "agentic_workflows/multi_pass_iterative_analysis.instructions.md"
+        version: "1.0.0"
+        title: "Multi-Pass Iterative Analysis"
+        domains: ["agentic_workflows", "research"]
+        priority: "P1"
+
+      - path: "agentic_workflows/agentic_decision_making.instructions.md"
+        version: "1.0.0"
+        title: "Agentic Decision Making"
+        domains: ["agentic_workflows", "operational_validation"]
+        priority: "P0"
+
+      - path: "agentic_workflows/agent_compliance_framework.instructions.md"
+        version: "1.0.0"
+        title: "Agent Compliance Framework"
+        domains: ["agentic_workflows", "operational_validation"]
+        priority: "P0"
+
+      - path: "agentic_workflows/agent_environment_setup.instructions.md"
+        version: "1.0.0"
+        title: "Agent Environment Setup"
+        domains: ["agentic_workflows", "devops"]
+        priority: "P1"
+
+  architecture:
+    description: "Repository organization and architectural patterns"
+    classification: "ADOPT"
+    enabled_by_default: true
+    files:
+      - path: "architecture/repository_organization.instructions.md"
+        version: "1.0.0"
+        title: "Repository Organization"
+        domains: ["architecture", "development_standards"]
+        priority: "P1"
+
+  quality:
+    description: "Pull request workflows, environment configuration"
+    classification: "ADAPT"
+    enabled_by_default: true
+    files:
+      - path: "quality/pull_request_workflow.instructions.md"
+        version: "1.0.0"
+        title: "Pull Request Workflow"
+        domains: ["quality", "github_integration"]
+        priority: "P1"
+
+      - path: "quality/environment_configuration.instructions.md"
+        version: "1.0.0"
+        title: "Environment Configuration"
+        domains: ["quality", "devops"]
+        priority: "P1"
+
+  safety_prevention:
+    description: "Validation-first execution, systematic prevention"
+    classification: "ADAPT"
+    enabled_by_default: true
+    files:
+      - path: "safety_prevention/validation_first_execution.instructions.md"
+        version: "1.0.0"
+        title: "Validation-First Execution"
+        domains: ["safety_prevention", "operational_validation"]
+        priority: "P0"
+
+      - path: "safety_prevention/git_safety.instructions.md"
+        version: "1.0.0"
+        title: "Git Safety"
+        domains: ["safety_prevention", "systematic_prevention"]
+        priority: "P0"
+
+      - path: "safety_prevention/systematic_prevention_framework.instructions.md"
+        version: "1.0.0"
+        title: "Systematic Prevention Framework"
+        domains: ["safety_prevention", "systematic_prevention"]
+        priority: "P0"
+
+  testing:
+    description: "Observability testing patterns"
+    classification: "ADOPT"
+    enabled_by_default: true
+    files:
+      - path: "testing/observability_testing.instructions.md"
+        version: "1.0.0"
+        title: "Observability Testing"
+        domains: ["testing", "observability"]
+        priority: "P1"
+
+  validation:
+    description: "Verification efficiency, deterministic validation"
+    classification: "ADAPT"
+    enabled_by_default: true
+    files:
+      - path: "validation/verification_efficiency.instructions.md"
+        version: "1.0.0"
+        title: "Verification Efficiency"
+        domains: ["validation", "operational_validation"]
+        priority: "P0"
+
+      - path: "validation/deterministic_validation_framework.instructions.md"
+        version: "1.0.0"
+        title: "Deterministic Validation Framework"
+        domains: ["validation", "operational_validation"]
+        priority: "P0"
+
+      - path: "validation/validation_essentials.instructions.md"
+        version: "1.0.0"
+        title: "Validation Essentials"
+        domains: ["validation", "operational_validation"]
+        priority: "P0"
+
+  devops:
+    description: "Audit logging, observability patterns"
+    classification: "ADAPT"
+    enabled_by_default: true
+    files:
+      - path: "devops/audit_logging_patterns.instructions.md"
+        version: "1.0.0"
+        title: "Audit Logging Patterns"
+        domains: ["devops", "observability"]
+        priority: "P1"
+
+      - path: "devops/observability_patterns.instructions.md"
+        version: "1.0.0"
+        title: "Observability Patterns"
+        domains: ["devops", "observability"]
+        priority: "P1"
+
+  development:
+    description: "Token usage and context management"
+    classification: "ADAPT"
+    enabled_by_default: true
+    files:
+      - path: "development/token_usage_context_management.instructions.md"
+        version: "1.0.0"
+        title: "Token Usage and Context Management"
+        domains: ["development", "agentic_workflows"]
+        priority: "P1"
+
+  github_integration:
+    description: "GitHub essentials, sub-issues patterns"
+    classification: "ADAPT"
+    enabled_by_default: true
+    files:
+      - path: "github_integration/github_essentials.instructions.md"
+        version: "1.0.0"
+        title: "GitHub Essentials"
+        domains: ["github_integration", "project_management"]
+        priority: "P1"
+
+      - path: "github_integration/github_sub_issues.instructions.md"
+        version: "1.0.0"
+        title: "GitHub Sub-Issues Usage Standards"
+        domains: ["github_integration", "project_management"]
+        priority: "P1"
+
+  trust_execution:
+    description: "Trust-based task execution, feature development workflows"
+    classification: "ADAPT"
+    enabled_by_default: true
+    files:
+      - path: "trust_execution/trust_based_task_execution.instructions.md"
+        version: "1.0.0"
+        title: "Trust-Based Task Execution"
+        domains: ["trust_execution", "operational_validation"]
+        priority: "P0"
+
+      - path: "trust_execution/feature_development.instructions.md"
+        version: "1.0.0"
+        title: "Feature Development Standards"
+        domains: ["trust_execution", "quality_first"]
+        priority: "P0"
+
+      - path: "trust_execution/development_workflow_essentials.instructions.md"
+        version: "1.0.0"
+        title: "Development Workflow Essentials"
+        domains: ["trust_execution", "project_management", "agentic_workflows"]
+        priority: "P0"
 
 # Metadata for update checking
 compatibility:
@@ -73,7 +287,9 @@ compatibility:
 
 # Statistics for this bundle
 stats:
-  total_files: 5
-  total_lines: ~2400
-  categories: 2
-  sample_batch: true  # This is a sample batch, not full set
+  total_files: 31
+  total_categories: 12
+  classification_breakdown:
+    adopt: 9
+    adapt: 22
+  sample_batch: false

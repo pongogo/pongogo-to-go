@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pongogo"
+version = "0.1.0"
+description = "AI agent knowledge routing system for software development"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Pongogo", email = "hello@pongogo.dev" }
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development",
+]
+keywords = ["ai", "agents", "knowledge", "routing", "mcp"]
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+pongogo = "cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/pongogo/pongogo-to-go"
+Documentation = "https://github.com/pongogo/pongogo-to-go#readme"
+Repository = "https://github.com/pongogo/pongogo-to-go"
+Issues = "https://github.com/pongogo/pongogo-to-go/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cli", "src/mcp-server"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/instructions",
+]
