@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
+**Project Home**: [pongogo.com](https://pongogo.com)
+
 Pongogo is a portable AI agent knowledge routing system. This repository contains the product that external users install on their repositories.
 
 ## Status
