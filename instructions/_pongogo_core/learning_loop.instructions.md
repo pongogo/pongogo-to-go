@@ -13,6 +13,9 @@ routing:
       - completed_work
       - task_done
       - finished
+      - shipped
+      - completed
+      - wrapped_up
     nlp: "Conduct retrospective to capture learnings from completed work"
   includes:
     - _pongogo_core/_pongogo_collaboration.instructions.md
