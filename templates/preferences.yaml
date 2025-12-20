@@ -1,0 +1,40 @@
+# Pongogo Preferences
+# Auto-generated through use - edit via /pongogo-config
+#
+# Behaviors: How proactive Pongogo is for each trigger (auto/ask/skip)
+# Communication: How Pongogo communicates (acronyms, verbosity, tone)
+# Approaches: Validated techniques Pongogo remembers to use
+#
+# Documentation: https://github.com/pongogo/pongogo-to-go/blob/main/docs/reference/preferences.md
+
+version: 1
+learned_at: null  # Set on first preference learned
+
+# Behavior preferences: How proactive should Pongogo be?
+# Modes: auto (just do it) | ask (prompt first) | skip (don't mention)
+behaviors: {}
+
+# Communication preferences: How should Pongogo communicate?
+communication:
+  use_acronyms: true      # Use abbreviations like "RCA" vs "Root Cause Analysis"
+  verbosity: balanced     # concise | balanced | verbose
+  tone: balanced          # casual | balanced | professional
+  use_emojis: false       # Include emojis in responses
+
+# Approach commitments: Validated techniques to keep using
+# Example:
+#   root_cause_analysis:
+#     technique: "5 Whys method"
+#     validated_count: 3
+#     committed_at: 2025-12-20T14:00:00Z
+approaches: {}
+
+# Action bundling: Group related triggers for cleaner communication
+bundling:
+  task_completion:
+    - work_log_on_task_completion
+    - decision_capture
+    - strategic_insight_capture
+  epic_completion:
+    - retro_on_epic_completion
+    - work_log_on_task_completion
