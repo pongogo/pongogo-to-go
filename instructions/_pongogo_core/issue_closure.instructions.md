@@ -11,6 +11,9 @@ routing:
       - ready_to_close
       - mark_done
       - finish_task
+      - shipped
+      - close_this
+      - mark_complete
     nlp: "Verify work is complete before closing GitHub issue"
   includes:
     - _pongogo_core/_pongogo_collaboration.instructions.md
@@ -33,7 +36,7 @@ routing:
 This instruction triggers when:
 
 - Work is complete and ready to close issue
-- User says "done", "complete", "close this", "mark done"
+- User says "done", "complete", "close this", "mark done", "shipped"
 - All acceptance criteria appear met
 - Ready to move issue to Done status
 
