@@ -34,6 +34,9 @@ from router import InstructionRouter, RuleBasedRouter
 from routing_engine import RoutingEngine, create_router, get_available_engines, get_engine_features
 from config import load_config, get_knowledge_path, get_routing_config, get_core_instructions_path, ConfigurationError
 
+# Discovery system for observation-triggered promotion
+from discovery_system import DiscoverySystem
+
 # Import engines package to auto-register frozen engine versions (Task #231)
 import engines  # noqa: F401 - imported for side effect (engine registration)
 
@@ -65,6 +68,17 @@ routing_config = get_routing_config(server_config)
 router: RoutingEngine = create_router(instruction_handler, routing_config)
 # Note: Routing engine version now comes from router.version (Task #214)
 # Version format: durian-{major}.{minor}[-dev] (e.g., durian-0.5)
+
+# Initialize discovery system for observation-triggered promotion (Task #360)
+# Project root is parent of .pongogo directory (which is parent of instructions/)
+PROJECT_ROOT = KNOWLEDGE_BASE_PATH.parent.parent
+discovery_system: Optional[DiscoverySystem] = None
+try:
+    if (PROJECT_ROOT / ".pongogo" / "discovery.db").exists():
+        discovery_system = DiscoverySystem(PROJECT_ROOT)
+        logger.info(f"Discovery system initialized for: {PROJECT_ROOT}")
+except Exception as e:
+    logger.warning(f"Discovery system not available: {e}")
 
 # Reindex state management
 _reindex_lock = threading.Lock()
@@ -421,6 +435,17 @@ async def route_instructions(
         # Use router.version from RoutingEngine interface instead of hardcoded constant
         results['routing_engine_version'] = router.version
 
+        # Observation-triggered discovery promotion (Task #360)
+        # Check discoveries for matches and auto-promote on first observation
+        if discovery_system:
+            try:
+                promoted_discoveries = _check_and_promote_discoveries(message, results)
+                if promoted_discoveries:
+                    results['promoted_discoveries'] = promoted_discoveries
+                    logger.info(f"Auto-promoted {len(promoted_discoveries)} discoveries")
+            except Exception as e:
+                logger.warning(f"Discovery promotion check failed: {e}")
+
         return results
 
     except Exception as e:
@@ -432,6 +457,63 @@ async def route_instructions(
             "routing_engine_version": router.version if router else "unknown",
             "error": str(e)
         }
+
+
+def _check_and_promote_discoveries(message: str, routing_results: dict) -> list:
+    """
+    Check discovery database for matches and auto-promote on first observation.
+
+    Args:
+        message: User message/query
+        routing_results: Results from router.route() for keyword extraction
+
+    Returns:
+        List of promoted discovery info dicts
+    """
+    if not discovery_system:
+        return []
+
+    promoted = []
+
+    # Extract keywords from routing analysis if available
+    keywords = []
+    routing_analysis = routing_results.get('routing_analysis', {})
+    if 'query_keywords' in routing_analysis:
+        keywords = routing_analysis['query_keywords']
+    elif 'keywords' in routing_analysis:
+        keywords = routing_analysis['keywords']
+    else:
+        # Fallback: extract simple keywords from message
+        import re
+        words = re.findall(r'\b[a-zA-Z][a-zA-Z0-9_]{2,}\b', message.lower())
+        keywords = list(set(words))[:20]
+
+    if not keywords:
+        return []
+
+    # Find matching discoveries
+    matches = discovery_system.find_matches(keywords, limit=3)
+
+    for discovery in matches:
+        if discovery.status == "DISCOVERED":
+            # Auto-promote: create instruction file
+            instruction_path = discovery_system.promote(discovery.id)
+            if instruction_path:
+                promoted.append({
+                    "discovery_id": discovery.id,
+                    "source_file": discovery.source_file,
+                    "section_title": discovery.section_title,
+                    "instruction_file": instruction_path,
+                    "message": f"Auto-created instruction from {discovery.source_type} discovery"
+                })
+
+                # Trigger reindex to include new instruction file
+                # (async reindex will pick it up on next file watcher event)
+                logger.info(
+                    f"Discovery #{discovery.id} promoted to {instruction_path}"
+                )
+
+    return promoted
 
 
 @mcp.resource("instruction://pongogo/{category}/{name}")

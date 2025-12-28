@@ -16,6 +16,18 @@ from .instructions import (
     load_manifest,
 )
 
+# Import discovery system (lazy import to avoid circular dependencies)
+def get_discovery_system():
+    """Lazy import of DiscoverySystem to avoid circular imports."""
+    import sys
+    from pathlib import Path
+    # Add mcp-server to path if needed
+    mcp_server_path = Path(__file__).parent.parent / "mcp-server"
+    if str(mcp_server_path) not in sys.path:
+        sys.path.insert(0, str(mcp_server_path))
+    from discovery_system import DiscoverySystem
+    return DiscoverySystem
+
 console = Console()
 
 PONGOGO_DIR = ".pongogo"
@@ -279,6 +291,19 @@ def init_command(
 
     console.print(f"  [green]Copied[/green] {files_copied} instruction files")
     console.print(f"  [green]Categories:[/green] {', '.join(enabled_categories)}")
+
+    # Scan repository for existing knowledge patterns
+    console.print("\n[bold]Discovering repository knowledge...[/bold]")
+    discovery_summary = None
+    try:
+        DiscoverySystem = get_discovery_system()
+        ds = DiscoverySystem(cwd)
+        scan_result = ds.scan_repository()
+        discovery_summary = ds.format_scan_summary(scan_result)
+        console.print(discovery_summary)
+    except Exception as e:
+        console.print(f"  [yellow]Warning:[/yellow] Discovery scan failed: {e}")
+        console.print("  [dim]You can run 'pongogo discoveries rescan' later[/dim]")
 
     # Build success message with created folders
     created_items = [

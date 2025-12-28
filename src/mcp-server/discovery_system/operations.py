@@ -1,0 +1,449 @@
+"""
+Discovery System Operations - Main System Interface
+
+Provides high-level operations for discovery scanning, matching, and promotion.
+"""
+
+import json
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+from .database import DiscoveryDatabase
+from .scanner import DiscoveryScanner, DiscoveredSection
+
+
+@dataclass
+class Discovery:
+    """A discovery record from the database."""
+    id: int
+    source_file: str
+    source_type: str
+    section_title: Optional[str]
+    section_content: str
+    content_hash: str
+    keywords: list[str]
+    status: str
+    instruction_file: Optional[str]
+    discovered_at: str
+    promoted_at: Optional[str]
+    archived_at: Optional[str]
+    archive_reason: Optional[str]
+
+    @classmethod
+    def from_row(cls, row) -> "Discovery":
+        """Create Discovery from database row."""
+        return cls(
+            id=row["id"],
+            source_file=row["source_file"],
+            source_type=row["source_type"],
+            section_title=row["section_title"],
+            section_content=row["section_content"],
+            content_hash=row["content_hash"],
+            keywords=json.loads(row["keywords"]) if row["keywords"] else [],
+            status=row["status"],
+            instruction_file=row["instruction_file"],
+            discovered_at=row["discovered_at"],
+            promoted_at=row["promoted_at"],
+            archived_at=row["archived_at"],
+            archive_reason=row["archive_reason"],
+        )
+
+
+@dataclass
+class ScanResult:
+    """Result of a discovery scan operation."""
+    total_discoveries: int
+    new_discoveries: int
+    updated_discoveries: int
+    by_source: dict  # source_type -> {files: int, sections: int}
+
+
+class DiscoverySystem:
+    """
+    Main interface for the Discovery System.
+
+    Coordinates scanning, storage, matching, and promotion of discoveries.
+    """
+
+    def __init__(self, project_root: Path):
+        """
+        Initialize Discovery System for a project.
+
+        Args:
+            project_root: Path to project root directory
+        """
+        self.project_root = Path(project_root)
+        self.db = DiscoveryDatabase(project_root)
+        self.scanner = DiscoveryScanner(project_root)
+
+    def scan_repository(self) -> ScanResult:
+        """
+        Scan repository for knowledge patterns and store in database.
+
+        Returns:
+            ScanResult with counts of discoveries found
+        """
+        discoveries = self.scanner.scan_all()
+        summary = self.scanner.get_scan_summary(discoveries)
+
+        new_count = 0
+        updated_count = 0
+        now = datetime.utcnow().isoformat()
+
+        for d in discoveries:
+            # Check if we already have this content (by hash)
+            existing = self.db.get_discovery_by_hash(d.content_hash)
+
+            if existing:
+                # Content unchanged, nothing to do
+                updated_count += 1
+            else:
+                # Check if same source_file + section_title exists (updated content)
+                existing_by_location = self.db.execute_one(
+                    """
+                    SELECT id FROM discoveries
+                    WHERE source_file = ? AND section_title = ?
+                    """,
+                    (d.source_file, d.section_title),
+                )
+
+                if existing_by_location:
+                    # Update existing discovery with new content
+                    self.db.execute_update(
+                        """
+                        UPDATE discoveries
+                        SET section_content = ?, content_hash = ?, keywords = ?,
+                            discovered_at = ?
+                        WHERE id = ?
+                        """,
+                        (
+                            d.section_content,
+                            d.content_hash,
+                            json.dumps(d.keywords),
+                            now,
+                            existing_by_location["id"],
+                        ),
+                    )
+                    updated_count += 1
+                else:
+                    # Insert new discovery
+                    self.db.execute_insert(
+                        """
+                        INSERT INTO discoveries
+                        (source_file, source_type, section_title, section_content,
+                         content_hash, keywords, status, discovered_at)
+                        VALUES (?, ?, ?, ?, ?, ?, 'DISCOVERED', ?)
+                        """,
+                        (
+                            d.source_file,
+                            d.source_type,
+                            d.section_title,
+                            d.section_content,
+                            d.content_hash,
+                            json.dumps(d.keywords),
+                            now,
+                        ),
+                    )
+                    new_count += 1
+
+        # Record scan in history
+        for source_type, data in summary.get("by_source", {}).items():
+            self.db.execute_insert(
+                """
+                INSERT INTO scan_history
+                (scan_date, source_type, files_scanned, sections_found,
+                 new_discoveries, updated_discoveries)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    now,
+                    source_type,
+                    data.get("files", 0),
+                    data.get("sections", 0),
+                    new_count,
+                    updated_count,
+                ),
+            )
+
+        return ScanResult(
+            total_discoveries=len(discoveries),
+            new_discoveries=new_count,
+            updated_discoveries=updated_count,
+            by_source=summary.get("by_source", {}),
+        )
+
+    def find_matches(self, keywords: list[str], limit: int = 10) -> list[Discovery]:
+        """
+        Find discoveries matching given keywords.
+
+        Used during routing to check if query matches any discoveries.
+
+        Args:
+            keywords: List of keywords to match against
+            limit: Maximum number of matches to return
+
+        Returns:
+            List of matching Discovery objects, sorted by match score
+        """
+        if not keywords:
+            return []
+
+        # Build SQL for keyword matching
+        # Simple approach: count how many keywords match
+        discoveries = self.db.execute(
+            """
+            SELECT * FROM discoveries
+            WHERE status = 'DISCOVERED'
+            ORDER BY discovered_at DESC
+            """
+        )
+
+        # Score each discovery by keyword overlap
+        scored = []
+        keyword_set = {k.lower() for k in keywords}
+
+        for row in discoveries:
+            discovery_keywords = set(
+                json.loads(row["keywords"]) if row["keywords"] else []
+            )
+            overlap = len(keyword_set & discovery_keywords)
+            if overlap > 0:
+                scored.append((overlap, Discovery.from_row(row)))
+
+        # Sort by score descending, take top N
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [d for _, d in scored[:limit]]
+
+    def promote(self, discovery_id: int) -> Optional[str]:
+        """
+        Promote a discovery to an instruction file.
+
+        Creates instruction file in .pongogo/instructions/_discovered/
+        and updates discovery status to PROMOTED.
+
+        Args:
+            discovery_id: ID of discovery to promote
+
+        Returns:
+            Path to created instruction file, or None if failed
+        """
+        # Get discovery
+        row = self.db.execute_one(
+            "SELECT * FROM discoveries WHERE id = ?",
+            (discovery_id,),
+        )
+        if not row:
+            return None
+
+        discovery = Discovery.from_row(row)
+
+        # Generate instruction file name
+        source_prefix = discovery.source_type.lower()
+        if discovery.section_title:
+            # Sanitize title for filename
+            slug = self._slugify(discovery.section_title)
+        else:
+            # Use source file name
+            slug = self._slugify(Path(discovery.source_file).stem)
+
+        filename = f"{source_prefix}_{slug}.instructions.md"
+        instruction_dir = (
+            self.project_root / ".pongogo" / "instructions" / "_discovered"
+        )
+        instruction_dir.mkdir(parents=True, exist_ok=True)
+        instruction_path = instruction_dir / filename
+
+        # Generate instruction file content
+        content = self._generate_instruction_content(discovery)
+        instruction_path.write_text(content, encoding="utf-8")
+
+        # Update discovery status
+        now = datetime.utcnow().isoformat()
+        relative_path = str(instruction_path.relative_to(self.project_root))
+        self.db.execute_update(
+            """
+            UPDATE discoveries
+            SET status = 'PROMOTED', instruction_file = ?, promoted_at = ?
+            WHERE id = ?
+            """,
+            (relative_path, now, discovery_id),
+        )
+
+        return relative_path
+
+    def _generate_instruction_content(self, discovery: Discovery) -> str:
+        """Generate instruction file content from a discovery."""
+        title = discovery.section_title or "Discovered Knowledge"
+        keywords_str = ", ".join(discovery.keywords[:10])
+
+        # Determine category from source type
+        category_map = {
+            "CLAUDE_MD": "project_guidance",
+            "WIKI": "architecture",
+            "DOCS": "documentation",
+        }
+        category = category_map.get(discovery.source_type, "discovered")
+
+        content = f"""---
+id: discovered:{self._slugify(title)}
+title: {title}
+category: {category}
+keywords: [{keywords_str}]
+source_file: {discovery.source_file}
+source_type: {discovery.source_type}
+discovered_at: {discovery.discovered_at}
+promoted_at: {datetime.utcnow().isoformat()}
+auto_generated: true
+---
+
+# {title}
+
+> **Source**: Automatically discovered from `{discovery.source_file}` during repository knowledge scan.
+
+{discovery.section_content}
+"""
+        return content
+
+    def _slugify(self, text: str) -> str:
+        """Convert text to a valid filename slug."""
+        import re
+
+        # Convert to lowercase and replace spaces/special chars with underscores
+        slug = text.lower()
+        slug = re.sub(r"[^\w\s-]", "", slug)
+        slug = re.sub(r"[\s-]+", "_", slug)
+        slug = slug.strip("_")
+        return slug[:50]  # Limit length
+
+    def list_discoveries(
+        self,
+        status: Optional[str] = None,
+        source_type: Optional[str] = None,
+        limit: int = 100,
+    ) -> list[Discovery]:
+        """
+        List discoveries with optional filters.
+
+        Args:
+            status: Filter by status (DISCOVERED, PROMOTED, ARCHIVED)
+            source_type: Filter by source type (CLAUDE_MD, WIKI, DOCS)
+            limit: Maximum number to return
+
+        Returns:
+            List of Discovery objects
+        """
+        conditions = []
+        params = []
+
+        if status:
+            conditions.append("status = ?")
+            params.append(status)
+        if source_type:
+            conditions.append("source_type = ?")
+            params.append(source_type)
+
+        where_clause = " AND ".join(conditions) if conditions else "1=1"
+        params.append(limit)
+
+        rows = self.db.execute(
+            f"""
+            SELECT * FROM discoveries
+            WHERE {where_clause}
+            ORDER BY discovered_at DESC
+            LIMIT ?
+            """,
+            tuple(params),
+        )
+
+        return [Discovery.from_row(row) for row in rows]
+
+    def get_discovery(self, discovery_id: int) -> Optional[Discovery]:
+        """Get a single discovery by ID."""
+        row = self.db.execute_one(
+            "SELECT * FROM discoveries WHERE id = ?",
+            (discovery_id,),
+        )
+        return Discovery.from_row(row) if row else None
+
+    def archive_discovery(
+        self, discovery_id: int, reason: str = "Marked as not useful"
+    ) -> bool:
+        """
+        Archive a discovery (mark as not useful).
+
+        Args:
+            discovery_id: ID of discovery to archive
+            reason: Reason for archiving
+
+        Returns:
+            True if archived, False if not found
+        """
+        now = datetime.utcnow().isoformat()
+        affected = self.db.execute_update(
+            """
+            UPDATE discoveries
+            SET status = 'ARCHIVED', archived_at = ?, archive_reason = ?
+            WHERE id = ?
+            """,
+            (now, reason, discovery_id),
+        )
+        return affected > 0
+
+    def get_stats(self) -> dict:
+        """
+        Get discovery system statistics.
+
+        Returns:
+            Dictionary with counts and status breakdown
+        """
+        total = self.db.count_discoveries()
+        by_status = {}
+        for status in ["DISCOVERED", "PROMOTED", "ARCHIVED"]:
+            by_status[status] = self.db.count_discoveries(status=status)
+
+        by_source = self.db.count_by_source_type()
+
+        return {
+            "total": total,
+            "by_status": by_status,
+            "by_source": by_source,
+        }
+
+    def format_scan_summary(self, result: ScanResult) -> str:
+        """
+        Format scan result for user display.
+
+        Returns:
+            Formatted string for terminal output
+        """
+        lines = ["📚 Repository Knowledge Discovery"]
+
+        if not result.by_source:
+            lines.append("   No knowledge sources found")
+            return "\n".join(lines)
+
+        for source_type, data in result.by_source.items():
+            source_label = {
+                "CLAUDE_MD": "CLAUDE.md",
+                "WIKI": "wiki/",
+                "DOCS": "docs/",
+            }.get(source_type, source_type)
+
+            files = data.get("files", 0)
+            sections = data.get("sections", 0)
+
+            if source_type == "CLAUDE_MD":
+                lines.append(f"   Found {source_label}: {sections} sections cataloged")
+            else:
+                lines.append(
+                    f"   Found {source_label}: {files} files, {sections} sections cataloged"
+                )
+
+        lines.append(f"   Total: {result.total_discoveries} knowledge patterns discovered")
+
+        if result.new_discoveries > 0:
+            lines.append(f"   New discoveries: {result.new_discoveries}")
+
+        return "\n".join(lines)
