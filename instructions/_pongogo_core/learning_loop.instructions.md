@@ -14,6 +14,7 @@ routing:
       - lessons_learned
       - completed_work
       - task_done
+      - done
       - finished
       - shipped
       - completed

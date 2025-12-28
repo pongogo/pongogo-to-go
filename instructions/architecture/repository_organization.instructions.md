@@ -24,7 +24,7 @@ routing:
       - nested_prefixed
       - root_cleanliness
       - autocomplete
-      - @_selector
+      - "@_selector"
       - self-documenting_names
       - directory_naming
       - folder_structure

@@ -12,6 +12,8 @@ routing:
       - approach
       - architecture
       - strategy
+      - think_through
+      - let_me_plan
       - how_should_we
       - what_approach
       - lets_think_about
