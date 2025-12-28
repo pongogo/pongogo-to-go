@@ -17,6 +17,19 @@ This creates a `.pongogo/` directory with configuration and seeded instruction f
 
 ## Installation
 
+### Zero-Config Install (Recommended)
+
+The fastest way to get started - downloads and initializes in one command:
+
+```bash
+curl -fsSL https://get.pongogo.com | sh
+```
+
+This will:
+1. Install the Pongogo CLI (via pip)
+2. Run `pongogo init` in your current directory
+3. Create the `.pongogo/` folder with seeded instructions
+
 ### Requirements
 
 - Python 3.10 or higher
@@ -95,6 +108,32 @@ your-project/
         │   └── ... (4 files)
         └── ... (9 more categories)
 ```
+
+## Portability
+
+The `.pongogo/` directory is designed to be **lean and portable**:
+
+- **Commit to version control**: The entire `.pongogo/` directory should be committed
+- **Multi-machine workflow**: Coworkers can `git pull` and immediately have working Pongogo
+- **No local state**: No machine-specific paths, credentials, or large files
+- **Independent init**: Each team member can run `pongogo init` on a fresh clone
+
+### What Gets Stored
+
+| Location | Contents | Portable? |
+|----------|----------|-----------|
+| `.pongogo/config.yaml` | Category toggles, placeholders | Yes |
+| `.pongogo/instructions/` | Seeded instruction files | Yes |
+| `.pongogo/instructions/manifest.yaml` | Version tracking | Yes |
+
+### What Stays Local
+
+These are NOT stored in `.pongogo/`:
+- MCP server logs (stored in system logs)
+- Cache files (regenerated on demand)
+- User credentials (use environment variables)
+
+---
 
 ## Configuration
 

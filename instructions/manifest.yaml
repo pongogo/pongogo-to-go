@@ -17,7 +17,7 @@ bundle_version: "1.1.0"
 created_date: "2025-12-18T17:52:00-05:00"
 updated_date: "2025-12-19T01:21:00-05:00"
 description: "Seeded instruction files for Pongogo - foundational development patterns and workflows"
-source: "Extracted from Super Pongogo (Task #300)"
+source: "Pongogo foundation library"
 
 # Placeholder schema - replaced during `pongogo init`
 placeholder_schema:
@@ -283,7 +283,24 @@ categories:
 # Metadata for update checking
 compatibility:
   min_pongogo_version: "0.1.0"
-  routing_engine_version: "durian-0.5+"
+  routing_engine_version: "durian-0.6.1"
+  routing_engine_frozen_at: "2025-12-20"
+
+# Frontmatter schema for instruction files
+# All instruction files should include these fields
+instruction_frontmatter_schema:
+  required:
+    - title
+    - description
+    - version
+    - domains
+    - priority
+  optional:
+    - last_updated
+    - applies_to
+    - patterns
+    - routing
+    - durian_version  # Routing engine version this instruction was optimized for
 
 # Statistics for this bundle
 stats:

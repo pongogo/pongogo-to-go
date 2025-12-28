@@ -5,6 +5,7 @@ from pathlib import Path
 import typer
 from rich.console import Console
 from rich.panel import Panel
+from rich.prompt import Confirm
 
 from .config import generate_config, write_config
 from .instructions import (
@@ -20,6 +21,154 @@ console = Console()
 PONGOGO_DIR = ".pongogo"
 CONFIG_FILE = "config.yaml"
 INSTRUCTIONS_DIR = "instructions"
+
+# Common wiki/docs folder names to detect
+WIKI_FOLDER_NAMES = ["wiki", "Wiki", ".wiki"]
+DOCS_FOLDER_NAMES = ["docs", "Docs", "documentation", "Documentation"]
+
+
+def detect_knowledge_folders(cwd: Path) -> tuple[Path | None, Path | None]:
+    """Detect existing wiki and docs folders in the project.
+
+    Returns:
+        Tuple of (wiki_path, docs_path) - each is None if not found.
+    """
+    wiki_path = None
+    docs_path = None
+
+    for name in WIKI_FOLDER_NAMES:
+        candidate = cwd / name
+        if candidate.is_dir():
+            wiki_path = candidate
+            break
+
+    for name in DOCS_FOLDER_NAMES:
+        candidate = cwd / name
+        if candidate.is_dir():
+            docs_path = candidate
+            break
+
+    return wiki_path, docs_path
+
+
+def offer_knowledge_folder_creation(
+    cwd: Path,
+    wiki_path: Path | None,
+    docs_path: Path | None,
+    no_interactive: bool,
+) -> tuple[Path | None, Path | None]:
+    """Offer to create wiki/docs folders with reassurance-first messaging.
+
+    Philosophy: "red x's are scary" - always show the solution alongside any finding.
+    Never show problems without solutions. Use reassurance-first approach.
+
+    Returns:
+        Tuple of (created_wiki_path, created_docs_path)
+    """
+    created_wiki = None
+    created_docs = None
+
+    # Check what's missing
+    missing_wiki = wiki_path is None
+    missing_docs = docs_path is None
+
+    if not missing_wiki and not missing_docs:
+        # Both exist, nothing to offer
+        return None, None
+
+    # Reassurance-first messaging - show the solution with the finding
+    console.print()
+    console.print(
+        Panel(
+            "[bold green]Knowledge Folders[/bold green]\n\n"
+            "Pongogo works best when your project has dedicated folders for "
+            "institutional knowledge - this helps AI agents understand your project's "
+            "architecture and decisions.\n\n"
+            "[dim]This isn't a problem if you don't have them yet - "
+            "we can create them for you![/dim]",
+            title="Checking Project Structure",
+            border_style="blue",
+        )
+    )
+
+    # Report what was found with positive framing
+    if not missing_wiki:
+        console.print(f"  [green]Found[/green] wiki folder: {wiki_path.name}/")
+    if not missing_docs:
+        console.print(f"  [green]Found[/green] docs folder: {docs_path.name}/")
+
+    # Offer to create missing folders with reassurance
+    if missing_wiki:
+        console.print("  [dim]No wiki folder found - that's totally fine![/dim]")
+
+        if no_interactive:
+            # Non-interactive: create by default
+            created_wiki = cwd / "wiki"
+            created_wiki.mkdir(exist_ok=True)
+            console.print(f"  [green]Created[/green] wiki/ folder")
+        else:
+            # Interactive: ask with positive framing
+            create_wiki = Confirm.ask(
+                "  Would you like to create a [bold]wiki/[/bold] folder for project documentation?",
+                default=True,
+            )
+            if create_wiki:
+                created_wiki = cwd / "wiki"
+                created_wiki.mkdir(exist_ok=True)
+                console.print(f"  [green]Created[/green] wiki/ folder")
+
+                # Create a starter file to help users
+                readme = created_wiki / "Home.md"
+                if not readme.exists():
+                    readme.write_text(
+                        "# Project Wiki\n\n"
+                        "Welcome to your project wiki! This folder is for:\n\n"
+                        "- **Architecture decisions** - Why things are built the way they are\n"
+                        "- **Strategic context** - High-level project direction\n"
+                        "- **Onboarding guides** - Help new contributors get started\n\n"
+                        "## Getting Started\n\n"
+                        "If you're using GitHub, this folder can sync with your repository's wiki.\n"
+                        "See: https://docs.github.com/en/communities/documenting-your-project-with-wikis\n"
+                    )
+                    console.print("  [green]Created[/green] wiki/Home.md starter file")
+
+    if missing_docs:
+        console.print("  [dim]No docs folder found - no worries![/dim]")
+
+        if no_interactive:
+            # Non-interactive: create by default
+            created_docs = cwd / "docs"
+            created_docs.mkdir(exist_ok=True)
+            console.print(f"  [green]Created[/green] docs/ folder")
+        else:
+            # Interactive: ask with positive framing
+            create_docs = Confirm.ask(
+                "  Would you like to create a [bold]docs/[/bold] folder for technical documentation?",
+                default=True,
+            )
+            if create_docs:
+                created_docs = cwd / "docs"
+                created_docs.mkdir(exist_ok=True)
+                console.print(f"  [green]Created[/green] docs/ folder")
+
+                # Create a starter README
+                readme = created_docs / "README.md"
+                if not readme.exists():
+                    readme.write_text(
+                        "# Documentation\n\n"
+                        "This folder contains technical documentation for the project:\n\n"
+                        "- **API references** - How to use project APIs\n"
+                        "- **Setup guides** - Installation and configuration\n"
+                        "- **Architecture docs** - Technical design documents\n\n"
+                        "## Organization\n\n"
+                        "Consider organizing your docs by audience:\n"
+                        "- `guides/` - How-to guides for common tasks\n"
+                        "- `reference/` - API and configuration reference\n"
+                        "- `architecture/` - Design decisions and diagrams\n"
+                    )
+                    console.print("  [green]Created[/green] docs/README.md starter file")
+
+    return created_wiki, created_docs
 
 
 def init_command(
@@ -82,9 +231,24 @@ def init_command(
             default=False,
         )
 
-    # Generate configuration
+    # Check for wiki/docs folders and offer to create them
+    # Philosophy: "red x's are scary" - show solutions alongside findings
+    wiki_path, docs_path = detect_knowledge_folders(cwd)
+    created_wiki, created_docs = offer_knowledge_folder_creation(
+        cwd, wiki_path, docs_path, no_interactive
+    )
+
+    # Track created folders for config
+    final_wiki = created_wiki or wiki_path
+    final_docs = created_docs or docs_path
+
+    # Generate configuration with detected/created paths
     console.print("\n[bold]Creating configuration...[/bold]")
-    config = generate_config(minimal=minimal)
+    config = generate_config(
+        minimal=minimal,
+        wiki_path=f"{final_wiki.name}/" if final_wiki else None,
+        docs_path=f"{final_docs.name}/" if final_docs else None,
+    )
 
     config_path = pongogo_dir / CONFIG_FILE
     write_config(config_path, config)
@@ -116,13 +280,22 @@ def init_command(
     console.print(f"  [green]Copied[/green] {files_copied} instruction files")
     console.print(f"  [green]Categories:[/green] {', '.join(enabled_categories)}")
 
+    # Build success message with created folders
+    created_items = [
+        f"  - {CONFIG_FILE}",
+        f"  - {INSTRUCTIONS_DIR}/ ({files_copied} files)",
+    ]
+    if created_wiki:
+        created_items.append(f"  - wiki/ (new)")
+    if created_docs:
+        created_items.append(f"  - docs/ (new)")
+
     # Success message
     console.print(
         Panel(
             f"[green]Pongogo initialized successfully![/green]\n\n"
             f"Created: {PONGOGO_DIR}/\n"
-            f"  - {CONFIG_FILE}\n"
-            f"  - {INSTRUCTIONS_DIR}/ ({files_copied} files)\n\n"
+            + "\n".join(created_items) + "\n\n"
             "[dim]Next steps:[/dim]\n"
             "  1. Review and customize .pongogo/config.yaml\n"
             "  2. Configure MCP server for Claude Code integration\n"

@@ -46,11 +46,17 @@ CONFIG_HEADER = """\
 """
 
 
-def generate_config(minimal: bool = False) -> dict[str, Any]:
+def generate_config(
+    minimal: bool = False,
+    wiki_path: str | None = None,
+    docs_path: str | None = None,
+) -> dict[str, Any]:
     """Generate configuration dictionary.
 
     Args:
         minimal: If True, only enable core categories
+        wiki_path: Detected/created wiki folder path (relative to project root)
+        docs_path: Detected/created docs folder path (relative to project root)
 
     Returns:
         Configuration dictionary
@@ -62,6 +68,12 @@ def generate_config(minimal: bool = False) -> dict[str, Any]:
     if minimal:
         for category in config["categories"]:
             config["categories"][category] = category in MINIMAL_CATEGORIES
+
+    # Update placeholders with detected/created paths
+    if wiki_path:
+        config["placeholders"]["wiki_path"] = wiki_path
+    if docs_path:
+        config["placeholders"]["docs_path"] = docs_path
 
     return config
 

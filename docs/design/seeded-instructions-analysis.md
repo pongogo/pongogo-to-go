@@ -1,9 +1,54 @@
 # Seeded Instructions Analysis
 
-**Purpose**: Multi-pass analysis of Super Pongogo's 108 instruction files to determine what ships with pongogo-to-go.
+**Purpose**: Multi-pass analysis of instruction files to determine what ships with pongogo-to-go.
 
-**Task**: #293 (pongogo/pongogo)
 **Created**: 2025-12-17
+**Updated**: 2025-12-20
+
+---
+
+## Multi-Pass Evaluation Methodology
+
+### Philosophy
+
+**Parallel passes with synthesis**: Run multiple independent analysis passes, then synthesize findings. This catches insights that single-pass analysis misses.
+
+**Evidence during reading, not after**: Capture observations as you encounter them, not from memory after reading. Real-time capture preserves nuance.
+
+### Pass Structure
+
+| Pass | Focus | Captures | Duration |
+|------|-------|----------|----------|
+| **1. Inventory** | What exists? | Filenames, categories, line counts | Fast |
+| **2. Portability** | How project-specific? | Pongogo refs, hardcoded paths, jargon | Medium |
+| **3. Classification** | Keep, adapt, or skip? | ADOPT/ADAPT/INSPIRE/SKIP decisions | Medium |
+| **4. Abstraction** | What changes needed? | Placeholders, scrubbing notes | Slow |
+
+### Classification Framework (ADOPT/ADAPT/INSPIRE/SKIP)
+
+| Decision | Meaning | Action |
+|----------|---------|--------|
+| **ADOPT** | Directly portable, universal value | Copy with minimal changes |
+| **ADAPT** | Good content, needs generalization | Scrub internals, add placeholders |
+| **INSPIRE** | Valuable pattern, not directly usable | Reference in new generic instruction |
+| **SKIP** | Too specific or internal-only | Don't include |
+
+### Quality Signals
+
+When evaluating instructions, look for:
+
+- **High value**: Universal principles, reusable patterns, safety guardrails
+- **Medium value**: Domain-specific but generalizable guidance
+- **Low value**: Project-specific implementation details
+
+### Synthesis Process
+
+After all passes complete:
+
+1. Group files by classification decision
+2. Identify dependencies between instructions
+3. Plan abstraction order (low portability score first)
+4. Validate decisions against use cases
 
 ---
 
