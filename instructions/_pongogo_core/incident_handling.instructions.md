@@ -1,5 +1,7 @@
 ---
+id: core:incident_handling
 routing:
+  protected: true
   priority: 15
   description: Handle incidents, bugs, and failures with RCA
   triggers:

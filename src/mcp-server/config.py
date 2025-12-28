@@ -219,3 +219,26 @@ def get_routing_config(config: Dict[str, Any]) -> Dict[str, Any]:
             "features": routing.get("features", {}),
         }
     }
+
+
+def get_core_instructions_path() -> Optional[Path]:
+    """
+    Get path to package-bundled core instructions.
+
+    Core instructions (_pongogo_core) are protected and always available,
+    even if user deletes their .pongogo/instructions directory.
+
+    Returns:
+        Path to _pongogo_core directory, or None if not found
+    """
+    # Core instructions are bundled at package root level
+    # Path: <package>/instructions/_pongogo_core/
+    package_root = Path(__file__).parent.parent.parent
+    core_path = package_root / "instructions" / "_pongogo_core"
+
+    if core_path.exists():
+        logger.debug(f"Core instructions path: {core_path}")
+        return core_path
+
+    logger.warning(f"Core instructions path not found: {core_path}")
+    return None

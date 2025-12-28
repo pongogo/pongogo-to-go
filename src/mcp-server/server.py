@@ -32,7 +32,7 @@ from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from instruction_handler import InstructionHandler
 from router import InstructionRouter, RuleBasedRouter
 from routing_engine import RoutingEngine, create_router, get_available_engines, get_engine_features
-from config import load_config, get_knowledge_path, get_routing_config, ConfigurationError
+from config import load_config, get_knowledge_path, get_routing_config, get_core_instructions_path, ConfigurationError
 
 # Import engines package to auto-register frozen engine versions (Task #231)
 import engines  # noqa: F401 - imported for side effect (engine registration)
@@ -55,7 +55,9 @@ server_config = load_config(server_dir=SERVER_DIR)
 # Initialize handlers (global state)
 # Knowledge path from config or default (../knowledge/instructions)
 KNOWLEDGE_BASE_PATH = get_knowledge_path(server_config, SERVER_DIR)
-instruction_handler = InstructionHandler(KNOWLEDGE_BASE_PATH)
+# Core instructions path (bundled in package, protected from deletion)
+CORE_INSTRUCTIONS_PATH = get_core_instructions_path()
+instruction_handler = InstructionHandler(KNOWLEDGE_BASE_PATH, core_path=CORE_INSTRUCTIONS_PATH)
 
 # Create router with config (Task #213, Task #214)
 # Config specifies engine version and feature flags
@@ -196,7 +198,8 @@ def _reindex_knowledge_base():
             logger.info("=== Starting knowledge base reindex ===")
 
             # Create new handler instance (loads fresh from disk)
-            new_handler = InstructionHandler(KNOWLEDGE_BASE_PATH)
+            # Core path is constant (bundled), user path reloads from disk
+            new_handler = InstructionHandler(KNOWLEDGE_BASE_PATH, core_path=CORE_INSTRUCTIONS_PATH)
             new_count = new_handler.load_instructions()
 
             # Create new router with new handler (factory pattern - Task #214)

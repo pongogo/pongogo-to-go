@@ -1,5 +1,7 @@
 ---
+id: core:issue_creation
 routing:
+  protected: true
   priority: 10
   description: Guide GitHub issue creation with templates
   triggers:

@@ -1,5 +1,7 @@
 ---
+id: core:work_logging
 routing:
+  protected: true
   priority: 10
   description: Basic work log format for progress tracking
   triggers:

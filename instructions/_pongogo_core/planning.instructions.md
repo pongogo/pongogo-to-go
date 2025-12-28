@@ -1,5 +1,7 @@
 ---
+id: core:planning
 routing:
+  protected: true
   priority: 10
   description: Guide planning and design discussions
   triggers:

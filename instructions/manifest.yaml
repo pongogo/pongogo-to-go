@@ -13,9 +13,9 @@
 #   3. If newer version available, shows diff of changed files
 #   4. User approves update, system downloads and replaces files
 
-bundle_version: "1.1.0"
+bundle_version: "1.2.0"
 created_date: "2025-12-18T17:52:00-05:00"
-updated_date: "2025-12-19T01:21:00-05:00"
+updated_date: "2025-12-28T02:00:00-05:00"
 description: "Seeded instruction files for Pongogo - foundational development patterns and workflows"
 source: "Pongogo foundation library"
 
@@ -34,6 +34,69 @@ placeholder_schema:
 # Categories and their files
 # Users can disable entire categories via .pongogo/config.yaml
 categories:
+  # Core instructions are bundled with the package and protected from deletion
+  # They are NOT copied to user's .pongogo/instructions/ directory
+  _pongogo_core:
+    description: "Core Pongogo instructions - protected, always available"
+    classification: "CORE"
+    enabled_by_default: true
+    bundled: true      # Bundled in package, not copied to user repo
+    protected: true    # Cannot be overridden by user files
+    files:
+      - path: "_pongogo_core/_pongogo_collaboration.instructions.md"
+        id: "core:collaboration"
+        version: "1.0.0"
+        title: "Pongogo Collaboration"
+        protected: true
+
+      - path: "_pongogo_core/incident_handling.instructions.md"
+        id: "core:incident_handling"
+        version: "1.0.0"
+        title: "Incident Handling"
+        protected: true
+
+      - path: "_pongogo_core/issue_closure.instructions.md"
+        id: "core:issue_closure"
+        version: "1.0.0"
+        title: "Issue Closure"
+        protected: true
+
+      - path: "_pongogo_core/issue_creation.instructions.md"
+        id: "core:issue_creation"
+        version: "1.0.0"
+        title: "Issue Creation"
+        protected: true
+
+      - path: "_pongogo_core/issue_status.instructions.md"
+        id: "core:issue_status"
+        version: "1.0.0"
+        title: "Issue Status Management"
+        protected: true
+
+      - path: "_pongogo_core/learning_loop.instructions.md"
+        id: "core:learning_loop"
+        version: "1.0.0"
+        title: "Learning Loop"
+        protected: true
+
+      - path: "_pongogo_core/pi_tracking.instructions.md"
+        id: "core:pi_tracking"
+        version: "1.0.0"
+        title: "Pattern Improvement Tracking"
+        protected: true
+
+      - path: "_pongogo_core/planning.instructions.md"
+        id: "core:planning"
+        version: "1.0.0"
+        title: "Planning & Design"
+        protected: true
+
+      - path: "_pongogo_core/work_logging.instructions.md"
+        id: "core:work_logging"
+        version: "1.0.0"
+        title: "Work Logging"
+        protected: true
+
   software_engineering:
     description: "Development standards, git safety, commit formats"
     classification: "ADOPT"
@@ -304,9 +367,10 @@ instruction_frontmatter_schema:
 
 # Statistics for this bundle
 stats:
-  total_files: 31
-  total_categories: 12
+  total_files: 40           # 31 user + 9 core
+  total_categories: 13      # 12 user + 1 core
   classification_breakdown:
+    core: 9                 # Protected, bundled (not copied to user repo)
     adopt: 9
     adapt: 22
   sample_batch: false

@@ -1,5 +1,7 @@
 ---
+id: core:collaboration
 routing:
+  protected: true
   priority: 1000
   always_include: true
   description: Foundational instruction for adaptive preference system

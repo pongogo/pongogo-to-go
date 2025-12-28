@@ -1,5 +1,7 @@
 ---
+id: core:issue_closure
 routing:
+  protected: true
   priority: 10
   description: Completion verification for GitHub issues
   triggers:

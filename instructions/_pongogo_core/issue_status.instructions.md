@@ -1,5 +1,7 @@
 ---
+id: core:issue_status
 routing:
+  protected: true
   priority: 10
   description: Manage GitHub issue status transitions
   triggers:

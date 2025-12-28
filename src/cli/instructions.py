@@ -6,6 +6,23 @@ from typing import Any
 
 import yaml
 
+# Protected instruction names that cannot be overridden by user files
+# These correspond to core instructions bundled with the package
+PROTECTED_NAMES = frozenset({
+    'collaboration',
+    'incident_handling',
+    'issue_closure',
+    'issue_creation',
+    'issue_status',
+    'learning_loop',
+    'pi_tracking',
+    'planning',
+    'work_logging',
+})
+
+# Category that contains protected core instructions (bundled, not copied)
+CORE_CATEGORY = '_pongogo_core'
+
 
 def get_package_instructions_dir() -> Path:
     """Get the path to bundled instructions directory.
@@ -74,6 +91,9 @@ def copy_instructions(
 ) -> int:
     """Copy instruction files for enabled categories.
 
+    Note: Core instructions (_pongogo_core) are NOT copied - they remain
+    bundled in the package and are loaded separately by the MCP server.
+
     Args:
         source_dir: Source instructions directory
         dest_dir: Destination .pongogo/instructions directory
@@ -89,6 +109,10 @@ def copy_instructions(
     categories = manifest.get("categories", {})
 
     for category_name in enabled_categories:
+        # Skip core instructions - they're bundled, not copied
+        if category_name == CORE_CATEGORY:
+            continue
+
         category = categories.get(category_name, {})
         files = category.get("files", [])
 
@@ -106,6 +130,38 @@ def copy_instructions(
                 files_copied += 1
 
     return files_copied
+
+
+def get_core_instructions_path() -> Path | None:
+    """Get path to package-bundled core instructions.
+
+    Core instructions are protected and always available, even if user
+    deletes their .pongogo/instructions directory.
+
+    Returns:
+        Path to _pongogo_core directory, or None if not found
+    """
+    try:
+        package_instructions = get_package_instructions_dir()
+        core_path = package_instructions / CORE_CATEGORY
+        return core_path if core_path.exists() else None
+    except FileNotFoundError:
+        return None
+
+
+def is_protected_name(name: str) -> bool:
+    """Check if an instruction name is protected.
+
+    Args:
+        name: Instruction file name (without .instructions.md extension)
+
+    Returns:
+        True if name is protected and cannot be overridden
+    """
+    # Strip common prefixes and extensions
+    clean_name = name.replace('core:', '').replace('.instructions.md', '')
+    clean_name = clean_name.replace('_pongogo_', '')
+    return clean_name in PROTECTED_NAMES
 
 
 def copy_manifest(source_dir: Path, dest_dir: Path) -> None:

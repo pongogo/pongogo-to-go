@@ -1,5 +1,7 @@
 ---
+id: core:learning_loop
 routing:
+  protected: true
   priority: 10
   description: Simple retrospective for learning capture
   triggers:

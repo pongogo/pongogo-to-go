@@ -1,5 +1,7 @@
 ---
+id: core:pi_tracking
 routing:
+  protected: true
   priority: 10
   description: Pattern detection and threshold-based improvement tracking
   triggers:

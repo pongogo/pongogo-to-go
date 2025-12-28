@@ -88,31 +88,76 @@ class InstructionFile:
 class InstructionHandler:
     """Handles loading, parsing, and querying instruction files."""
 
-    def __init__(self, knowledge_base_path: Path):
+    def __init__(self, knowledge_base_path: Path, core_path: Optional[Path] = None):
         self.knowledge_base_path = Path(knowledge_base_path)
+        self.core_path = Path(core_path) if core_path else None
         self.instructions: Dict[str, InstructionFile] = {}
         self.by_category: Dict[str, List[str]] = {}
+        self._protected_ids: set = set()  # Track protected instruction IDs
 
         logger.info(f"InstructionHandler initialized with path: {self.knowledge_base_path}")
+        if self.core_path:
+            logger.info(f"Core instructions path: {self.core_path}")
 
     def load_instructions(self) -> int:
         """
         Load all instruction files from knowledge base.
+
+        Loads in two phases:
+        1. Core instructions (protected, bundled in package) - loaded first
+        2. User instructions (from .pongogo/instructions/) - skip if shadows protected ID
 
         Returns:
             Number of instruction files loaded
         """
         count = 0
 
+        # Phase 1: Load CORE instructions first (protected, bundled in package)
+        if self.core_path and self.core_path.exists():
+            for file_path in self.core_path.rglob("*.instructions.md"):
+                try:
+                    instruction = self._parse_instruction_file(file_path)
+                    if instruction:
+                        # Mark as protected
+                        instruction.metadata['protected'] = True
+                        self.instructions[instruction.id] = instruction
+
+                        # Track protected IDs (both with and without core: prefix)
+                        self._protected_ids.add(instruction.id)
+                        base_id = instruction.id.replace('core:', '')
+                        self._protected_ids.add(base_id)
+
+                        # Index by category
+                        for category in instruction.categories:
+                            if category not in self.by_category:
+                                self.by_category[category] = []
+                            self.by_category[category].append(instruction.id)
+
+                        count += 1
+                        logger.debug(f"Loaded CORE instruction: {instruction.id} from {file_path}")
+
+                except Exception as e:
+                    logger.error(f"Error loading core instruction file {file_path}: {e}", exc_info=True)
+
+            logger.info(f"Loaded {len(self._protected_ids) // 2} core instruction files")
+
+        # Phase 2: Load USER instructions (skip if shadows protected ID)
         if not self.knowledge_base_path.exists():
             logger.error(f"Knowledge base path does not exist: {self.knowledge_base_path}")
             return count
 
-        # Find all .instructions.md files recursively
         for file_path in self.knowledge_base_path.rglob("*.instructions.md"):
             try:
                 instruction = self._parse_instruction_file(file_path)
                 if instruction:
+                    # Check if this shadows a protected ID
+                    if instruction.id in self._protected_ids:
+                        logger.warning(
+                            f"Skipping '{instruction.id}' from {file_path} - "
+                            f"shadows protected core instruction"
+                        )
+                        continue
+
                     self.instructions[instruction.id] = instruction
 
                     # Index by category
@@ -127,7 +172,7 @@ class InstructionHandler:
             except Exception as e:
                 logger.error(f"Error loading instruction file {file_path}: {e}", exc_info=True)
 
-        logger.info(f"Loaded {count} instruction files")
+        logger.info(f"Loaded {count} instruction files total")
         return count
 
     def _parse_instruction_file(self, file_path: Path) -> Optional[InstructionFile]:
