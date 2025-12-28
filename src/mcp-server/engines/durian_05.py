@@ -4,24 +4,24 @@ DurianRouter05 - Frozen Stable Routing Engine (durian-0.5)
 This is the frozen stable version of the durian routing engine, extracted from
 commit 1a0933b (2025-12-04, "Promote durian-0.5-dev to durian-0.5").
 
-This version includes all IMP-002 through IMP-009 features but NOT IMP-010
+This version includes all  through  features but NOT 
 (procedural warnings). Preserved for A/B comparison and rollback.
 
 Features (all enabled by default):
-- IMP-002: Violation detection (boost compliance routing on frustration)
-- IMP-003: Approval suppression (skip routing for "yes", "ok", etc.)
-- IMP-007: Instruction bundles (boost co-occurring pairs)
-- IMP-008: Semantic flags (boost categories based on message content)
-- IMP-009: Commencement lookback (boost previous routing on continuation)
+- Violation detection (boost compliance routing on frustration)
+- Approval suppression (skip routing for "yes", "ok", etc.)
+- Instruction bundles (boost co-occurring pairs)
+- Semantic flags (boost categories based on message content)
+- Commencement lookback (boost previous routing on continuation)
 - Foundational: Always-include foundational instructions
 
 Source: git show 1a0933b:pongogo-knowledge-server/router.py
-Frozen: 2025-12-10 (Task #269 versioning update)
+Frozen: 2025-12-10 (versioning update)
 
 References:
-    - Task #204: Quick Wins Implementation
-    - Spike #188: Routing Engine Architecture
-    - Task #214: RoutingEngine Abstract Interface
+    - Quick Wins Implementation
+    - Routing Engine Architecture
+    - RoutingEngine Abstract Interface
 """
 
 import fnmatch
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 # Frozen version identifier - DO NOT CHANGE
 DURIAN_VERSION = "durian-0.5"
 
-# IMP-003: Simple approval patterns that should suppress routing
+# Simple approval patterns that should suppress routing
 APPROVAL_PATTERNS = {
     'yes', 'ok', 'okay', 'sure', 'go ahead', 'please continue', 'continue',
     'sounds good', 'perfect', 'great', 'excellent', 'good', 'fine', 'nice',
@@ -70,7 +70,7 @@ COMMENCEMENT_PHRASES = [
     "go ahead and proceed", "continue with", "proceed with",
 ]
 
-# IMP-002: Violation detection
+# Violation detection
 VIOLATION_WORDS = {
     'unacceptable', 'wrong', 'incorrect', 'mistake',
     'frustrated', 'frustrating', 'annoying', 'annoyed', 'disappointed',
@@ -83,7 +83,7 @@ VIOLATION_CATEGORY_BOOST = 20
 FOUNDATIONAL_SCORE = 1000
 COMMENCEMENT_LOOKBACK_BOOST = 15
 
-# IMP-007: Instruction bundles
+# Instruction bundles
 INSTRUCTION_BUNDLES = {
     'trust_execution/development_workflow_essentials': [
         ('trust_execution/trust_based_task_execution', 12, 0.55),
@@ -111,7 +111,7 @@ INSTRUCTION_BUNDLES = {
 }
 BUNDLE_BOOST_BASE = 10
 
-# IMP-008: Semantic flags
+# Semantic flags
 SEMANTIC_FLAG_PATTERNS = {
     'corrective': {
         'patterns': [
@@ -179,16 +179,16 @@ class DurianRouter05(RoutingEngine):
     """
     Frozen stable routing engine (durian-0.5).
 
-    This is the stable version with IMP-002 through IMP-009 features,
+    This is the stable version with  through  features,
     preserved for A/B comparison and rollback capability.
 
     Features:
-        - violation_detection: IMP-002 - Boost compliance on frustration
-        - approval_suppression: IMP-003 - Skip routing for approvals
+        - violation_detection:  - Boost compliance on frustration
+        - approval_suppression:  - Skip routing for approvals
         - foundational: Always-include foundational instructions
-        - commencement_lookback: IMP-009 - Boost previous on continuation
-        - instruction_bundles: IMP-007 - Boost co-occurring pairs
-        - semantic_flags: IMP-008 - Boost categories by message content
+        - commencement_lookback:  - Boost previous on continuation
+        - instruction_bundles:  - Boost co-occurring pairs
+        - semantic_flags:  - Boost categories by message content
     """
 
     def __init__(self, handler: InstructionHandler, features: Optional[Dict] = None):
@@ -207,29 +207,29 @@ class DurianRouter05(RoutingEngine):
     @property
     def description(self) -> str:
         """Return human-readable description of routing approach."""
-        return "Frozen stable: Rule-based routing with IMP-002 through IMP-009 features"
+        return "Frozen stable: Rule-based routing with  through  features"
 
     @classmethod
     def get_available_features(cls) -> List[FeatureSpec]:
         """Return feature flags available for durian-0.5."""
         return [
             FeatureSpec(name="violation_detection",
-                       description="IMP-002: Boost compliance routing on frustrated/corrective messages",
+                       description="Boost compliance routing on frustrated/corrective messages",
                        default=True, category="scoring"),
             FeatureSpec(name="approval_suppression",
-                       description="IMP-003: Suppress routing for simple approval messages",
+                       description="Suppress routing for simple approval messages",
                        default=True, category="routing"),
             FeatureSpec(name="foundational",
                        description="Always-include foundational instructions",
                        default=True, category="routing"),
             FeatureSpec(name="commencement_lookback",
-                       description="IMP-009: Boost previous routing on commencement messages",
+                       description="Boost previous routing on commencement messages",
                        default=True, category="scoring"),
             FeatureSpec(name="instruction_bundles",
-                       description="IMP-007: Boost co-occurring instruction pairs",
+                       description="Boost co-occurring instruction pairs",
                        default=True, category="scoring"),
             FeatureSpec(name="semantic_flags",
-                       description="IMP-008: Boost categories based on message semantic flags",
+                       description="Boost categories based on message semantic flags",
                        default=True, category="scoring"),
         ]
 
@@ -243,7 +243,7 @@ class DurianRouter05(RoutingEngine):
                         'instructions': [], 'count': 0,
                         'routing_analysis': {
                             'suppressed': True,
-                            'reason': f'IMP-003: {suppression_reason}',
+                            'reason': f'{suppression_reason}',
                             'commencement_detected': False,
                             'message_preview': message[:50] if len(message) > 50 else message
                         }
@@ -352,7 +352,7 @@ class DurianRouter05(RoutingEngine):
             return {'instructions': [], 'count': 0, 'routing_analysis': {'error': str(e)}}
 
     def _detect_violations(self, message: str) -> Dict[str, Any]:
-        """Detect violation signals in message (IMP-002)."""
+        """Detect violation signals in message ()."""
         signals = []
         message_lower = message.lower()
         words = re.findall(r'\b\w+\b', message_lower)
@@ -380,7 +380,7 @@ class DurianRouter05(RoutingEngine):
         return {'detected': len(signals) > 0, 'signals': signals, 'boost_amount': boost_amount}
 
     def _is_simple_approval(self, message: str) -> tuple:
-        """Detect if message is simple approval (IMP-003)."""
+        """Detect if message is simple approval ()."""
         message_clean = message.strip().lower()
         message_normalized = re.sub(r'[.!?,]+$', '', message_clean)
 
@@ -416,7 +416,7 @@ class DurianRouter05(RoutingEngine):
         return foundational
 
     def _get_previous_routing(self, context: Optional[Dict] = None) -> Optional[Dict]:
-        """Get previous routing result for commencement look-back (IMP-009)."""
+        """Get previous routing result for commencement look-back ()."""
         if context and 'previous_routing' in context:
             return context['previous_routing']
 
@@ -444,7 +444,7 @@ class DurianRouter05(RoutingEngine):
         return None
 
     def _normalize_instruction_id(self, instruction) -> str:
-        """Normalize instruction ID to category/name format (IMP-009)."""
+        """Normalize instruction ID to category/name format ()."""
         inst_id = instruction.id
         if inst_id.endswith('.instructions'):
             inst_id = inst_id[:-len('.instructions')]
@@ -592,7 +592,7 @@ class DurianRouter05(RoutingEngine):
         return score, breakdown
 
     def _detect_semantic_flags(self, message: str) -> Dict[str, Any]:
-        """Detect semantic flags in message (IMP-008)."""
+        """Detect semantic flags in message ()."""
         flags = []
         category_boosts = {}
         for flag_name, config in COMPILED_SEMANTIC_FLAGS.items():
@@ -605,7 +605,7 @@ class DurianRouter05(RoutingEngine):
         return {'detected': len(flags) > 0, 'flags': flags, 'category_boosts': category_boosts}
 
     def _apply_bundle_boost(self, scored_instructions: List[Dict]) -> Dict[str, Any]:
-        """Apply bundle boost for co-occurring instruction pairs (IMP-007)."""
+        """Apply bundle boost for co-occurring instruction pairs ()."""
         boosts_applied = []
         instruction_ids = set()
         for inst in scored_instructions:

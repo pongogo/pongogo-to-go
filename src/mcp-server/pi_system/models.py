@@ -119,7 +119,7 @@ class PIEvidence:
     """Evidence/occurrence record for a PI."""
     pi_id: str
     date: str
-    source: str                    # Task #123, RCA-2025-11-15, etc.
+    source: str                    # , RCA-2025-11-15, etc.
     description: Optional[str] = None
     id: Optional[int] = None       # Database ID (auto-generated)
 

@@ -311,9 +311,3 @@ if approach:
     print(f"Using {approach['technique']} as we discussed")
 ```
 
----
-
-## Related
-
-- [Core Loop Automation Design](../design/core-loop-automation.md)
-- [Spike #329: Preferences System Design](https://github.com/pongogo/pongogo/issues/329)

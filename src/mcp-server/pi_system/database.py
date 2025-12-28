@@ -50,7 +50,7 @@ class PIDatabase:
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         pi_id TEXT NOT NULL,
         date TEXT NOT NULL,
-        source TEXT NOT NULL,                    -- Task #123, RCA-2025-11-15, etc.
+        source TEXT NOT NULL,                    -- , RCA-2025-11-15, etc.
         description TEXT,
         FOREIGN KEY (pi_id) REFERENCES potential_improvements(id) ON DELETE CASCADE
     );

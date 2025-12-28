@@ -177,7 +177,7 @@ class PISystem:
 
         Args:
             pi_id: PI to add evidence to
-            source: Source of evidence (e.g., "Task #123", "RCA-2025-11-15")
+            source: Source of evidence (e.g., "", "RCA-2025-11-15")
             description: Description of the occurrence
             date: Date of occurrence (default: today)
 

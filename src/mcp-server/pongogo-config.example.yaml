@@ -22,25 +22,25 @@ routing:
   # Available features depend on engine version
   # See docs/architecture/routing_engine_interface.md for details
   features:
-    # IMP-002: Boost compliance routing on violation signals
+    # Boost compliance routing on violation signals
     violation_detection: true
 
-    # IMP-003: Suppress routing for approval messages
+    # Suppress routing for approval messages
     approval_suppression: true
 
     # Always include foundational instructions
     foundational: true
 
-    # IMP-007: Co-occurrence-based instruction bundles
+    # Co-occurrence-based instruction bundles
     instruction_bundles: true
 
-    # IMP-008: Semantic flag-based category boosting
+    # Semantic flag-based category boosting
     semantic_flags: true
 
-    # IMP-009: Commencement look-back for context continuity
+    # Commencement look-back for context continuity
     commencement_lookback: true
 
-    # IMP-010: Warn when procedural instructions routed (Task #269)
+    # Warn when procedural instructions routed
     procedural_warning: true
 
 # Knowledge base configuration

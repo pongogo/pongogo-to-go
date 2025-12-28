@@ -45,8 +45,8 @@ class InstructionFile:
         self.schema = metadata.get('schema', 'pongogo-instruction-v1')
         self.description = metadata.get('description', '')
 
-        # IMP-004: Support 'domains' as alias for 'categories' (legacy field name)
-        # IMP-005: Support 'patterns' as additional tags source
+        # Support 'domains' as alias for 'categories' (legacy field name)
+        # Support 'patterns' as additional tags source
         self.tags = metadata.get('tags', [])
         patterns = metadata.get('patterns', [])
         if patterns and not self.tags:
@@ -57,7 +57,7 @@ class InstructionFile:
         if domains and not self.categories:
             self.categories = domains  # Use domains as categories if categories empty
 
-        # IMP-006: Support 'applies_to' as top-level glob patterns
+        # Support 'applies_to' as top-level glob patterns
         self.routing = metadata.get('routing', {})
         applies_to = metadata.get('applies_to', [])
         if applies_to:
@@ -211,7 +211,7 @@ class InstructionHandler:
                 metadata = {}
                 markdown_content = content
 
-            # IMP-004: Merge categories from multiple sources
+            # Merge categories from multiple sources
             # IMPORTANT: Directory-based category MUST be first for ground truth matching
             # Ground truth uses format "directory/name" so first category must match directory
             categories = []

@@ -1,7 +1,7 @@
 """Routing Engine Abstract Interface
 
 Defines the abstract interface for swappable routing engines (durian versions).
-Part of the Routing Engine Architecture (Spike #188, Task #214).
+Part of the Routing Engine Architecture.
 
 Architecture:
     IDE/Coding Tool → LLM → MCP Tools → Pongogo MCP Server → RoutingEngine
@@ -15,8 +15,8 @@ Versions:
     - durian-02: Embedding-based semantic similarity (future)
 
 References:
-    - Spike #188: Routing Engine Architecture
-    - Task #214: Create RoutingEngine Abstract Interface
+    - Routing Engine Architecture
+    - Create RoutingEngine Abstract Interface
     - docs/architecture/routing_engine_interface.md
 """
 
@@ -153,8 +153,8 @@ class RoutingEngine(ABC):
             @classmethod
             def get_available_features(cls) -> List[FeatureSpec]:
                 return [
-                    FeatureSpec("violation_detection", "IMP-002: Boost compliance routing", True),
-                    FeatureSpec("approval_suppression", "IMP-003: Suppress approval messages", True),
+                    FeatureSpec("violation_detection", "Boost compliance routing", True),
+                    FeatureSpec("approval_suppression", "Suppress approval messages", True),
                 ]
         """
         return []
@@ -231,9 +231,9 @@ def create_router(
         handler: InstructionHandler instance
         config: Optional configuration dictionary with:
             - routing.engine: Engine version (uses default if not specified)
-            - routing.features: Feature flags dict (Task #204 Phase 00):
-                - violation_detection: bool (IMP-002)
-                - approval_suppression: bool (IMP-003)
+            - routing.features: Feature flags dict ():
+                - violation_detection: bool ()
+                - approval_suppression: bool ()
                 - foundational: bool (always-include foundational)
 
     Returns:
@@ -249,7 +249,7 @@ def create_router(
         # Explicit version
         router = create_router(handler, {"routing": {"engine": "durian-01"}})
 
-        # With feature flags (Task #204 Phase 00)
+        # With feature flags ()
         router = create_router(handler, {"routing": {
             "engine": "durian-0.5",
             "features": {"violation_detection": False}
@@ -262,7 +262,7 @@ def create_router(
     if config:
         routing_config = config.get("routing", {})
         engine_version = routing_config.get("engine", default_version)
-        features = routing_config.get("features")  # Task #204 Phase 00
+        features = routing_config.get("features")  # 
 
     # Look up engine class in registry
     if engine_version not in _ENGINE_REGISTRY:
@@ -272,7 +272,7 @@ def create_router(
             f"Available engines: {available}"
         )
 
-    # Validate features against engine's available features (Task #204)
+    # Validate features against engine's available features
     if features:
         validate_features(engine_version, features)
 
@@ -280,7 +280,7 @@ def create_router(
     # Pass features if engine supports it (duck typing)
     engine_class = _ENGINE_REGISTRY[engine_version]
     try:
-        # Try with features (Task #204 Phase 00 - RuleBasedRouter supports this)
+        # Try with features ( - RuleBasedRouter supports this)
         return engine_class(handler, features=features)
     except TypeError:
         # Fall back for engines that don't support features parameter

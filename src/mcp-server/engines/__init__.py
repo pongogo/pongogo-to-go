@@ -24,9 +24,9 @@ Usage:
     router = create_router(handler, {"routing": {"engine": "durian-00"}})
 
 References:
-    - Spike #188: Routing Engine Architecture
-    - Task #214: RoutingEngine Abstract Interface
-    - Task #231: Version Snapshot Infrastructure
+    - Routing Engine Architecture
+    - RoutingEngine Abstract Interface
+    - Version Snapshot Infrastructure
 """
 
 from pathlib import Path

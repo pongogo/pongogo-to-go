@@ -21,7 +21,7 @@ Usage:
     ready = pi.find_ready_for_implementation()
 
     # Operations
-    pi.add_evidence("PI-001", "Task #199", "Third occurrence identified")
+    pi.add_evidence("PI-001", "", "Third occurrence identified")
     pi.add_relationship("PI-022", "PI-030", "RELATED", "Both address automation")
 
     # Generate index

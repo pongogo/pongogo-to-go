@@ -20,12 +20,12 @@ Routing Algorithm:
 6. Select top N instructions
 
 Source: git show a2e62f1:pongogo-knowledge-server/router.py
-Frozen: 2025-12-01 (Task #231)
+Frozen: 2025-12-01
 
 References:
-    - Task #130: Phase 0 Semantic Similarity Benchmark (ground truth labeling)
-    - Spike #188: Routing Engine Architecture
-    - Task #231: Version Snapshot Infrastructure
+    - Phase 0 Semantic Similarity Benchmark (ground truth labeling)
+    - Routing Engine Architecture
+    - Version Snapshot Infrastructure
 """
 
 import fnmatch
@@ -53,7 +53,7 @@ class DurianRouter00(RoutingEngine):
     Frozen baseline routing engine (durian-00).
 
     This is the original rule-based routing implementation used during
-    Phase 0B ground truth labeling (Task #130, 497 events). Preserved
+    Phase 0B ground truth labeling (based on 497 events). Preserved
     as baseline for A/B comparison with future durian versions.
 
     Scoring Components:

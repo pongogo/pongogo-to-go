@@ -96,7 +96,7 @@ routing:
     nlp: "Time-free project management using complexity-based scoping"
 ```
 
-### Router Behavior (IMP-013)
+### Router Behavior
 
 The durian routing engine (0.6.1+):
 1. Extracts individual words from query
@@ -191,7 +191,7 @@ placeholders:
 
 compatibility:
   min_pongogo_version: "0.1.0"
-  routing_engine_version: "durian-0.6.1+"  # IMP-013 keyword matching
+  routing_engine_version: "durian-0.6.1+"  # Underscore keyword matching
 
 stats:
   total_files: 5
@@ -199,7 +199,7 @@ stats:
   categories: 2
 ```
 
-## Update Flow (Future - Spike #304)
+## Update Flow (Future)
 
 The update mechanism is designed but not yet implemented:
 
@@ -218,9 +218,3 @@ The update mechanism is designed but not yet implemented:
 5. **Update manifest** with file entry
 6. **Test routing** to ensure keywords trigger correctly
 
-## Related
-
-- [Spike #304](https://github.com/pongogo/pongogo/issues/304): Seeded Instructions Update Flow
-- [Task #300](https://github.com/pongogo/pongogo/issues/300): Define Seeded Instructions
-- [Task #305](https://github.com/pongogo/pongogo/issues/305): Underscore Keyword Convention
-- [Task #293 Analysis](https://github.com/pongogo/pongogo/blob/main/experiments/task_293_seeded_instructions/analysis.md): Classification methodology

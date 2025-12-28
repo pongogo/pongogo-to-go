@@ -7,7 +7,7 @@ Implements intelligent routing using NLP, taxonomy, and context-based matching.
 
 Features:
 - Intelligent routing (NLP, taxonomy, context matching)
-- Automatic reindexing via file watcher (Task #123)
+- Automatic reindexing via file watcher
 - Manual reindexing via /pongogo-reindex command
 - Health check (5-minute consistency verification)
 
@@ -37,7 +37,7 @@ from config import load_config, get_knowledge_path, get_routing_config, get_core
 # Discovery system for observation-triggered promotion
 from discovery_system import DiscoverySystem
 
-# Import engines package to auto-register frozen engine versions (Task #231)
+# Import engines package to auto-register frozen engine versions
 import engines  # noqa: F401 - imported for side effect (engine registration)
 
 # Configure logging
@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP server
 mcp = FastMCP("pongogo-knowledge")
 
-# Load configuration (Task #213)
+# Load configuration
 # Priority: PONGOGO_CONFIG_PATH env var > ./pongogo-config.yaml > defaults
 SERVER_DIR = Path(__file__).parent
 server_config = load_config(server_dir=SERVER_DIR)
@@ -62,14 +62,14 @@ KNOWLEDGE_BASE_PATH = get_knowledge_path(server_config, SERVER_DIR)
 CORE_INSTRUCTIONS_PATH = get_core_instructions_path()
 instruction_handler = InstructionHandler(KNOWLEDGE_BASE_PATH, core_path=CORE_INSTRUCTIONS_PATH)
 
-# Create router with config (Task #213, Task #214)
+# Create router with config
 # Config specifies engine version and feature flags
 routing_config = get_routing_config(server_config)
 router: RoutingEngine = create_router(instruction_handler, routing_config)
-# Note: Routing engine version now comes from router.version (Task #214)
+# Note: Routing engine version now comes from router.version
 # Version format: durian-{major}.{minor}[-dev] (e.g., durian-0.5)
 
-# Initialize discovery system for observation-triggered promotion (Task #360)
+# Initialize discovery system for observation-triggered promotion
 # Project root is parent of .pongogo directory (which is parent of instructions/)
 PROJECT_ROOT = KNOWLEDGE_BASE_PATH.parent.parent
 discovery_system: Optional[DiscoverySystem] = None
@@ -216,8 +216,8 @@ def _reindex_knowledge_base():
             new_handler = InstructionHandler(KNOWLEDGE_BASE_PATH, core_path=CORE_INSTRUCTIONS_PATH)
             new_count = new_handler.load_instructions()
 
-            # Create new router with new handler (factory pattern - Task #214)
-            # Preserve current config (Task #213)
+            # Create new router with new handler (factory pattern - )
+            # Preserve current config
             new_router = create_router(new_handler, routing_config)
 
             # Atomic swap (zero-downtime)
@@ -237,7 +237,7 @@ def _reindex_knowledge_base():
                 "old_count": old_count,
                 "new_count": new_count,
                 "elapsed_ms": elapsed_ms,
-                "engine": new_router.version,  # Task #214: Include engine version
+                "engine": new_router.version,  # Include engine version
                 "timestamp": datetime.now().isoformat()
             }
 
@@ -412,8 +412,8 @@ async def route_instructions(
         - instructions: List of routed instructions with confidence scores
         - count: Number of results
         - routing_analysis: Breakdown of how routing decision was made
-        - routing_engine_version: Version of routing engine that produced results (Task #212)
-        - procedural_warning: Warning when procedural instructions routed (IMP-010, Task #269)
+        - routing_engine_version: Version of routing engine that produced results
+        - procedural_warning: Warning when procedural instructions routed 
           Contains warning message, list of procedural instructions, and enforcement guidance
 
     Examples:
@@ -431,11 +431,11 @@ async def route_instructions(
 
         results = router.route(message, context=context, limit=limit)
 
-        # Add routing engine version to response (Task #212, Task #214)
+        # Add routing engine version to response
         # Use router.version from RoutingEngine interface instead of hardcoded constant
         results['routing_engine_version'] = router.version
 
-        # Observation-triggered discovery promotion (Task #360)
+        # Observation-triggered discovery promotion
         # Check discoveries for matches and auto-promote on first observation
         if discovery_system:
             try:
@@ -613,7 +613,7 @@ async def switch_engine(engine_version: Optional[str] = None) -> dict:
     """
     Switch routing engine version or list available engines.
 
-    Task #213: Runtime engine switching for A/B testing and development.
+    Runtime engine switching for A/B testing and development.
 
     Args:
         engine_version: Engine version to switch to (e.g., "durian-0.5-dev").
@@ -850,7 +850,7 @@ if __name__ == "__main__":
     else:
         logger.info(f"Startup routing test passed: '{test_query}' → {test_count} results")
 
-    # Start file watcher in background thread (Task #123)
+    # Start file watcher in background thread
     watcher_thread = threading.Thread(
         target=_start_file_watcher,
         daemon=True,
@@ -859,7 +859,7 @@ if __name__ == "__main__":
     watcher_thread.start()
     logger.info("File watcher thread started (auto-reindex enabled)")
 
-    # Start consistency check in background thread (Task #123 Phase 3)
+    # Start consistency check in background thread ()
     health_check_thread = threading.Thread(
         target=_check_consistency,
         daemon=True,

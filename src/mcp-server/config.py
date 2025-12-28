@@ -1,7 +1,7 @@
 """Pongogo Knowledge Server Configuration
 
 Configuration loading with environment variable support and sensible defaults.
-Implements Task #213: Add engine selection configuration support.
+Implements Add engine selection configuration support.
 
 Environment Variables:
     PONGOGO_CONFIG_PATH: Path to config file (default: pongogo-config.yaml in server dir)
