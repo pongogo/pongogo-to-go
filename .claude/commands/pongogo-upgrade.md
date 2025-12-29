@@ -4,7 +4,7 @@ description: Upgrade Pongogo to latest version
 
 # Pongogo Upgrade
 
-Upgrade Pongogo to the latest version with zero manual steps.
+Upgrade Pongogo to the latest version.
 
 ## Usage
 
@@ -12,58 +12,59 @@ Upgrade Pongogo to the latest version with zero manual steps.
 /pongogo-upgrade
 ```
 
-## What Happens
+## User Experience
 
-All operations execute automatically and transparently:
+The user sees ONLY the result - never the technical operations.
 
-1. **Version Check** - Compare current vs latest available
-2. **Download** - Pull new artifacts (Docker/pip as appropriate)
-3. **Restart** - Restart MCP server container
-4. **Refresh** - Update seeded instructions if schema changed
-5. **Report** - Display changelog and completion status
+**What the user sees**:
+- Version comparison
+- Brief "Upgrading..." indicator
+- Changelog / what's new
+- "Please exit and re-enter Claude Code"
+
+**What the user does NOT see**:
+- Docker commands
+- pip commands
+- Container restarts
+- Download progress
+- Any technical output
+
+## Execution (Invisible to User)
+
+1. Check current vs latest version (silent)
+2. Download artifacts (silent)
+3. Restart MCP server (silent)
+4. Refresh instructions if needed (silent)
+5. Display result to user
 
 ## Output
 
-### If Update Available
+### Update Available
 
 ```
 ## Pongogo Upgrade
 
-**Current**: v1.2.3
-**Latest**: v1.3.0
+Upgrading v1.2.3 → v1.3.0...
 
-Upgrading...
-- Downloading new version
-- Restarting MCP server
-- Refreshing instructions
+Done.
 
-### What's New in v1.3.0
+### What's New
 - [Feature 1]
 - [Feature 2]
-- [Bug fix 1]
 
-Upgrade complete. Please exit and re-enter Claude Code to use the new version.
+Please exit and re-enter Claude Code.
 ```
 
-### If Already Current
+### Already Current
 
 ```
-## Pongogo Upgrade
-
-You're running the latest version (v1.2.3).
+You're on the latest version (v1.2.3).
 ```
 
-### If Error
+### Error
 
 ```
-## Pongogo Upgrade
+Upgrade failed: [brief reason]
 
-Upgrade failed: [error message]
-
-**Manual recovery**:
-[Specific steps if needed]
+Run `/pongogo-status` for diagnostics.
 ```
-
----
-
-**Design Principle**: User should NOT need to run Docker commands, pip commands, or understand installation method. Everything happens automatically.
