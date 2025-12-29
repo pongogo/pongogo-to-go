@@ -19,27 +19,42 @@ This creates a `.pongogo/` directory with configuration and seeded instruction f
 
 ### Zero-Config Install (Recommended)
 
-The fastest way to get started - downloads and initializes in one command:
+The fastest way to get started:
 
 ```bash
-curl -fsSL https://get.pongogo.com | sh
+curl -sSL https://get.pongogo.com | bash
 ```
 
-This will:
-1. Install the Pongogo CLI (via pip)
-2. Run `pongogo init` in your current directory
-3. Create the `.pongogo/` folder with seeded instructions
+The installer will:
+1. Detect if Docker is available
+2. If Docker present: Pull the Docker image and configure Claude Code
+3. If no Docker: Offer interactive menu (install Docker or use pip)
 
-### Requirements
+### Docker Installation
 
-- Python 3.10 or higher
-- pip
+Docker is the recommended method for security and consistency:
 
-### Install from PyPI
+```bash
+# Pull the image
+docker pull ghcr.io/pongogo/pongogo-server:latest
+
+# Configure Claude Code
+pongogo setup-mcp
+```
+
+### pip Installation
+
+For developers who prefer local Python:
 
 ```bash
 pip install pongogo
+pongogo setup-mcp
 ```
+
+### Requirements
+
+- **Docker** (recommended) OR Python 3.10+
+- Claude Code installed
 
 ### Install from source
 
@@ -174,7 +189,26 @@ placeholders:
 
 ## MCP Server Integration
 
-Pongogo includes an MCP (Model Context Protocol) server that routes instructions to AI coding assistants. Configuration instructions coming soon.
+Pongogo includes an MCP (Model Context Protocol) server that routes instructions to AI coding assistants.
+
+### Configure Claude Code
+
+```bash
+# Auto-detect Docker/pip and configure Claude Code
+pongogo setup-mcp
+
+# Preview configuration without changes
+pongogo setup-mcp --dry-run
+
+# Force overwrite existing configuration
+pongogo setup-mcp --force
+```
+
+This adds the Pongogo MCP server to your `~/.claude.json` configuration.
+
+### Upgrade Pongogo
+
+Use the `/pongogo-upgrade` slash command in Claude Code to upgrade to the latest version.
 
 ## Architecture
 
@@ -194,8 +228,10 @@ This separation ensures external users get a clean, focused product while intern
 Current capabilities:
 - ✅ `pongogo init` CLI
 - ✅ Seeded instruction files (31 files, 12 categories)
-- 🔄 MCP server integration (in progress)
-- 📋 Remote updates (planned)
+- ✅ MCP server with Docker/pip distribution
+- ✅ `pongogo setup-mcp` Claude Code integration
+- ✅ Upgrade mechanism via MCP tool
+- 📋 CI/CD for Docker image publishing (planned)
 
 See [pongogo/pongogo](https://github.com/pongogo/pongogo) for development progress.
 
