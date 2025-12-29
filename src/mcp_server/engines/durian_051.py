@@ -1,3 +1,8 @@
+# FROZEN VERSION - DO NOT MODIFY
+# Version: durian-0.5.1
+# Frozen by: freeze_engine.py
+# To make changes, update router.py and create a new frozen version.
+
 """
 Instruction Router (durian-00)
 
@@ -33,14 +38,14 @@ import sqlite3
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
-from instruction_handler import InstructionHandler
-from routing_engine import RoutingEngine, FeatureSpec, register_engine, set_default_engine
+from mcp_server.instruction_handler import InstructionHandler
+from mcp_server.routing_engine import RoutingEngine, FeatureSpec, register_engine, set_default_engine
 
 logger = logging.getLogger(__name__)
 
 # Single source of truth for this engine's version
 # Used by @register_engine decorator and version property
-DURIAN_VERSION = "durian-0.6"
+DURIAN_VERSION = "durian-0.5.1"
 
 # Simple approval patterns that should suppress routing
 # These messages are typically conversational continuations, not queries
@@ -250,159 +255,6 @@ COMPILED_SEMANTIC_FLAGS = {
     for flag_name, config in SEMANTIC_FLAG_PATTERNS.items()
 }
 
-# Friction patterns from  iteration detection
-# These are MORE SPECIFIC than semantic_flags "corrective" patterns
-# Evidence: 43 friction events (21.5%) in 200-event ground truth
-# Types: correction (35), retry (4), rejection (4)
-FRICTION_PATTERNS = {
-    'correction': [
-        # Explicit correction phrases
-        r"not\s+good\s+enough",
-        r"cutting\s+corners",
-        r"against\s+our\s+(goal|broader)",
-        r"please\s+remember",
-        r"we'?ve\s+been\s+over\s+this",
-        r"you\s+(should|need\s+to)\s+undo",
-        r"you'?re\s+again",
-        r"you\s+had\s+put.*wrong",
-        r"that'?s?\s+not\s+(right|correct|what)",
-        r"it\s+was\s+meant\s+to\s+be",
-        r"you'?re\s+overcomplicating",
-        r"don'?t\s+overcomplicate",
-        r"i'?m\s+not\s+sure\s+(that\s+)?you\s+did",
-        r"you\s+did\s+it\s+(in\s+)?reverse",
-        r"you\s+did\s+it\s+wrong",
-        r"we\s+already\s+(broke|did|have|completed)",
-        # Priority/behavior correction
-        r"is\s+not\s+the\s+priority",
-        r"focusing\s+on.*is\s+not",
-        r"don'?t\s+focus\s+on",
-    ],
-    'retry': [
-        # Context reset indicators
-        r"since\s+i'?ve?\s+(exited|re-?entered)",
-        r"cleared\s+the\s+context",
-        r"context\s+window\s+(reset|cleared)",
-        r"let'?s\s+try\s+again",
-        r"let'?s\s+retry",
-    ],
-    'rejection': [
-        # Strong rejection markers
-        r"^no!+",
-        r"\bno!{2,}",
-        r"\bunacceptable\b",
-        r"completely\s+unacceptable",
-        r"this\s+is\s+completely",
-        r"(lost|losing)\s+confidence",
-        # Failure declaration
-        r"consider\s+this\s+a\s+failure",
-        r"this\s+is\s+a\s+failure",
-        r"this\s+has\s+failed",
-        # Reset/revert commands
-        r"\brevert\b",
-        r"start\s+(again|over)",
-        r"delete\s+all",
-        r"fully\s+delete",
-        r"undo\s+(everything|all)",
-    ],
-}
-
-# Precompile friction patterns
-COMPILED_FRICTION_PATTERNS = {
-    friction_type: _re.compile('|'.join(patterns), _re.IGNORECASE)
-    for friction_type, patterns in FRICTION_PATTERNS.items()
-}
-
-# Friction boost configuration
-FRICTION_BOOST_AMOUNT = 20  # Tuned: 20 optimal (8-30 tested)
-FRICTION_BOOST_CATEGORIES = ['trust_execution', 'learning', 'safety_prevention', 'development_standards']  # Tuned: 4 optimal
-
-# Mistake type patterns from  outcome analysis
-# Maps user message patterns to mistake types that require specific preventive instructions
-MISTAKE_PATTERNS = {
-    'incomplete_implementation': [
-        r"not\s+good\s+enough",
-        r"thoroughly\s+analyze\s+all",  # More specific
-        r"guessing\s+is\s+against",
-        r"cutting\s+corners",
-        r"goal\s+of\s+completeness",  # Correction context
-        r"circumvent.*directive",
-        r"abbreviated\s+manner",
-        r"lost\s+confidence",
-        r"gotten\s+off\s+task",
-        r"isn'?t\s+an?\s+accurate\s+reflection",
-        r"ongoing\s+problem",
-        r"not\s+following\s+the\s+process",
-        r"revert.*start\s+again",
-        r"(6th|fifth|fourth|third)\s+time.*stop\s+you",  # Repeated correction
-    ],
-    'premature_action': [
-        r"no,?\s+you\s+may\s+not",
-        r"please\s+first\s+show",
-        r"let'?s\s+determine",
-        r"shouldn'?t\s+consider\s+it\s+correct",
-        r"did\s+you\s+verify.*first",
-        r"before\s+you\s+(do|proceed|continue)",
-    ],
-    'github_api_misuse': [
-        r"don'?t\s+see\s+any\s+changes\s+to\s+the\s+project\s*board",
-        r"not\s+in\s+the\s+right\s+place",
-        r"serious\s+mistakes.*project\s*board",
-        r"should\s+never\s+have\s+been\s+created",
-        r"project\s*board.*wrong",
-    ],
-    'closure_checklist_skip': [
-        r"complete\s+this\s+entire\s+checklist",
-        r"confirm\s+the\s+status\s+of\s+every",
-        r"missing\s+a\s+major\s+procedural\s+gate",
-        r"checklist.*not\s+(being\s+)?used",
-    ],
-    'commencement_checklist_skip': [
-        r"did\s+you\s+verify\s+the\s+status\s+of\s+issues?",
-        r"check\s+prerequisites?\s+first",
-        r"before\s+starting\s+work",
-    ],
-    'over_engineering': [
-        r"overcomplicat(ing|e)",
-        r"don'?t\s+overcomplicate",
-        r"already\s+(did|done|broke\s+out)",
-        r"too\s+complex",
-    ],
-    'wrong_file_location': [
-        r"not\s+the\s+right\s+(place|location|directory)",
-        r"should\s+be\s+stored\s+outside",
-        r"wrong\s+(place|location|directory)",
-        r"moved\s+(them|it)\s+to\s+the\s+correct",
-    ],
-    'misunderstanding_architecture': [
-        r"why\s+are\s+they\s+competing",
-        r"became\s+confused",
-        r"misunderstand.*architecture",
-        r"that'?s\s+not\s+how.*works",
-    ],
-}
-
-# Map mistake types to preventive instructions (from outcome ground truth)
-MISTAKE_INSTRUCTION_MAP = {
-    'incomplete_implementation': ['architecture_principles.instructions.md', 'development_workflow.instructions.md'],
-    'premature_action': ['issue_closure.instructions.md', 'issue_status_in_progress.instructions.md'],
-    'github_api_misuse': ['github_project_status_workflow.instructions.md', 'github_essentials.instructions.md'],
-    'closure_checklist_skip': ['issue_closure.instructions.md'],
-    'commencement_checklist_skip': ['issue_status_in_progress.instructions.md', 'issue_commencement.instructions.md'],
-    'over_engineering': ['architecture_principles.instructions.md'],
-    'wrong_file_location': ['documentation_placement.instructions.md', 'repository_organization.instructions.md'],
-    'misunderstanding_architecture': ['mcp_deployment_architecture.instructions.md', 'architecture_principles.instructions.md'],
-}
-
-# Precompile mistake patterns
-COMPILED_MISTAKE_PATTERNS = {
-    mistake_type: _re.compile('|'.join(patterns), _re.IGNORECASE)
-    for mistake_type, patterns in MISTAKE_PATTERNS.items()
-}
-
-# Outcome boost configuration
-OUTCOME_BOOST_AMOUNT = 5  # Tuned: 5 optimal (3-20 tested, low values best)
-
 # Default feature configuration (all improvements enabled)
 DEFAULT_FEATURES = {
     'violation_detection': True,    # Boost compliance routing on violations
@@ -412,17 +264,13 @@ DEFAULT_FEATURES = {
     'instruction_bundles': True,    # Boost co-occurring instruction pairs
     'semantic_flags': True,         # Boost categories based on message semantics
     'procedural_warning': True,     # Warn when procedural instructions routed
-    'iteration_aware': True,        # Detect friction using iteration patterns
-    'friction_boost': True,         # Boost categories when friction detected
-    'outcome_aware': True,          # Detect mistake types using iteration patterns
-    'outcome_boost': True,          # Boost specific instructions when mistake type detected
 }
 
 
 @register_engine(DURIAN_VERSION)
-class RuleBasedRouter(RoutingEngine):
+class DurianRouter051(RoutingEngine):
     """
-    Rule-based routing engine (durian-0.5-dev).
+    Frozen routing engine (durian-0.5.1).
 
     Routes user queries to relevant instruction files using keyword matching,
     category/tag filtering, glob patterns, and NLP triggers.
@@ -466,7 +314,7 @@ class RuleBasedRouter(RoutingEngine):
 
         # Log feature configuration
         feature_str = ", ".join(f"{k}={v}" for k, v in self.features.items())
-        logger.info(f"RuleBasedRouter initialized (version: {self.version}, features: {feature_str})")
+        logger.info(f"DurianRouter051 initialized (version: {self.version}, features: {feature_str})")
 
     @property
     def version(self) -> str:
@@ -529,30 +377,6 @@ class RuleBasedRouter(RoutingEngine):
                 description="Warn when procedural instructions are routed (requires Read before execute)",
                 default=True,
                 category="compliance"
-            ),
-            FeatureSpec(
-                name="iteration_aware",
-                description="Detect friction (correction/retry/rejection) using iteration patterns",
-                default=True,
-                category="scoring"
-            ),
-            FeatureSpec(
-                name="friction_boost",
-                description="Boost trust/learning/safety categories when friction detected",
-                default=True,
-                category="scoring"
-            ),
-            FeatureSpec(
-                name="outcome_aware",
-                description="Detect mistake types (incomplete_implementation, premature_action, etc.) using iteration patterns",
-                default=True,
-                category="scoring"
-            ),
-            FeatureSpec(
-                name="outcome_boost",
-                description="Boost specific preventive instructions when mistake type detected",
-                default=True,
-                category="scoring"
             ),
         ]
 
@@ -623,18 +447,6 @@ class RuleBasedRouter(RoutingEngine):
             else:
                 semantic_flags_info = {'detected': False, 'flags': [], 'category_boosts': {}}
 
-            # Detect friction using iteration patterns (if enabled)
-            if self.features.get('iteration_aware', True):
-                friction_info = self._detect_friction(message)
-            else:
-                friction_info = {'detected': False, 'friction_type': None, 'signals': [], 'category_boosts': {}}
-
-            # Detect mistake types using iteration patterns (if enabled)
-            if self.features.get('outcome_aware', True):
-                mistake_info = self._detect_mistake_type(message)
-            else:
-                mistake_info = {'detected': False, 'mistake_type': None, 'signals': [], 'instruction_boosts': []}
-
             context = context or {}
             files = context.get('files', [])
             directories = context.get('directories', [])
@@ -669,8 +481,6 @@ class RuleBasedRouter(RoutingEngine):
                 'features': self.features,  # : expose active feature flags
                 'violation_detection': violation_info if violation_info['detected'] else None,
                 'semantic_flags': semantic_flags_info if semantic_flags_info['detected'] else None,  # 
-                'friction_detection': friction_info if friction_info['detected'] else None,  # 
-                'mistake_detection': mistake_info if mistake_info['detected'] else None,  # 
                 'commencement_override': commencement_override,  #  refinement tracking
                 'commencement_lookback': lookback_info,  #  look-back tracking
                 'scoring_breakdown': []
@@ -698,34 +508,6 @@ class RuleBasedRouter(RoutingEngine):
                         score += COMMENCEMENT_LOOKBACK_BOOST
                         score_breakdown['commencement_lookback'] = COMMENCEMENT_LOOKBACK_BOOST
                         logger.debug(f"Boosted {instruction.id} (normalized: {inst_id_normalized}) by {COMMENCEMENT_LOOKBACK_BOOST}")
-
-                # Apply friction boost when friction detected and friction_boost enabled
-                if friction_info['detected'] and self.features.get('friction_boost', True):
-                    for inst_category in instruction.categories:
-                        if inst_category in FRICTION_BOOST_CATEGORIES:
-                            score += FRICTION_BOOST_AMOUNT
-                            score_breakdown['friction_boost'] = {
-                                'category': inst_category,
-                                'boost': FRICTION_BOOST_AMOUNT,
-                                'friction_type': friction_info.get('friction_type')
-                            }
-                            logger.debug(f"Friction boost for {instruction.id} (category: {inst_category}) by {FRICTION_BOOST_AMOUNT}")
-                            break  # Only apply once per instruction
-
-                # Apply outcome boost when mistake type detected and outcome_boost enabled
-                if mistake_info['detected'] and self.features.get('outcome_boost', True):
-                    # Check if this instruction is in the list of preventive instructions
-                    inst_filename = instruction.file_path.name if hasattr(instruction, 'file_path') else ''
-                    for preventive_inst in mistake_info.get('instruction_boosts', []):
-                        if preventive_inst in inst_filename or inst_filename in preventive_inst:
-                            score += OUTCOME_BOOST_AMOUNT
-                            score_breakdown['outcome_boost'] = {
-                                'instruction': preventive_inst,
-                                'boost': OUTCOME_BOOST_AMOUNT,
-                                'mistake_type': mistake_info.get('mistake_type')
-                            }
-                            logger.debug(f"Outcome boost for {instruction.id} (preventive: {preventive_inst}) by {OUTCOME_BOOST_AMOUNT}")
-                            break  # Only apply once per instruction
 
                 if score > 0:
                     result = instruction.to_dict()
@@ -1313,107 +1095,6 @@ class RuleBasedRouter(RoutingEngine):
             'category_boosts': category_boosts
         }
 
-    def _detect_friction(self, message: str) -> Dict[str, Any]:
-        """
-        Detect friction (correction/retry/rejection) using iteration patterns.
-
-        Enhanced friction detection for routing boost.
-        Evidence:  identified 43 friction events (21.5%) in 200-event ground truth.
-
-        Friction types (all indicate user frustration/correction):
-        - correction: Pointing out errors ("that's not right", "you did it wrong")
-        - retry: Resending after failure ("let's try again", "context reset")
-        - rejection: Full rejection ("unacceptable", "start over", "revert")
-
-        Args:
-            message: User message to analyze
-
-        Returns:
-            Dictionary with:
-            - detected: True if friction detected
-            - friction_type: Type of friction (correction/retry/rejection) or None
-            - signals: List of matched patterns
-            - category_boosts: Dict of category -> boost amount (for friction_boost feature)
-        """
-        signals = []
-        friction_type = None
-
-        # Check each friction type in priority order (rejection > retry > correction)
-        for ftype in ['rejection', 'retry', 'correction']:
-            pattern = COMPILED_FRICTION_PATTERNS[ftype]
-            match = pattern.search(message)
-            if match:
-                signals.append(f"{ftype}:{match.group()[:20]}")
-                if friction_type is None:
-                    friction_type = ftype  # First match wins (priority order)
-
-        if signals:
-            logger.debug(f"Friction detected: type={friction_type}, signals={signals}")
-
-        # Build category boosts (only used if friction_boost feature enabled)
-        category_boosts = {}
-        if friction_type:
-            for category in FRICTION_BOOST_CATEGORIES:
-                category_boosts[category] = FRICTION_BOOST_AMOUNT
-
-        return {
-            'detected': len(signals) > 0,
-            'friction_type': friction_type,
-            'signals': signals,
-            'category_boosts': category_boosts
-        }
-
-    def _detect_mistake_type(self, message: str) -> Dict[str, Any]:
-        """
-        Detect mistake types using  outcome patterns.
-
-        Mistake type detection for targeted instruction boosting.
-        Evidence:  identified mistake types and their preventive instructions.
-
-        Mistake types (indicate specific errors that have known preventive instructions):
-        - incomplete_implementation: Cutting corners, not thorough enough
-        - premature_action: Acting without proper verification
-        - github_api_misuse: Project board or GitHub API errors
-        - closure_checklist_skip: Missing closure verification steps
-        - commencement_checklist_skip: Missing startup verification steps
-        - over_engineering: Making things too complex
-        - wrong_file_location: Placing files in wrong directories
-        - misunderstanding_architecture: Architectural confusion
-
-        Args:
-            message: User message to analyze
-
-        Returns:
-            Dictionary with:
-            - detected: True if mistake type detected
-            - mistake_type: Type of mistake or None
-            - signals: List of matched patterns
-            - instruction_boosts: List of instruction filenames to boost
-        """
-        signals = []
-        mistake_type = None
-        instruction_boosts = []
-
-        # Check each mistake type
-        for mtype, pattern in COMPILED_MISTAKE_PATTERNS.items():
-            match = pattern.search(message)
-            if match:
-                signals.append(f"{mtype}:{match.group()[:30]}")
-                if mistake_type is None:
-                    mistake_type = mtype  # First match wins
-                    # Get preventive instructions for this mistake type
-                    instruction_boosts = MISTAKE_INSTRUCTION_MAP.get(mtype, [])
-
-        if signals:
-            logger.debug(f"Mistake type detected: type={mistake_type}, signals={signals}, boosts={instruction_boosts}")
-
-        return {
-            'detected': len(signals) > 0,
-            'mistake_type': mistake_type,
-            'signals': signals,
-            'instruction_boosts': instruction_boosts
-        }
-
     def _is_procedural_instruction(self, instruction) -> Dict[str, Any]:
         """
         Detect if an instruction is procedural (requires Read before execute).
@@ -1573,12 +1254,3 @@ class RuleBasedRouter(RoutingEngine):
             'boosts': boosts_applied,
             'total_boosts': len(boosts_applied)
         }
-
-
-# Backward compatibility alias
-# Existing code using InstructionRouter will continue to work
-InstructionRouter = RuleBasedRouter
-
-# Set this engine as the default for the factory
-# This is the single place that determines the default engine
-set_default_engine(DURIAN_VERSION)

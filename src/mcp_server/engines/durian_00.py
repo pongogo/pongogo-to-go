@@ -38,8 +38,8 @@ from typing import Any, Dict, List, Optional
 # Add parent directory to path for imports when running from engines/
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from instruction_handler import InstructionHandler
-from routing_engine import RoutingEngine, FeatureSpec, register_engine
+from mcp_server.instruction_handler import InstructionHandler
+from mcp_server.routing_engine import RoutingEngine, FeatureSpec, register_engine
 
 logger = logging.getLogger(__name__)
 

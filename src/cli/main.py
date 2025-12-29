@@ -6,6 +6,7 @@ from rich.console import Console
 from . import __version__
 from .init_command import init_command
 from .discoveries import app as discoveries_app
+from .setup_mcp import setup_mcp_command
 
 app = typer.Typer(
     name="pongogo",
@@ -39,6 +40,9 @@ def main(
 
 # Register the init command
 app.command(name="init")(init_command)
+
+# Register the setup-mcp command
+app.command(name="setup-mcp")(setup_mcp_command)
 
 # Register the discoveries subcommand group
 app.add_typer(discoveries_app, name="discoveries")

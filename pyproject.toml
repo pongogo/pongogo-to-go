@@ -26,9 +26,14 @@ classifiers = [
 ]
 keywords = ["ai", "agents", "knowledge", "routing", "mcp"]
 dependencies = [
+    # CLI dependencies
     "typer>=0.9.0",
     "rich>=13.0.0",
     "pyyaml>=6.0",
+    # MCP server dependencies
+    "fastmcp>=1.0.0",
+    "pydantic>=2.0.0",
+    "watchdog>=3.0.0",
 ]
 
 [project.optional-dependencies]
@@ -39,6 +44,7 @@ dev = [
 
 [project.scripts]
 pongogo = "cli.main:app"
+pongogo-server = "mcp_server.server:main"
 
 [project.urls]
 Homepage = "https://github.com/pongogo/pongogo-to-go"
@@ -47,7 +53,7 @@ Repository = "https://github.com/pongogo/pongogo-to-go"
 Issues = "https://github.com/pongogo/pongogo-to-go/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/cli", "src/mcp-server"]
+packages = ["src/cli", "src/mcp_server"]
 
 [tool.hatch.build.targets.sdist]
 include = [

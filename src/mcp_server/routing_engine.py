@@ -23,7 +23,7 @@ References:
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional
 
-from instruction_handler import InstructionHandler
+from mcp_server.instruction_handler import InstructionHandler
 
 
 class RoutingError(Exception):
@@ -261,7 +261,8 @@ def create_router(
     features = None
     if config:
         routing_config = config.get("routing", {})
-        engine_version = routing_config.get("engine", default_version)
+        # Use 'or' to handle None values from config (not just missing keys)
+        engine_version = routing_config.get("engine") or default_version
         features = routing_config.get("features")  # 
 
     # Look up engine class in registry

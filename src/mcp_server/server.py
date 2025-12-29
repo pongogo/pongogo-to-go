@@ -29,16 +29,19 @@ from mcp.server.fastmcp import FastMCP
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
 
-from instruction_handler import InstructionHandler
-from router import InstructionRouter, RuleBasedRouter
-from routing_engine import RoutingEngine, create_router, get_available_engines, get_engine_features
-from config import load_config, get_knowledge_path, get_routing_config, get_core_instructions_path, ConfigurationError
+from mcp_server.instruction_handler import InstructionHandler
+from mcp_server.router import InstructionRouter, RuleBasedRouter
+from mcp_server.routing_engine import RoutingEngine, create_router, get_available_engines, get_engine_features
+from mcp_server.config import load_config, get_knowledge_path, get_routing_config, get_core_instructions_path, ConfigurationError
 
 # Discovery system for observation-triggered promotion
-from discovery_system import DiscoverySystem
+from mcp_server.discovery_system import DiscoverySystem
 
 # Import engines package to auto-register frozen engine versions
-import engines  # noqa: F401 - imported for side effect (engine registration)
+import mcp_server.engines  # noqa: F401 - imported for side effect (engine registration)
+
+# Upgrade functionality
+from mcp_server.upgrade import upgrade as do_upgrade, detect_install_method, get_current_version
 
 # Configure logging
 logging.basicConfig(
@@ -717,6 +720,48 @@ async def switch_engine(engine_version: Optional[str] = None) -> dict:
         }
 
 
+@mcp.tool()
+async def upgrade_pongogo() -> dict:
+    """
+    Upgrade Pongogo to the latest version.
+
+    Automatically detects installation method (Docker or pip) and executes
+    the appropriate upgrade command. The upgrade takes effect after restarting
+    Claude Code.
+
+    Returns:
+        Dictionary with:
+        - success: True if upgrade succeeded
+        - method: Installation method (docker/pip)
+        - message: Human-readable status message
+        - previous_version: Version before upgrade (if known)
+        - new_version: Version after upgrade (for pip only)
+
+    Example:
+        # Upgrade Pongogo
+        upgrade_pongogo()  # Returns {"success": True, "method": "docker", ...}
+    """
+    try:
+        result = do_upgrade()
+
+        return {
+            "success": result.success,
+            "method": result.method.value,
+            "message": result.message,
+            "previous_version": result.previous_version,
+            "new_version": result.new_version,
+        }
+
+    except Exception as e:
+        logger.error(f"Upgrade error: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e),
+            "method": detect_install_method().value,
+            "current_version": get_current_version(),
+        }
+
+
 def _check_consistency():
     """
     Periodic health check comparing disk file count vs cached instruction count.
@@ -808,8 +853,15 @@ def _signal_handler(sig, frame):
     sys.exit(0)
 
 
-# Server startup
-if __name__ == "__main__":
+def main():
+    """Main entry point for pongogo-server CLI command.
+
+    Starts the Pongogo Knowledge MCP Server with:
+    - Instruction file loading and validation
+    - File watcher for auto-reindex
+    - Health check thread
+    - Signal handlers for graceful shutdown
+    """
     # Register signal handlers for graceful shutdown
     signal.signal(signal.SIGTERM, _signal_handler)
     signal.signal(signal.SIGINT, _signal_handler)
@@ -859,7 +911,7 @@ if __name__ == "__main__":
     watcher_thread.start()
     logger.info("File watcher thread started (auto-reindex enabled)")
 
-    # Start consistency check in background thread ()
+    # Start consistency check in background thread
     health_check_thread = threading.Thread(
         target=_check_consistency,
         daemon=True,
@@ -872,3 +924,7 @@ if __name__ == "__main__":
     logger.info("MCP server ready - listening for tool calls")
     logger.info("Signal handlers registered (SIGTERM, SIGINT) for graceful shutdown")
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()
