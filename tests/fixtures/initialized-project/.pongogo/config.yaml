@@ -1,0 +1,24 @@
+# Pongogo Configuration
+# Fixture for testing initialized project state
+
+version: "1.0.0"
+
+categories:
+  software_engineering: true
+  project_management: true
+  agentic_workflows: true
+  architecture: true
+  quality: true
+  safety_prevention: true
+  testing: true
+  validation: true
+  devops: true
+  development: true
+  github_integration: true
+  trust_execution: true
+
+placeholders:
+  wiki_path: wiki/
+  docs_path: docs/
+  owner_repo: test-owner/test-repo
+  instructions_path: .pongogo/instructions/

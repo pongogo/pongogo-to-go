@@ -1,0 +1,13 @@
+# Pongogo Instructions Manifest
+# Fixture for testing instruction loading
+
+version: "1.0.0"
+generated_at: "2025-01-01T00:00:00Z"
+
+instructions:
+  - id: test_instruction
+    path: software_engineering/test_instruction.md
+    category: software_engineering
+    tags:
+      - testing
+      - fixture
