@@ -21,7 +21,7 @@ Configuration Schema:
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import yaml
 
@@ -30,11 +30,12 @@ logger = logging.getLogger(__name__)
 
 class ConfigurationError(Exception):
     """Raised when configuration is invalid or cannot be loaded."""
+
     pass
 
 
 # Default configuration values
-DEFAULT_CONFIG: Dict[str, Any] = {
+DEFAULT_CONFIG: dict[str, Any] = {
     "routing": {
         "engine": None,  # Use registered default engine
         "limit_default": 5,
@@ -49,7 +50,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 }
 
 
-def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     """
     Deep merge override dict into base dict.
 
@@ -69,7 +70,7 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any
     return result
 
 
-def _resolve_path(path: Optional[str], base_dir: Path) -> Optional[Path]:
+def _resolve_path(path: str | None, base_dir: Path) -> Path | None:
     """
     Resolve a path, making relative paths absolute from base_dir.
 
@@ -90,9 +91,8 @@ def _resolve_path(path: Optional[str], base_dir: Path) -> Optional[Path]:
 
 
 def load_config(
-    config_path: Optional[str] = None,
-    server_dir: Optional[Path] = None
-) -> Dict[str, Any]:
+    config_path: str | None = None, server_dir: Path | None = None
+) -> dict[str, Any]:
     """
     Load configuration from YAML file with environment variable overrides.
 
@@ -137,13 +137,13 @@ def load_config(
         resolved_path = _resolve_path(file_path, server_dir)
         if resolved_path and resolved_path.exists():
             try:
-                with open(resolved_path, 'r') as f:
+                with open(resolved_path) as f:
                     file_config = yaml.safe_load(f) or {}
                 config = _deep_merge(config, file_config)
                 logger.info(f"Loaded configuration from: {resolved_path}")
             except yaml.YAMLError as e:
                 raise ConfigurationError(f"Invalid YAML in config file: {e}")
-            except IOError as e:
+            except OSError as e:
                 raise ConfigurationError(f"Cannot read config file: {e}")
         else:
             # Explicit path provided but file doesn't exist
@@ -153,13 +153,13 @@ def load_config(
         default_config_path = server_dir / "pongogo-config.yaml"
         if default_config_path.exists():
             try:
-                with open(default_config_path, 'r') as f:
+                with open(default_config_path) as f:
                     file_config = yaml.safe_load(f) or {}
                 config = _deep_merge(config, file_config)
                 logger.info(f"Loaded configuration from: {default_config_path}")
             except yaml.YAMLError as e:
                 logger.warning(f"Invalid YAML in default config (ignoring): {e}")
-            except IOError as e:
+            except OSError as e:
                 logger.warning(f"Cannot read default config (ignoring): {e}")
         else:
             logger.debug("No config file found, using defaults")
@@ -180,7 +180,7 @@ def load_config(
     return config
 
 
-def get_knowledge_path(config: Dict[str, Any], server_dir: Optional[Path] = None) -> Path:
+def get_knowledge_path(config: dict[str, Any], server_dir: Path | None = None) -> Path:
     """
     Get knowledge base path from config or default.
 
@@ -202,7 +202,7 @@ def get_knowledge_path(config: Dict[str, Any], server_dir: Optional[Path] = None
     return (server_dir.parent / "knowledge" / "instructions").resolve()
 
 
-def get_routing_config(config: Dict[str, Any]) -> Dict[str, Any]:
+def get_routing_config(config: dict[str, Any]) -> dict[str, Any]:
     """
     Extract routing configuration for create_router() factory.
 
@@ -221,7 +221,7 @@ def get_routing_config(config: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def get_core_instructions_path() -> Optional[Path]:
+def get_core_instructions_path() -> Path | None:
     """
     Get path to package-bundled core instructions.
 

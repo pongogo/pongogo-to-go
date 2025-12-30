@@ -76,7 +76,7 @@ behaviors:
     mode: auto
     learned_at: 2025-12-20T14:30:00Z
     learned_from: "User said 'yes, always do that'"
-  
+
   retro_on_epic_completion:
     mode: ask
     learned_at: 2025-12-20T15:00:00Z
@@ -104,10 +104,10 @@ communication:
   use_acronyms: false
   use_acronyms_learned_at: 2025-12-20T16:00:00Z
   use_acronyms_learned_from: "User said 'please avoid acronyms'"
-  
+
   verbosity: concise
   verbosity_learned_at: 2025-12-21T08:00:00Z
-  
+
   tone: professional
   use_emojis: false
 ```
@@ -148,7 +148,7 @@ approaches:
     validated_count: 5
     committed_at: 2025-12-20T14:00:00Z
     committed_from: "User confirmed after 3rd use"
-  
+
   debugging:
     technique: "Reproduce first, then investigate"
     validated_count: 4
@@ -178,7 +178,7 @@ bundling:
     - work_log_on_task_completion
     - decision_capture
     - strategic_insight_capture
-  
+
   epic_completion:
     - retro_on_epic_completion
     - work_log_on_task_completion
@@ -233,11 +233,11 @@ behaviors:
     mode: auto
     learned_at: 2025-12-20T14:30:00Z
     learned_from: "User said 'yes, always do that'"
-  
+
   retro_on_epic_completion:
     mode: ask
     learned_at: 2025-12-20T15:00:00Z
-  
+
   decision_capture:
     mode: auto
     learned_at: 2025-12-22T09:00:00Z
@@ -246,10 +246,10 @@ communication:
   use_acronyms: false
   use_acronyms_learned_at: 2025-12-20T16:00:00Z
   use_acronyms_learned_from: "User said 'please avoid acronyms'"
-  
+
   verbosity: concise
   verbosity_learned_at: 2025-12-21T08:00:00Z
-  
+
   tone: professional
   use_emojis: false
 
@@ -310,4 +310,3 @@ approach = get_approach(prefs, "root_cause_analysis")
 if approach:
     print(f"Using {approach['technique']} as we discussed")
 ```
-

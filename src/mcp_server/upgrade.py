@@ -9,13 +9,13 @@ import subprocess
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 
 class InstallMethod(Enum):
     """Installation method for Pongogo."""
+
     DOCKER = "docker"
     PIP = "pip"
     UNKNOWN = "unknown"
@@ -24,11 +24,12 @@ class InstallMethod(Enum):
 @dataclass
 class UpgradeResult:
     """Result of an upgrade operation."""
+
     success: bool
     method: InstallMethod
     message: str
-    previous_version: Optional[str] = None
-    new_version: Optional[str] = None
+    previous_version: str | None = None
+    new_version: str | None = None
 
 
 def detect_install_method() -> InstallMethod:
@@ -46,7 +47,7 @@ def detect_install_method() -> InstallMethod:
         return InstallMethod.DOCKER
 
     try:
-        with open("/proc/1/cgroup", "r") as f:
+        with open("/proc/1/cgroup") as f:
             if "docker" in f.read():
                 return InstallMethod.DOCKER
     except (FileNotFoundError, PermissionError):
@@ -61,6 +62,7 @@ def get_current_version() -> str:
     try:
         # Try importing version from package
         from mcp_server import __version__
+
         return __version__
     except ImportError:
         return "unknown"

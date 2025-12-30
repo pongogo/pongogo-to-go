@@ -8,28 +8,28 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from .database import DiscoveryDatabase
-from .scanner import DiscoveryScanner, DiscoveredSection
+from .scanner import DiscoveryScanner
 
 
 @dataclass
 class Discovery:
     """A discovery record from the database."""
+
     id: int
     source_file: str
     source_type: str
-    section_title: Optional[str]
+    section_title: str | None
     section_content: str
     content_hash: str
     keywords: list[str]
     status: str
-    instruction_file: Optional[str]
+    instruction_file: str | None
     discovered_at: str
-    promoted_at: Optional[str]
-    archived_at: Optional[str]
-    archive_reason: Optional[str]
+    promoted_at: str | None
+    archived_at: str | None
+    archive_reason: str | None
 
     @classmethod
     def from_row(cls, row) -> "Discovery":
@@ -54,6 +54,7 @@ class Discovery:
 @dataclass
 class ScanResult:
     """Result of a discovery scan operation."""
+
     total_discoveries: int
     new_discoveries: int
     updated_discoveries: int
@@ -216,7 +217,7 @@ class DiscoverySystem:
         scored.sort(key=lambda x: x[0], reverse=True)
         return [d for _, d in scored[:limit]]
 
-    def promote(self, discovery_id: int) -> Optional[str]:
+    def promote(self, discovery_id: int) -> str | None:
         """
         Promote a discovery to an instruction file.
 
@@ -319,8 +320,8 @@ auto_generated: true
 
     def list_discoveries(
         self,
-        status: Optional[str] = None,
-        source_type: Optional[str] = None,
+        status: str | None = None,
+        source_type: str | None = None,
         limit: int = 100,
     ) -> list[Discovery]:
         """
@@ -359,7 +360,7 @@ auto_generated: true
 
         return [Discovery.from_row(row) for row in rows]
 
-    def get_discovery(self, discovery_id: int) -> Optional[Discovery]:
+    def get_discovery(self, discovery_id: int) -> Discovery | None:
         """Get a single discovery by ID."""
         row = self.db.execute_one(
             "SELECT * FROM discoveries WHERE id = ?",
@@ -441,7 +442,9 @@ auto_generated: true
                     f"   Found {source_label}: {files} files, {sections} sections cataloged"
                 )
 
-        lines.append(f"   Total: {result.total_discoveries} knowledge patterns discovered")
+        lines.append(
+            f"   Total: {result.total_discoveries} knowledge patterns discovered"
+        )
 
         if result.new_discoveries > 0:
             lines.append(f"   New discoveries: {result.new_discoveries}")

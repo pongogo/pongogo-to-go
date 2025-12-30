@@ -30,8 +30,8 @@ Usage:
 """
 
 from .database import DiscoveryDatabase
-from .scanner import DiscoveryScanner
 from .operations import DiscoverySystem
+from .scanner import DiscoveryScanner
 
 __all__ = [
     "DiscoveryDatabase",

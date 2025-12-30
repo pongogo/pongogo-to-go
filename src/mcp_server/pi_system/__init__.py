@@ -29,7 +29,7 @@ Usage:
 """
 
 from .database import PIDatabase
-from .models import PotentialImprovement, PIEvidence, PIRelationship
+from .models import PIEvidence, PIRelationship, PotentialImprovement
 from .operations import PISystem
 from .queries import PIQueries
 

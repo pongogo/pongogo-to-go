@@ -16,17 +16,21 @@ from .instructions import (
     load_manifest,
 )
 
+
 # Import discovery system (lazy import to avoid circular dependencies)
 def get_discovery_system():
     """Lazy import of DiscoverySystem to avoid circular imports."""
     import sys
     from pathlib import Path
+
     # Add mcp-server to path if needed
     mcp_server_path = Path(__file__).parent.parent / "mcp-server"
     if str(mcp_server_path) not in sys.path:
         sys.path.insert(0, str(mcp_server_path))
     from discovery_system import DiscoverySystem
+
     return DiscoverySystem
+
 
 console = Console()
 
@@ -117,7 +121,7 @@ def offer_knowledge_folder_creation(
             # Non-interactive: create by default
             created_wiki = cwd / "wiki"
             created_wiki.mkdir(exist_ok=True)
-            console.print(f"  [green]Created[/green] wiki/ folder")
+            console.print("  [green]Created[/green] wiki/ folder")
         else:
             # Interactive: ask with positive framing
             create_wiki = Confirm.ask(
@@ -127,7 +131,7 @@ def offer_knowledge_folder_creation(
             if create_wiki:
                 created_wiki = cwd / "wiki"
                 created_wiki.mkdir(exist_ok=True)
-                console.print(f"  [green]Created[/green] wiki/ folder")
+                console.print("  [green]Created[/green] wiki/ folder")
 
                 # Create a starter file to help users
                 readme = created_wiki / "Home.md"
@@ -151,7 +155,7 @@ def offer_knowledge_folder_creation(
             # Non-interactive: create by default
             created_docs = cwd / "docs"
             created_docs.mkdir(exist_ok=True)
-            console.print(f"  [green]Created[/green] docs/ folder")
+            console.print("  [green]Created[/green] docs/ folder")
         else:
             # Interactive: ask with positive framing
             create_docs = Confirm.ask(
@@ -161,7 +165,7 @@ def offer_knowledge_folder_creation(
             if create_docs:
                 created_docs = cwd / "docs"
                 created_docs.mkdir(exist_ok=True)
-                console.print(f"  [green]Created[/green] docs/ folder")
+                console.print("  [green]Created[/green] docs/ folder")
 
                 # Create a starter README
                 readme = created_docs / "README.md"
@@ -178,7 +182,9 @@ def offer_knowledge_folder_creation(
                         "- `reference/` - API and configuration reference\n"
                         "- `architecture/` - Design decisions and diagrams\n"
                     )
-                    console.print("  [green]Created[/green] docs/README.md starter file")
+                    console.print(
+                        "  [green]Created[/green] docs/README.md starter file"
+                    )
 
     return created_wiki, created_docs
 
@@ -220,8 +226,11 @@ def init_command(
             )
             raise typer.Exit(1)
         else:
-            console.print(f"[yellow]Overwriting existing {PONGOGO_DIR}/ directory...[/yellow]")
+            console.print(
+                f"[yellow]Overwriting existing {PONGOGO_DIR}/ directory...[/yellow]"
+            )
             import shutil
+
             shutil.rmtree(pongogo_dir)
 
     # Show welcome message
@@ -311,16 +320,15 @@ def init_command(
         f"  - {INSTRUCTIONS_DIR}/ ({files_copied} files)",
     ]
     if created_wiki:
-        created_items.append(f"  - wiki/ (new)")
+        created_items.append("  - wiki/ (new)")
     if created_docs:
-        created_items.append(f"  - docs/ (new)")
+        created_items.append("  - docs/ (new)")
 
     # Success message
     console.print(
         Panel(
             f"[green]Pongogo initialized successfully![/green]\n\n"
-            f"Created: {PONGOGO_DIR}/\n"
-            + "\n".join(created_items) + "\n\n"
+            f"Created: {PONGOGO_DIR}/\n" + "\n".join(created_items) + "\n\n"
             "[dim]Next steps:[/dim]\n"
             "  1. Review and customize .pongogo/config.yaml\n"
             "  2. Configure MCP server for Claude Code integration\n"

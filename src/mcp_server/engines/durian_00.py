@@ -33,13 +33,13 @@ import logging
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # Add parent directory to path for imports when running from engines/
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from mcp_server.instruction_handler import InstructionHandler
-from mcp_server.routing_engine import RoutingEngine, FeatureSpec, register_engine
+from mcp_server.routing_engine import FeatureSpec, RoutingEngine, register_engine
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ class DurianRouter00(RoutingEngine):
         return "Frozen baseline: Rule-based routing with keyword matching, taxonomy, and context heuristics (Phase 0B)"
 
     @classmethod
-    def get_available_features(cls) -> List[FeatureSpec]:
+    def get_available_features(cls) -> list[FeatureSpec]:
         """
         Return feature flags available for durian-00.
 
@@ -101,11 +101,8 @@ class DurianRouter00(RoutingEngine):
         return []
 
     def route(
-        self,
-        message: str,
-        context: Optional[Dict[str, Any]] = None,
-        limit: int = 5
-    ) -> Dict[str, Any]:
+        self, message: str, context: dict[str, Any] | None = None, limit: int = 5
+    ) -> dict[str, Any]:
         """
         Route message to relevant instruction files.
 
@@ -130,18 +127,18 @@ class DurianRouter00(RoutingEngine):
             intent = self._extract_intent(message)
 
             context = context or {}
-            files = context.get('files', [])
-            directories = context.get('directories', [])
-            branch = context.get('branch', '')
-            language = context.get('language', '')
+            files = context.get("files", [])
+            directories = context.get("directories", [])
+            branch = context.get("branch", "")
+            language = context.get("language", "")
 
             # Score all instructions
             scored_instructions = []
             analysis = {
-                'keywords_extracted': keywords,
-                'intent_detected': intent,
-                'context_used': context,
-                'scoring_breakdown': []
+                "keywords_extracted": keywords,
+                "intent_detected": intent,
+                "context_used": context,
+                "scoring_breakdown": [],
             }
 
             for instruction in self.instruction_handler.instructions.values():
@@ -153,42 +150,44 @@ class DurianRouter00(RoutingEngine):
                     files=files,
                     directories=directories,
                     branch=branch,
-                    language=language
+                    language=language,
                 )
 
                 if score > 0:
                     result = instruction.to_dict()
-                    result['routing_score'] = score
-                    result['score_breakdown'] = score_breakdown
+                    result["routing_score"] = score
+                    result["score_breakdown"] = score_breakdown
                     scored_instructions.append(result)
 
-                    analysis['scoring_breakdown'].append({
-                        'instruction_id': instruction.id,
-                        'score': score,
-                        'breakdown': score_breakdown
-                    })
+                    analysis["scoring_breakdown"].append(
+                        {
+                            "instruction_id": instruction.id,
+                            "score": score,
+                            "breakdown": score_breakdown,
+                        }
+                    )
 
             # Sort by score descending
-            scored_instructions.sort(key=lambda x: x['routing_score'], reverse=True)
+            scored_instructions.sort(key=lambda x: x["routing_score"], reverse=True)
 
             # Return top N
             top_instructions = scored_instructions[:limit]
 
             return {
-                'instructions': top_instructions,
-                'count': len(top_instructions),
-                'routing_analysis': analysis
+                "instructions": top_instructions,
+                "count": len(top_instructions),
+                "routing_analysis": analysis,
             }
 
         except Exception as e:
             logger.error(f"Error routing message: {e}", exc_info=True)
             return {
-                'instructions': [],
-                'count': 0,
-                'routing_analysis': {'error': str(e)}
+                "instructions": [],
+                "count": 0,
+                "routing_analysis": {"error": str(e)},
             }
 
-    def _extract_keywords(self, message: str) -> List[str]:
+    def _extract_keywords(self, message: str) -> list[str]:
         """
         Extract keywords from message.
 
@@ -198,17 +197,62 @@ class DurianRouter00(RoutingEngine):
         message_lower = message.lower()
 
         # Remove punctuation
-        message_clean = re.sub(r'[^\w\s]', ' ', message_lower)
+        message_clean = re.sub(r"[^\w\s]", " ", message_lower)
 
         # Split into words
         words = message_clean.split()
 
         # Remove common stop words
-        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-                      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'be',
-                      'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
-                      'would', 'should', 'could', 'may', 'might', 'must', 'can', 'this',
-                      'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they'}
+        stop_words = {
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "from",
+            "as",
+            "is",
+            "was",
+            "are",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "should",
+            "could",
+            "may",
+            "might",
+            "must",
+            "can",
+            "this",
+            "that",
+            "these",
+            "those",
+            "i",
+            "you",
+            "he",
+            "she",
+            "it",
+            "we",
+            "they",
+        }
 
         keywords = [w for w in words if w not in stop_words and len(w) > 2]
 
@@ -223,31 +267,36 @@ class DurianRouter00(RoutingEngine):
         message_lower = message.lower()
 
         # Common intent patterns
-        if any(word in message_lower for word in ['how do i', 'how to', 'how can']):
-            return 'how-to'
-        elif any(word in message_lower for word in ['what is', 'what are', 'explain']):
-            return 'explanation'
-        elif any(word in message_lower for word in ['create', 'add', 'make', 'build']):
-            return 'creation'
-        elif any(word in message_lower for word in ['fix', 'debug', 'error', 'issue', 'problem']):
-            return 'troubleshooting'
-        elif any(word in message_lower for word in ['test', 'validate', 'check']):
-            return 'validation'
-        elif any(word in message_lower for word in ['document', 'write docs', 'readme']):
-            return 'documentation'
+        if any(word in message_lower for word in ["how do i", "how to", "how can"]):
+            return "how-to"
+        elif any(word in message_lower for word in ["what is", "what are", "explain"]):
+            return "explanation"
+        elif any(word in message_lower for word in ["create", "add", "make", "build"]):
+            return "creation"
+        elif any(
+            word in message_lower
+            for word in ["fix", "debug", "error", "issue", "problem"]
+        ):
+            return "troubleshooting"
+        elif any(word in message_lower for word in ["test", "validate", "check"]):
+            return "validation"
+        elif any(
+            word in message_lower for word in ["document", "write docs", "readme"]
+        ):
+            return "documentation"
 
-        return 'general'
+        return "general"
 
     def _score_instruction(
         self,
         instruction,
         message: str,
-        keywords: List[str],
+        keywords: list[str],
         intent: str,
-        files: List[str],
-        directories: List[str],
+        files: list[str],
+        directories: list[str],
         branch: str,
-        language: str
+        language: str,
     ) -> tuple:
         """
         Score instruction relevance using multiple signals.
@@ -279,15 +328,15 @@ class DurianRouter00(RoutingEngine):
 
             # Check in metadata keywords
             routing = instruction.routing or {}
-            triggers = routing.get('triggers', {})
-            meta_keywords = triggers.get('keywords', [])
+            triggers = routing.get("triggers", {})
+            meta_keywords = triggers.get("keywords", [])
             for meta_keyword in meta_keywords:
                 if keyword in meta_keyword.lower():
                     score += 10
                     keyword_matches.append(f"metadata_keyword:{meta_keyword}")
 
         if keyword_matches:
-            breakdown['keyword_matches'] = keyword_matches
+            breakdown["keyword_matches"] = keyword_matches
 
         # 2. Category matching (+5 per category)
         category_matches = []
@@ -298,24 +347,24 @@ class DurianRouter00(RoutingEngine):
                 category_matches.append(category)
 
         if category_matches:
-            breakdown['category_matches'] = category_matches
+            breakdown["category_matches"] = category_matches
 
         # 3. NLP trigger matching (+8)
         routing = instruction.routing or {}
-        triggers = routing.get('triggers', {})
-        nlp_trigger = triggers.get('nlp', '')
+        triggers = routing.get("triggers", {})
+        nlp_trigger = triggers.get("nlp", "")
         if nlp_trigger:
             # Check if message matches NLP trigger description
             nlp_keywords = self._extract_keywords(nlp_trigger)
             overlap = set(keywords) & set(nlp_keywords)
             if overlap:
                 score += 8 * len(overlap)
-                breakdown['nlp_trigger_match'] = list(overlap)
+                breakdown["nlp_trigger_match"] = list(overlap)
 
         # 4. Glob/path matching (+7 per file match)
         glob_matches = []
-        apply_to = routing.get('applyTo', {})
-        globs = apply_to.get('globs', [])
+        apply_to = routing.get("applyTo", {})
+        globs = apply_to.get("globs", [])
 
         for file_path in files:
             for glob_pattern in globs:
@@ -324,14 +373,14 @@ class DurianRouter00(RoutingEngine):
                     glob_matches.append(f"{file_path} matches {glob_pattern}")
 
         if glob_matches:
-            breakdown['glob_matches'] = glob_matches
+            breakdown["glob_matches"] = glob_matches
 
         # 5. Contextual matching (files, branches) (+5)
         contextual_matches = []
-        contextual = routing.get('contextual', {})
+        contextual = routing.get("contextual", {})
 
         # File context
-        file_patterns = contextual.get('files', [])
+        file_patterns = contextual.get("files", [])
         for file_path in files:
             for pattern in file_patterns:
                 if fnmatch.fnmatch(file_path, pattern):
@@ -339,14 +388,14 @@ class DurianRouter00(RoutingEngine):
                     contextual_matches.append(f"file_context:{file_path}")
 
         # Branch context
-        branch_patterns = contextual.get('branches', [])
+        branch_patterns = contextual.get("branches", [])
         for pattern in branch_patterns:
             if fnmatch.fnmatch(branch, pattern):
                 score += 5
                 contextual_matches.append(f"branch_context:{branch}")
 
         if contextual_matches:
-            breakdown['contextual_matches'] = contextual_matches
+            breakdown["contextual_matches"] = contextual_matches
 
         # 6. Tag matching (+3 per tag)
         tag_matches = []
@@ -356,7 +405,7 @@ class DurianRouter00(RoutingEngine):
                 tag_matches.append(tag)
 
         if tag_matches:
-            breakdown['tag_matches'] = tag_matches
+            breakdown["tag_matches"] = tag_matches
 
-        breakdown['total_score'] = score
+        breakdown["total_score"] = score
         return score, breakdown

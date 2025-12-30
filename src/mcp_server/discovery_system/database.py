@@ -6,9 +6,8 @@ found in CLAUDE.md, wiki/, and docs/ during pongogo init.
 """
 
 import sqlite3
-from pathlib import Path
-from typing import Optional
 from contextlib import contextmanager
+from pathlib import Path
 
 
 class DiscoveryDatabase:
@@ -79,7 +78,7 @@ class DiscoveryDatabase:
             # Set schema version
             conn.execute(
                 "INSERT OR REPLACE INTO schema_info (key, value) VALUES (?, ?)",
-                ("schema_version", str(self.SCHEMA_VERSION))
+                ("schema_version", str(self.SCHEMA_VERSION)),
             )
 
     @contextmanager
@@ -108,7 +107,7 @@ class DiscoveryDatabase:
             cursor = conn.execute(sql, params)
             return cursor.fetchall()
 
-    def execute_one(self, sql: str, params: tuple = ()) -> Optional[sqlite3.Row]:
+    def execute_one(self, sql: str, params: tuple = ()) -> sqlite3.Row | None:
         """Execute SQL and return first result."""
         with self.connection() as conn:
             cursor = conn.execute(sql, params)
@@ -129,17 +128,15 @@ class DiscoveryDatabase:
     def get_schema_version(self) -> int:
         """Get current schema version."""
         result = self.execute_one(
-            "SELECT value FROM schema_info WHERE key = ?",
-            ("schema_version",)
+            "SELECT value FROM schema_info WHERE key = ?", ("schema_version",)
         )
         return int(result["value"]) if result else 0
 
-    def count_discoveries(self, status: Optional[str] = None) -> int:
+    def count_discoveries(self, status: str | None = None) -> int:
         """Count discoveries with optional status filter."""
         if status:
             result = self.execute_one(
-                "SELECT COUNT(*) as cnt FROM discoveries WHERE status = ?",
-                (status,)
+                "SELECT COUNT(*) as cnt FROM discoveries WHERE status = ?", (status,)
             )
         else:
             result = self.execute_one("SELECT COUNT(*) as cnt FROM discoveries")
@@ -157,11 +154,10 @@ class DiscoveryDatabase:
         )
         return {row["source_type"]: row["cnt"] for row in rows}
 
-    def get_discovery_by_hash(self, content_hash: str) -> Optional[sqlite3.Row]:
+    def get_discovery_by_hash(self, content_hash: str) -> sqlite3.Row | None:
         """Find discovery by content hash (for duplicate detection)."""
         return self.execute_one(
-            "SELECT * FROM discoveries WHERE content_hash = ?",
-            (content_hash,)
+            "SELECT * FROM discoveries WHERE content_hash = ?", (content_hash,)
         )
 
     def reset(self):

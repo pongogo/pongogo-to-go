@@ -2,46 +2,49 @@
 PI System Models - Data classes for PI entities.
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, List
 
 
 class PIStatus(str, Enum):
     """Status of a Potential Improvement."""
-    CANDIDATE = "CANDIDATE"           # Initial tracking
-    TRACKING = "TRACKING"             # Active monitoring for evidence
-    VALIDATED = "VALIDATED"           # Confidence threshold reached
-    IMPLEMENTED = "IMPLEMENTED"       # Prevention/solution implemented
-    ARCHIVED = "ARCHIVED"             # No longer relevant
-    DEFERRED = "DEFERRED"             # Intentionally postponed
+
+    CANDIDATE = "CANDIDATE"  # Initial tracking
+    TRACKING = "TRACKING"  # Active monitoring for evidence
+    VALIDATED = "VALIDATED"  # Confidence threshold reached
+    IMPLEMENTED = "IMPLEMENTED"  # Prevention/solution implemented
+    ARCHIVED = "ARCHIVED"  # No longer relevant
+    DEFERRED = "DEFERRED"  # Intentionally postponed
 
 
 class PIConfidence(str, Enum):
     """Confidence level based on occurrence count."""
-    LOW = "LOW"           # 1-2 occurrences
-    MEDIUM = "MEDIUM"     # 3-4 occurrences
-    HIGH = "HIGH"         # 5+ occurrences or critical severity
+
+    LOW = "LOW"  # 1-2 occurrences
+    MEDIUM = "MEDIUM"  # 3-4 occurrences
+    HIGH = "HIGH"  # 5+ occurrences or critical severity
 
 
 class PIClassification(str, Enum):
     """Classification of PI type."""
-    CORRECTIVE = "CORRECTIVE"       # Addresses specific failure mode
-    EXPLORATORY = "EXPLORATORY"     # Proposes improvement without failure evidence
+
+    CORRECTIVE = "CORRECTIVE"  # Addresses specific failure mode
+    EXPLORATORY = "EXPLORATORY"  # Proposes improvement without failure evidence
 
 
 class RelationshipType(str, Enum):
     """Types of relationships between PIs."""
-    OVERLAPS = "OVERLAPS"           # Partial scope intersection
-    SUPERSEDES = "SUPERSEDES"       # Newer PI replaces older
-    BLOCKS = "BLOCKS"               # One PI blocks another
-    RELATED = "RELATED"             # General relationship
-    DUPLICATE = "DUPLICATE"         # Same or nearly same content
+
+    OVERLAPS = "OVERLAPS"  # Partial scope intersection
+    SUPERSEDES = "SUPERSEDES"  # Newer PI replaces older
+    BLOCKS = "BLOCKS"  # One PI blocks another
+    RELATED = "RELATED"  # General relationship
+    DUPLICATE = "DUPLICATE"  # Same or nearly same content
 
 
 class ImplementationType(str, Enum):
     """Where a PI was implemented."""
+
     PATTERN_LIBRARY = "PATTERN_LIBRARY"
     INSTRUCTION_FILE = "INSTRUCTION_FILE"
     PROCESS_DOC = "PROCESS_DOC"
@@ -53,21 +56,22 @@ class ImplementationType(str, Enum):
 @dataclass
 class PotentialImprovement:
     """Core Potential Improvement entity."""
-    id: str                                          # PI-001, PI-002, etc.
+
+    id: str  # PI-001, PI-002, etc.
     title: str
-    summary: Optional[str] = None
+    summary: str | None = None
     status: PIStatus = PIStatus.CANDIDATE
     confidence: PIConfidence = PIConfidence.LOW
-    classification: Optional[PIClassification] = None
-    classification_reason: Optional[str] = None      # Why this classification
-    classification_model: Optional[str] = None       # Which model classified
-    classification_date: Optional[str] = None        # When classified
-    cluster: Optional[str] = None
-    identified_date: Optional[str] = None
-    last_updated: Optional[str] = None
+    classification: PIClassification | None = None
+    classification_reason: str | None = None  # Why this classification
+    classification_model: str | None = None  # Which model classified
+    classification_date: str | None = None  # When classified
+    cluster: str | None = None
+    identified_date: str | None = None
+    last_updated: str | None = None
     occurrence_count: int = 1
-    source_task: Optional[str] = None
-    file_path: Optional[str] = None
+    source_task: str | None = None
+    file_path: str | None = None
     archived: bool = False
 
     def to_dict(self) -> dict:
@@ -76,9 +80,15 @@ class PotentialImprovement:
             "id": self.id,
             "title": self.title,
             "summary": self.summary,
-            "status": self.status.value if isinstance(self.status, PIStatus) else self.status,
-            "confidence": self.confidence.value if isinstance(self.confidence, PIConfidence) else self.confidence,
-            "classification": self.classification.value if isinstance(self.classification, PIClassification) else self.classification,
+            "status": self.status.value
+            if isinstance(self.status, PIStatus)
+            else self.status,
+            "confidence": self.confidence.value
+            if isinstance(self.confidence, PIConfidence)
+            else self.confidence,
+            "classification": self.classification.value
+            if isinstance(self.classification, PIClassification)
+            else self.classification,
             "classification_reason": self.classification_reason,
             "classification_model": self.classification_model,
             "classification_date": self.classification_date,
@@ -99,11 +109,15 @@ class PotentialImprovement:
             title=row["title"],
             summary=row["summary"],
             status=PIStatus(row["status"]) if row["status"] else PIStatus.CANDIDATE,
-            confidence=PIConfidence(row["confidence"]) if row["confidence"] else PIConfidence.LOW,
-            classification=PIClassification(row["classification"]) if row["classification"] else None,
-            classification_reason=row["classification_reason"] if "classification_reason" in row.keys() else None,
-            classification_model=row["classification_model"] if "classification_model" in row.keys() else None,
-            classification_date=row["classification_date"] if "classification_date" in row.keys() else None,
+            confidence=PIConfidence(row["confidence"])
+            if row["confidence"]
+            else PIConfidence.LOW,
+            classification=PIClassification(row["classification"])
+            if row["classification"]
+            else None,
+            classification_reason=row.get("classification_reason", None),
+            classification_model=row.get("classification_model", None),
+            classification_date=row.get("classification_date", None),
             cluster=row["cluster"],
             identified_date=row["identified_date"],
             last_updated=row["last_updated"],
@@ -117,11 +131,12 @@ class PotentialImprovement:
 @dataclass
 class PIEvidence:
     """Evidence/occurrence record for a PI."""
+
     pi_id: str
     date: str
-    source: str                    # , RCA-2025-11-15, etc.
-    description: Optional[str] = None
-    id: Optional[int] = None       # Database ID (auto-generated)
+    source: str  # , RCA-2025-11-15, etc.
+    description: str | None = None
+    id: int | None = None  # Database ID (auto-generated)
 
     def to_dict(self) -> dict:
         """Convert to dictionary for database insertion."""
@@ -147,18 +162,21 @@ class PIEvidence:
 @dataclass
 class PIRelationship:
     """Relationship between two PIs."""
+
     pi_id_1: str
     pi_id_2: str
     relationship_type: RelationshipType
-    notes: Optional[str] = None
-    discovered_date: Optional[str] = None
+    notes: str | None = None
+    discovered_date: str | None = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary for database insertion."""
         return {
             "pi_id_1": self.pi_id_1,
             "pi_id_2": self.pi_id_2,
-            "relationship_type": self.relationship_type.value if isinstance(self.relationship_type, RelationshipType) else self.relationship_type,
+            "relationship_type": self.relationship_type.value
+            if isinstance(self.relationship_type, RelationshipType)
+            else self.relationship_type,
             "notes": self.notes,
             "discovered_date": self.discovered_date,
         }
@@ -178,18 +196,21 @@ class PIRelationship:
 @dataclass
 class PIImplementation:
     """Implementation record for a PI."""
+
     pi_id: str
-    implementation_date: Optional[str] = None
-    implementation_type: Optional[ImplementationType] = None
-    location: Optional[str] = None
-    notes: Optional[str] = None
+    implementation_date: str | None = None
+    implementation_type: ImplementationType | None = None
+    location: str | None = None
+    notes: str | None = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary for database insertion."""
         return {
             "pi_id": self.pi_id,
             "implementation_date": self.implementation_date,
-            "implementation_type": self.implementation_type.value if isinstance(self.implementation_type, ImplementationType) else self.implementation_type,
+            "implementation_type": self.implementation_type.value
+            if isinstance(self.implementation_type, ImplementationType)
+            else self.implementation_type,
             "location": self.location,
             "notes": self.notes,
         }
@@ -200,7 +221,9 @@ class PIImplementation:
         return cls(
             pi_id=row["pi_id"],
             implementation_date=row["implementation_date"],
-            implementation_type=ImplementationType(row["implementation_type"]) if row["implementation_type"] else None,
+            implementation_type=ImplementationType(row["implementation_type"])
+            if row["implementation_type"]
+            else None,
             location=row["location"],
             notes=row["notes"],
         )

@@ -1,12 +1,10 @@
 """Setup MCP server integration with Claude Code."""
 
 import json
-import os
 import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -45,9 +43,10 @@ def get_mcp_config() -> dict:
                 "run",
                 "-i",
                 "--rm",
-                "-v", "${workspaceFolder}/.pongogo:/project/.pongogo:ro",
-                "ghcr.io/pongogo/pongogo-server:latest"
-            ]
+                "-v",
+                "${workspaceFolder}/.pongogo:/project/.pongogo:ro",
+                "ghcr.io/pongogo/pongogo-server:latest",
+            ],
         }
     else:
         # Direct Python configuration (pip install)
@@ -56,7 +55,7 @@ def get_mcp_config() -> dict:
             "args": [],
             "env": {
                 "PONGOGO_KNOWLEDGE_PATH": "${workspaceFolder}/.pongogo/instructions"
-            }
+            },
         }
 
     return config
@@ -69,11 +68,13 @@ def load_claude_config(path: Path) -> dict:
             with open(path) as f:
                 return json.load(f)
         except json.JSONDecodeError:
-            console.print("[yellow]Warning: Could not parse existing config, starting fresh[/yellow]")
+            console.print(
+                "[yellow]Warning: Could not parse existing config, starting fresh[/yellow]"
+            )
     return {}
 
 
-def backup_config(path: Path) -> Optional[Path]:
+def backup_config(path: Path) -> Path | None:
     """Create backup of existing config file."""
     if path.exists():
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -139,7 +140,9 @@ def setup_mcp_command(
         console.print(f"Config path: {config_path}")
         console.print(f"Method: {'Docker' if use_docker else 'Direct Python'}\n")
         console.print("[bold]Configuration to add:[/bold]")
-        console.print_json(json.dumps({"mcpServers": {"pongogo-knowledge": mcp_config}}))
+        console.print_json(
+            json.dumps({"mcpServers": {"pongogo-knowledge": mcp_config}})
+        )
         return
 
     # Create backup

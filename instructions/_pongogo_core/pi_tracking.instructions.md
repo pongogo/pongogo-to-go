@@ -125,7 +125,7 @@ When a pattern reaches 3+ occurrences:
 For process/workflow patterns:
 
 ```markdown
-"I've noticed [pattern] has occurred 3 times now. 
+"I've noticed [pattern] has occurred 3 times now.
 Want me to create an instruction file to prevent this?"
 ```
 
@@ -134,7 +134,7 @@ Want me to create an instruction file to prevent this?"
 For knowledge gaps:
 
 ```markdown
-"This [issue] keeps coming up. Should I add it to the 
+"This [issue] keeps coming up. Should I add it to the
 project documentation so it's easier to find?"
 ```
 
@@ -143,7 +143,7 @@ project documentation so it's easier to find?"
 For repeated oversights:
 
 ```markdown
-"We've missed [thing] 3 times. Want me to create a 
+"We've missed [thing] 3 times. Want me to create a
 checklist to catch this earlier?"
 ```
 
@@ -152,7 +152,7 @@ checklist to catch this earlier?"
 For recurring bugs/issues:
 
 ```markdown
-"This [problem] has happened 3 times. Should we 
+"This [problem] has happened 3 times. Should we
 prioritize a proper fix? I can create an issue for it."
 ```
 
@@ -195,7 +195,7 @@ Beyond general patterns, track specific candidate types:
 Terms used 3+ times without definition:
 
 ```markdown
-"I've noticed [term] has been used several times. 
+"I've noticed [term] has been used several times.
 Want me to add a glossary entry for it?"
 ```
 
@@ -204,7 +204,7 @@ Want me to add a glossary entry for it?"
 Questions asked 3+ times:
 
 ```markdown
-"This question about [topic] has come up 3 times. 
+"This question about [topic] has come up 3 times.
 Should I add it to an FAQ?"
 ```
 
@@ -213,7 +213,7 @@ Should I add it to an FAQ?"
 Procedures explained 3+ times:
 
 ```markdown
-"I've explained how to [do thing] 3 times now. 
+"I've explained how to [do thing] 3 times now.
 Want me to create an instruction file for it?"
 ```
 

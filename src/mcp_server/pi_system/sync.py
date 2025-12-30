@@ -8,18 +8,28 @@ Generates index markdown from database.
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple
-from .database import PIDatabase, DEFAULT_DB_PATH
+from typing import Any
+
 from .models import (
-    PotentialImprovement, PIEvidence,
-    PIStatus, PIConfidence, PIClassification
+    PIClassification,
+    PIConfidence,
+    PIStatus,
 )
 from .operations import PISystem
 
-
 # Default PI files location
-DEFAULT_PI_DIR = Path(__file__).parent.parent.parent / "docs" / "project_management" / "potential_improvements"
-DEFAULT_INDEX_PATH = Path(__file__).parent.parent.parent / "docs" / "project_management" / "potential_improvements.md"
+DEFAULT_PI_DIR = (
+    Path(__file__).parent.parent.parent
+    / "docs"
+    / "project_management"
+    / "potential_improvements"
+)
+DEFAULT_INDEX_PATH = (
+    Path(__file__).parent.parent.parent
+    / "docs"
+    / "project_management"
+    / "potential_improvements.md"
+)
 
 
 class PISync:
@@ -31,9 +41,16 @@ class PISync:
         "title": re.compile(r"^#\s+(?:PI-\d+:?\s*)?(.+)$", re.MULTILINE),
         "status": re.compile(r"\*\*Status\*\*:\s*(\w+)", re.IGNORECASE),
         "confidence": re.compile(r"\*\*Confidence\*\*:\s*(\w+)", re.IGNORECASE),
-        "identified": re.compile(r"\*\*(?:Identified|Date Identified|Created)\*\*:\s*(\d{4}-\d{2}-\d{2})", re.IGNORECASE),
-        "updated": re.compile(r"\*\*(?:Last Updated|Updated)\*\*:\s*(\d{4}-\d{2}-\d{2})", re.IGNORECASE),
-        "summary_section": re.compile(r"##\s*Summary\s*\n+(.*?)(?=\n##|\Z)", re.DOTALL | re.IGNORECASE),
+        "identified": re.compile(
+            r"\*\*(?:Identified|Date Identified|Created)\*\*:\s*(\d{4}-\d{2}-\d{2})",
+            re.IGNORECASE,
+        ),
+        "updated": re.compile(
+            r"\*\*(?:Last Updated|Updated)\*\*:\s*(\d{4}-\d{2}-\d{2})", re.IGNORECASE
+        ),
+        "summary_section": re.compile(
+            r"##\s*Summary\s*\n+(.*?)(?=\n##|\Z)", re.DOTALL | re.IGNORECASE
+        ),
     }
 
     STATUS_MAP = {
@@ -57,9 +74,9 @@ class PISync:
 
     def __init__(
         self,
-        pi_system: Optional[PISystem] = None,
-        pi_dir: Optional[Path] = None,
-        index_path: Optional[Path] = None,
+        pi_system: PISystem | None = None,
+        pi_dir: Path | None = None,
+        index_path: Path | None = None,
     ):
         """
         Initialize sync.
@@ -73,7 +90,7 @@ class PISync:
         self.pi_dir = pi_dir or DEFAULT_PI_DIR
         self.index_path = index_path or DEFAULT_INDEX_PATH
 
-    def sync_from_files(self, reset_db: bool = False) -> Dict[str, Any]:
+    def sync_from_files(self, reset_db: bool = False) -> dict[str, Any]:
         """
         Parse all PI markdown files and populate database.
 
@@ -116,7 +133,7 @@ class PISync:
 
         return stats
 
-    def _parse_pi_file(self, file_path: Path) -> Optional[Dict[str, Any]]:
+    def _parse_pi_file(self, file_path: Path) -> dict[str, Any] | None:
         """
         Parse a PI markdown file to extract metadata.
 
@@ -146,7 +163,9 @@ class PISync:
         title = title_match.group(1).strip() if title_match else file_path.stem
 
         # Clean up title - remove "Potential Improvement:" prefix if present
-        title = re.sub(r"^(?:Potential Improvement:?\s*)", "", title, flags=re.IGNORECASE).strip()
+        title = re.sub(
+            r"^(?:Potential Improvement:?\s*)", "", title, flags=re.IGNORECASE
+        ).strip()
         # Remove PI ID from title if duplicated
         title = re.sub(rf"^{re.escape(pi_id)}:?\s*", "", title).strip()
 
@@ -168,9 +187,13 @@ class PISync:
             confidence = self.CONFIDENCE_MAP.get(conf_text, PIConfidence.LOW)
 
         # Also check for confidence in format "MEDIUM (2/3)"
-        conf_pattern = re.search(r"\*\*Confidence\*\*:\s*(LOW|MEDIUM|HIGH)", content, re.IGNORECASE)
+        conf_pattern = re.search(
+            r"\*\*Confidence\*\*:\s*(LOW|MEDIUM|HIGH)", content, re.IGNORECASE
+        )
         if conf_pattern:
-            confidence = self.CONFIDENCE_MAP.get(conf_pattern.group(1).lower(), PIConfidence.LOW)
+            confidence = self.CONFIDENCE_MAP.get(
+                conf_pattern.group(1).lower(), PIConfidence.LOW
+            )
 
         # Extract dates
         identified_match = self.PATTERNS["identified"].search(content)
@@ -190,7 +213,9 @@ class PISync:
 
         # Extract occurrence count if present
         occurrence_count = 1
-        occ_match = re.search(r"\((\d+)/\d+(?:\s*occurrences?)?\)", content, re.IGNORECASE)
+        occ_match = re.search(
+            r"\((\d+)/\d+(?:\s*occurrences?)?\)", content, re.IGNORECASE
+        )
         if occ_match:
             occurrence_count = int(occ_match.group(1))
 
@@ -213,7 +238,7 @@ class PISync:
             "file_path": str(file_path.relative_to(file_path.parent.parent.parent)),
         }
 
-    def _upsert_pi(self, metadata: Dict[str, Any], file_path: Path):
+    def _upsert_pi(self, metadata: dict[str, Any], file_path: Path):
         """Insert or update a PI in the database."""
         existing = self.pi_system.get_by_id(metadata["id"])
 
@@ -240,7 +265,7 @@ class PISync:
                 identified_date=metadata.get("identified_date"),
             )
 
-    def generate_index(self, output_path: Optional[Path] = None) -> str:
+    def generate_index(self, output_path: Path | None = None) -> str:
         """
         Generate index markdown from database.
 
@@ -255,13 +280,17 @@ class PISync:
         all_pis = self.pi_system.get_all()
 
         # Group by confidence
-        by_confidence = {
+        by_confidence: dict[str, list] = {
             "HIGH": [],
             "MEDIUM": [],
             "LOW": [],
         }
         for pi in all_pis:
-            conf = pi.confidence.value if isinstance(pi.confidence, PIConfidence) else pi.confidence
+            conf = (
+                pi.confidence.value
+                if isinstance(pi.confidence, PIConfidence)
+                else pi.confidence
+            )
             if conf in by_confidence:
                 by_confidence[conf].append(pi)
 
@@ -292,79 +321,117 @@ class PISync:
         for conf, count in stats.get("by_confidence", {}).items():
             lines.append(f"- **{conf}**: {count}")
 
-        lines.extend([
-            "",
-            "### By Status",
-            "",
-        ])
+        lines.extend(
+            [
+                "",
+                "### By Status",
+                "",
+            ]
+        )
 
         for status, count in stats.get("by_status", {}).items():
             lines.append(f"- **{status}**: {count}")
 
-        lines.extend([
-            "",
-            "---",
-            "",
-            "## Quick Reference",
-            "",
-        ])
+        lines.extend(
+            [
+                "",
+                "---",
+                "",
+                "## Quick Reference",
+                "",
+            ]
+        )
 
         # HIGH confidence section
         if by_confidence["HIGH"]:
-            lines.extend([
-                "### HIGH Confidence (Ready for Implementation)",
-                "",
-            ])
+            lines.extend(
+                [
+                    "### HIGH Confidence (Ready for Implementation)",
+                    "",
+                ]
+            )
             for pi in by_confidence["HIGH"]:
-                status = pi.status.value if isinstance(pi.status, PIStatus) else pi.status
-                lines.append(f"- [{pi.id}](./potential_improvements/{pi.id.replace('-', '_').lower()}.md): {pi.title} ({status})")
+                status = (
+                    pi.status.value if isinstance(pi.status, PIStatus) else pi.status
+                )
+                lines.append(
+                    f"- [{pi.id}](./potential_improvements/{pi.id.replace('-', '_').lower()}.md): {pi.title} ({status})"
+                )
             lines.append("")
 
         # MEDIUM confidence section
         if by_confidence["MEDIUM"]:
-            lines.extend([
-                "### MEDIUM Confidence (Validation in Progress)",
-                "",
-            ])
+            lines.extend(
+                [
+                    "### MEDIUM Confidence (Validation in Progress)",
+                    "",
+                ]
+            )
             for pi in by_confidence["MEDIUM"]:
-                status = pi.status.value if isinstance(pi.status, PIStatus) else pi.status
-                lines.append(f"- [{pi.id}](./potential_improvements/{pi.id.replace('-', '_').lower()}.md): {pi.title} ({status})")
+                status = (
+                    pi.status.value if isinstance(pi.status, PIStatus) else pi.status
+                )
+                lines.append(
+                    f"- [{pi.id}](./potential_improvements/{pi.id.replace('-', '_').lower()}.md): {pi.title} ({status})"
+                )
             lines.append("")
 
         # LOW confidence section
         if by_confidence["LOW"]:
-            lines.extend([
-                "### LOW Confidence (Monitoring)",
-                "",
-            ])
+            lines.extend(
+                [
+                    "### LOW Confidence (Monitoring)",
+                    "",
+                ]
+            )
             for pi in by_confidence["LOW"]:
-                status = pi.status.value if isinstance(pi.status, PIStatus) else pi.status
-                lines.append(f"- [{pi.id}](./potential_improvements/{pi.id.replace('-', '_').lower()}.md): {pi.title} ({status})")
+                status = (
+                    pi.status.value if isinstance(pi.status, PIStatus) else pi.status
+                )
+                lines.append(
+                    f"- [{pi.id}](./potential_improvements/{pi.id.replace('-', '_').lower()}.md): {pi.title} ({status})"
+                )
             lines.append("")
 
-        lines.extend([
-            "---",
-            "",
-            "## All Potential Improvements",
-            "",
-        ])
+        lines.extend(
+            [
+                "---",
+                "",
+                "## All Potential Improvements",
+                "",
+            ]
+        )
 
         # Full list sorted by ID
         for pi in sorted(all_pis, key=lambda p: int(p.id.split("-")[1])):
-            conf = pi.confidence.value if isinstance(pi.confidence, PIConfidence) else pi.confidence
+            conf = (
+                pi.confidence.value
+                if isinstance(pi.confidence, PIConfidence)
+                else pi.confidence
+            )
             status = pi.status.value if isinstance(pi.status, PIStatus) else pi.status
             classification = ""
             if pi.classification:
-                cls = pi.classification.value if isinstance(pi.classification, PIClassification) else pi.classification
+                cls = (
+                    pi.classification.value
+                    if isinstance(pi.classification, PIClassification)
+                    else pi.classification
+                )
                 classification = f" | {cls}"
 
             lines.append(f"### {pi.id}: {pi.title}")
-            lines.append(f"**Confidence**: {conf} | **Status**: {status}{classification}")
+            lines.append(
+                f"**Confidence**: {conf} | **Status**: {status}{classification}"
+            )
             if pi.summary:
                 lines.append("")
-                lines.append(pi.summary[:200] + ("..." if len(pi.summary) > 200 else ""))
+                lines.append(
+                    pi.summary[:200] + ("..." if len(pi.summary) > 200 else "")
+                )
             lines.append("")
-            lines.append(f"[View Full Details](./potential_improvements/{Path(pi.file_path).name if pi.file_path else pi.id.lower().replace('-', '_') + '.md'})")
+            lines.append(
+                f"[View Full Details](./potential_improvements/{Path(pi.file_path).name if pi.file_path else pi.id.lower().replace('-', '_') + '.md'})"
+            )
             lines.append("")
             lines.append("---")
             lines.append("")
@@ -376,7 +443,7 @@ class PISync:
 
         return content
 
-    def validate_consistency(self) -> Dict[str, Any]:
+    def validate_consistency(self) -> dict[str, Any]:
         """
         Validate consistency between files and database.
 
@@ -393,7 +460,7 @@ class PISync:
         # Get all files
         pi_files = {f.stem: f for f in self.pi_dir.glob("PI-*.md")}
         file_ids = set()
-        for stem in pi_files.keys():
+        for stem in pi_files:
             match = re.match(r"(PI-\d+)", stem)
             if match:
                 file_ids.add(match.group(1))

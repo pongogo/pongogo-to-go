@@ -24,7 +24,6 @@ routing:
 import logging
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import yaml
 
@@ -34,68 +33,70 @@ logger = logging.getLogger(__name__)
 class InstructionFile:
     """Represents a single instruction file with metadata and content."""
 
-    def __init__(self, file_path: Path, metadata: Dict, content: str):
+    def __init__(self, file_path: Path, metadata: dict, content: str):
         self.file_path = file_path
         self.metadata = metadata
         self.content = content
 
         # Extract common fields
-        self.id = metadata.get('id', file_path.stem)
-        self.version = metadata.get('version', '1.0.0')
-        self.schema = metadata.get('schema', 'pongogo-instruction-v1')
-        self.description = metadata.get('description', '')
+        self.id = metadata.get("id", file_path.stem)
+        self.version = metadata.get("version", "1.0.0")
+        self.schema = metadata.get("schema", "pongogo-instruction-v1")
+        self.description = metadata.get("description", "")
 
         # Support 'domains' as alias for 'categories' (legacy field name)
         # Support 'patterns' as additional tags source
-        self.tags = metadata.get('tags', [])
-        patterns = metadata.get('patterns', [])
+        self.tags = metadata.get("tags", [])
+        patterns = metadata.get("patterns", [])
         if patterns and not self.tags:
             self.tags = patterns  # Use patterns as tags if tags empty
 
-        self.categories = metadata.get('categories', [])
-        domains = metadata.get('domains', [])
+        self.categories = metadata.get("categories", [])
+        domains = metadata.get("domains", [])
         if domains and not self.categories:
             self.categories = domains  # Use domains as categories if categories empty
 
         # Support 'applies_to' as top-level glob patterns
-        self.routing = metadata.get('routing', {})
-        applies_to = metadata.get('applies_to', [])
+        self.routing = metadata.get("routing", {})
+        applies_to = metadata.get("applies_to", [])
         if applies_to:
             # Merge applies_to into routing.applyTo.globs
-            if 'applyTo' not in self.routing:
-                self.routing['applyTo'] = {}
-            existing_globs = self.routing['applyTo'].get('globs', [])
+            if "applyTo" not in self.routing:
+                self.routing["applyTo"] = {}
+            existing_globs = self.routing["applyTo"].get("globs", [])
             # Combine existing globs with applies_to, avoiding duplicates
             merged_globs = list(set(existing_globs + applies_to))
-            self.routing['applyTo']['globs'] = merged_globs
+            self.routing["applyTo"]["globs"] = merged_globs
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
         return {
-            'file_path': str(self.file_path),
-            'id': self.id,
-            'version': self.version,
-            'schema': self.schema,
-            'description': self.description,
-            'tags': self.tags,
-            'categories': self.categories,
-            'routing': self.routing,
-            'content': self.content,
-            'metadata': self.metadata
+            "file_path": str(self.file_path),
+            "id": self.id,
+            "version": self.version,
+            "schema": self.schema,
+            "description": self.description,
+            "tags": self.tags,
+            "categories": self.categories,
+            "routing": self.routing,
+            "content": self.content,
+            "metadata": self.metadata,
         }
 
 
 class InstructionHandler:
     """Handles loading, parsing, and querying instruction files."""
 
-    def __init__(self, knowledge_base_path: Path, core_path: Optional[Path] = None):
+    def __init__(self, knowledge_base_path: Path, core_path: Path | None = None):
         self.knowledge_base_path = Path(knowledge_base_path)
         self.core_path = Path(core_path) if core_path else None
-        self.instructions: Dict[str, InstructionFile] = {}
-        self.by_category: Dict[str, List[str]] = {}
+        self.instructions: dict[str, InstructionFile] = {}
+        self.by_category: dict[str, list[str]] = {}
         self._protected_ids: set = set()  # Track protected instruction IDs
 
-        logger.info(f"InstructionHandler initialized with path: {self.knowledge_base_path}")
+        logger.info(
+            f"InstructionHandler initialized with path: {self.knowledge_base_path}"
+        )
         if self.core_path:
             logger.info(f"Core instructions path: {self.core_path}")
 
@@ -119,12 +120,12 @@ class InstructionHandler:
                     instruction = self._parse_instruction_file(file_path)
                     if instruction:
                         # Mark as protected
-                        instruction.metadata['protected'] = True
+                        instruction.metadata["protected"] = True
                         self.instructions[instruction.id] = instruction
 
                         # Track protected IDs (both with and without core: prefix)
                         self._protected_ids.add(instruction.id)
-                        base_id = instruction.id.replace('core:', '')
+                        base_id = instruction.id.replace("core:", "")
                         self._protected_ids.add(base_id)
 
                         # Index by category
@@ -134,16 +135,25 @@ class InstructionHandler:
                             self.by_category[category].append(instruction.id)
 
                         count += 1
-                        logger.debug(f"Loaded CORE instruction: {instruction.id} from {file_path}")
+                        logger.debug(
+                            f"Loaded CORE instruction: {instruction.id} from {file_path}"
+                        )
 
                 except Exception as e:
-                    logger.error(f"Error loading core instruction file {file_path}: {e}", exc_info=True)
+                    logger.error(
+                        f"Error loading core instruction file {file_path}: {e}",
+                        exc_info=True,
+                    )
 
-            logger.info(f"Loaded {len(self._protected_ids) // 2} core instruction files")
+            logger.info(
+                f"Loaded {len(self._protected_ids) // 2} core instruction files"
+            )
 
         # Phase 2: Load USER instructions (skip if shadows protected ID)
         if not self.knowledge_base_path.exists():
-            logger.error(f"Knowledge base path does not exist: {self.knowledge_base_path}")
+            logger.error(
+                f"Knowledge base path does not exist: {self.knowledge_base_path}"
+            )
             return count
 
         for file_path in self.knowledge_base_path.rglob("*.instructions.md"):
@@ -167,15 +177,19 @@ class InstructionHandler:
                         self.by_category[category].append(instruction.id)
 
                     count += 1
-                    logger.debug(f"Loaded instruction: {instruction.id} from {file_path}")
+                    logger.debug(
+                        f"Loaded instruction: {instruction.id} from {file_path}"
+                    )
 
             except Exception as e:
-                logger.error(f"Error loading instruction file {file_path}: {e}", exc_info=True)
+                logger.error(
+                    f"Error loading instruction file {file_path}: {e}", exc_info=True
+                )
 
         logger.info(f"Loaded {count} instruction files total")
         return count
 
-    def _parse_instruction_file(self, file_path: Path) -> Optional[InstructionFile]:
+    def _parse_instruction_file(self, file_path: Path) -> InstructionFile | None:
         """
         Parse instruction file in Enhanced MDC format.
 
@@ -190,10 +204,12 @@ class InstructionHandler:
             InstructionFile instance or None if parsing fails
         """
         try:
-            content = file_path.read_text(encoding='utf-8')
+            content = file_path.read_text(encoding="utf-8")
 
             # Check for YAML frontmatter
-            frontmatter_match = re.match(r'^---\s*\n(.*?)\n---\s*\n(.*)$', content, re.DOTALL)
+            frontmatter_match = re.match(
+                r"^---\s*\n(.*?)\n---\s*\n(.*)$", content, re.DOTALL
+            )
 
             if frontmatter_match:
                 # Enhanced MDC format with YAML frontmatter
@@ -219,39 +235,39 @@ class InstructionHandler:
 
             # 1. Directory-based category FIRST (critical for ground truth matching)
             dir_category = file_path.parent.name
-            if dir_category != 'pongogo':
+            if dir_category != "pongogo":
                 categories.append(dir_category)
                 seen.add(dir_category)
 
             # 2. Add explicit categories
-            for cat in metadata.get('categories', []):
+            for cat in metadata.get("categories", []):
                 if cat not in seen:
                     categories.append(cat)
                     seen.add(cat)
 
             # 3. Add domains as additional categories (legacy field name)
-            for cat in metadata.get('domains', []):
+            for cat in metadata.get("domains", []):
                 if cat not in seen:
                     categories.append(cat)
                     seen.add(cat)
 
             # Store merged categories (directory first, then explicit, then domains)
-            metadata['categories'] = categories
+            metadata["categories"] = categories
 
             # Create InstructionFile
             instruction = InstructionFile(
-                file_path=file_path,
-                metadata=metadata,
-                content=markdown_content.strip()
+                file_path=file_path, metadata=metadata, content=markdown_content.strip()
             )
 
             return instruction
 
         except Exception as e:
-            logger.error(f"Error parsing instruction file {file_path}: {e}", exc_info=True)
+            logger.error(
+                f"Error parsing instruction file {file_path}: {e}", exc_info=True
+            )
             return None
 
-    def get_instruction(self, category: str, name: str) -> Optional[Dict]:
+    def get_instruction(self, category: str, name: str) -> dict | None:
         """
         Get specific instruction file by category and name.
 
@@ -275,13 +291,16 @@ class InstructionHandler:
         for instruction in self.instructions.values():
             if instruction.file_path.stem == name:
                 # Check if category matches
-                if category in instruction.categories or category == instruction.file_path.parent.name:
+                if (
+                    category in instruction.categories
+                    or category == instruction.file_path.parent.name
+                ):
                     return instruction.to_dict()
 
         logger.warning(f"Instruction not found: {category}/{name}")
         return None
 
-    def get_instructions_by_category(self, category: str) -> List[Dict]:
+    def get_instructions_by_category(self, category: str) -> list[dict]:
         """
         Get all instruction files in a category.
 
@@ -292,9 +311,13 @@ class InstructionHandler:
             List of instruction dictionaries
         """
         instruction_ids = self.by_category.get(category, [])
-        return [self.instructions[id].to_dict() for id in instruction_ids if id in self.instructions]
+        return [
+            self.instructions[id].to_dict()
+            for id in instruction_ids
+            if id in self.instructions
+        ]
 
-    def get_all_instructions(self) -> List[Dict]:
+    def get_all_instructions(self) -> list[dict]:
         """
         Get all instruction files.
 
@@ -303,7 +326,7 @@ class InstructionHandler:
         """
         return [instruction.to_dict() for instruction in self.instructions.values()]
 
-    def search_instructions(self, query: str, limit: int = 10) -> List[Dict]:
+    def search_instructions(self, query: str, limit: int = 10) -> list[dict]:
         """
         Full-text search across instruction files.
 
@@ -356,12 +379,12 @@ class InstructionHandler:
 
             if score > 0:
                 result = instruction.to_dict()
-                result['search_score'] = score
-                result['search_matches'] = matches
+                result["search_score"] = score
+                result["search_matches"] = matches
                 results.append(result)
 
         # Sort by score descending
-        results.sort(key=lambda x: x['search_score'], reverse=True)
+        results.sort(key=lambda x: x["search_score"], reverse=True)
 
         # Return top N results
         return results[:limit]

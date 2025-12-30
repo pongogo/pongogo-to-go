@@ -8,20 +8,22 @@ import yaml
 
 # Protected instruction names that cannot be overridden by user files
 # These correspond to core instructions bundled with the package
-PROTECTED_NAMES = frozenset({
-    'collaboration',
-    'incident_handling',
-    'issue_closure',
-    'issue_creation',
-    'issue_status',
-    'learning_loop',
-    'pi_tracking',
-    'planning',
-    'work_logging',
-})
+PROTECTED_NAMES = frozenset(
+    {
+        "collaboration",
+        "incident_handling",
+        "issue_closure",
+        "issue_creation",
+        "issue_status",
+        "learning_loop",
+        "pi_tracking",
+        "planning",
+        "work_logging",
+    }
+)
 
 # Category that contains protected core instructions (bundled, not copied)
-CORE_CATEGORY = '_pongogo_core'
+CORE_CATEGORY = "_pongogo_core"
 
 
 def get_package_instructions_dir() -> Path:
@@ -159,8 +161,8 @@ def is_protected_name(name: str) -> bool:
         True if name is protected and cannot be overridden
     """
     # Strip common prefixes and extensions
-    clean_name = name.replace('core:', '').replace('.instructions.md', '')
-    clean_name = clean_name.replace('_pongogo_', '')
+    clean_name = name.replace("core:", "").replace(".instructions.md", "")
+    clean_name = clean_name.replace("_pongogo_", "")
     return clean_name in PROTECTED_NAMES
 
 

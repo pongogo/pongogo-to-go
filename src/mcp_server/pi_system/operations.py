@@ -4,11 +4,18 @@ PI System Operations - CRUD and management operations.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List
-from .database import PIDatabase, DEFAULT_DB_PATH
+
+from .database import PIDatabase
 from .models import (
-    PotentialImprovement, PIEvidence, PIRelationship, PIImplementation,
-    PIStatus, PIConfidence, PIClassification, RelationshipType, ImplementationType
+    ImplementationType,
+    PIClassification,
+    PIConfidence,
+    PIEvidence,
+    PIImplementation,
+    PIRelationship,
+    PIStatus,
+    PotentialImprovement,
+    RelationshipType,
 )
 from .queries import PIQueries
 
@@ -20,7 +27,7 @@ class PISystem:
     Provides CRUD operations, gardening queries, and file sync capabilities.
     """
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         """
         Initialize PI System.
 
@@ -38,14 +45,14 @@ class PISystem:
         self,
         pi_id: str,
         title: str,
-        summary: Optional[str] = None,
+        summary: str | None = None,
         status: PIStatus = PIStatus.CANDIDATE,
         confidence: PIConfidence = PIConfidence.LOW,
-        classification: Optional[PIClassification] = None,
-        cluster: Optional[str] = None,
-        source_task: Optional[str] = None,
-        file_path: Optional[str] = None,
-        identified_date: Optional[str] = None,
+        classification: PIClassification | None = None,
+        cluster: str | None = None,
+        source_task: str | None = None,
+        file_path: str | None = None,
+        identified_date: str | None = None,
     ) -> PotentialImprovement:
         """
         Create a new Potential Improvement.
@@ -91,14 +98,14 @@ class PISystem:
     def update_pi(
         self,
         pi_id: str,
-        title: Optional[str] = None,
-        summary: Optional[str] = None,
-        status: Optional[PIStatus] = None,
-        confidence: Optional[PIConfidence] = None,
-        classification: Optional[PIClassification] = None,
-        cluster: Optional[str] = None,
-        occurrence_count: Optional[int] = None,
-    ) -> Optional[PotentialImprovement]:
+        title: str | None = None,
+        summary: str | None = None,
+        status: PIStatus | None = None,
+        confidence: PIConfidence | None = None,
+        classification: PIClassification | None = None,
+        cluster: str | None = None,
+        occurrence_count: int | None = None,
+    ) -> PotentialImprovement | None:
         """
         Update an existing PI.
 
@@ -123,10 +130,16 @@ class PISystem:
             params.append(status.value if isinstance(status, PIStatus) else status)
         if confidence is not None:
             updates.append("confidence = ?")
-            params.append(confidence.value if isinstance(confidence, PIConfidence) else confidence)
+            params.append(
+                confidence.value if isinstance(confidence, PIConfidence) else confidence
+            )
         if classification is not None:
             updates.append("classification = ?")
-            params.append(classification.value if isinstance(classification, PIClassification) else classification)
+            params.append(
+                classification.value
+                if isinstance(classification, PIClassification)
+                else classification
+            )
         if cluster is not None:
             updates.append("cluster = ?")
             params.append(cluster)
@@ -150,7 +163,7 @@ class PISystem:
         """Archive a PI (soft delete)."""
         self.db.execute(
             "UPDATE potential_improvements SET archived = 1, last_updated = ? WHERE id = ?",
-            (datetime.now().strftime("%Y-%m-%d"), pi_id)
+            (datetime.now().strftime("%Y-%m-%d"), pi_id),
         )
         return True
 
@@ -167,8 +180,8 @@ class PISystem:
         self,
         pi_id: str,
         source: str,
-        description: Optional[str] = None,
-        date: Optional[str] = None,
+        description: str | None = None,
+        date: str | None = None,
     ) -> PIEvidence:
         """
         Add evidence/occurrence to a PI.
@@ -223,7 +236,7 @@ class PISystem:
         pi_id_1: str,
         pi_id_2: str,
         relationship_type: RelationshipType,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> PIRelationship:
         """
         Add a relationship between two PIs.
@@ -262,7 +275,7 @@ class PISystem:
         """Remove a relationship between two PIs."""
         self.db.execute(
             "DELETE FROM pi_relationships WHERE pi_id_1 = ? AND pi_id_2 = ? AND relationship_type = ?",
-            (pi_id_1, pi_id_2, relationship_type.value)
+            (pi_id_1, pi_id_2, relationship_type.value),
         )
         return True
 
@@ -275,7 +288,7 @@ class PISystem:
         pi_id: str,
         implementation_type: ImplementationType,
         location: str,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> PIImplementation:
         """
         Mark a PI as implemented.
@@ -336,8 +349,8 @@ class PISystem:
         self,
         pi_id: str,
         new_status: PIStatus,
-        new_confidence: Optional[PIConfidence] = None,
-    ) -> Optional[PotentialImprovement]:
+        new_confidence: PIConfidence | None = None,
+    ) -> PotentialImprovement | None:
         """Convenience method to update status and optionally confidence."""
         return self.update_pi(pi_id, status=new_status, confidence=new_confidence)
 
@@ -347,7 +360,7 @@ class PISystem:
         classification: PIClassification,
         reason: str,
         model: str = "claude-opus-4-5-20251101",
-    ) -> Optional[PotentialImprovement]:
+    ) -> PotentialImprovement | None:
         """
         Classify a PI with reasoning.
 
@@ -364,9 +377,14 @@ class PISystem:
             Updated PotentialImprovement
         """
         now = datetime.now().strftime("%Y-%m-%d")
-        classification_value = classification.value if isinstance(classification, PIClassification) else classification
+        classification_value = (
+            classification.value
+            if isinstance(classification, PIClassification)
+            else classification
+        )
 
-        self.db.execute("""
+        self.db.execute(
+            """
             UPDATE potential_improvements
             SET classification = ?,
                 classification_reason = ?,
@@ -374,7 +392,9 @@ class PISystem:
                 classification_date = ?,
                 last_updated = ?
             WHERE id = ?
-        """, (classification_value, reason, model, now, now, pi_id))
+        """,
+            (classification_value, reason, model, now, now, pi_id),
+        )
 
         return self.queries.get_by_id(pi_id)
 
@@ -382,7 +402,7 @@ class PISystem:
         self,
         pi_id: str,
         classification: PIClassification,
-    ) -> Optional[PotentialImprovement]:
+    ) -> PotentialImprovement | None:
         """
         DEPRECATED: Use classify() instead which captures reasoning.
 
@@ -395,27 +415,27 @@ class PISystem:
     # Query Delegation
     # =========================================================================
 
-    def get_all(self, include_archived: bool = False) -> List[PotentialImprovement]:
+    def get_all(self, include_archived: bool = False) -> list[PotentialImprovement]:
         """Get all PIs."""
         return self.queries.get_all(include_archived)
 
-    def get_by_id(self, pi_id: str) -> Optional[PotentialImprovement]:
+    def get_by_id(self, pi_id: str) -> PotentialImprovement | None:
         """Get a PI by ID."""
         return self.queries.get_by_id(pi_id)
 
-    def find_stale(self, days: int = 90) -> List[PotentialImprovement]:
+    def find_stale(self, days: int = 90) -> list[PotentialImprovement]:
         """Find stale PIs."""
         return self.queries.find_stale(days)
 
-    def find_duplicates(self) -> List[PIRelationship]:
+    def find_duplicates(self) -> list[PIRelationship]:
         """Find duplicate relationships."""
         return self.queries.find_duplicates()
 
-    def find_ready_for_implementation(self) -> List[PotentialImprovement]:
+    def find_ready_for_implementation(self) -> list[PotentialImprovement]:
         """Find PIs ready for implementation."""
         return self.queries.find_ready_for_implementation()
 
-    def find_unclassified(self) -> List[PotentialImprovement]:
+    def find_unclassified(self) -> list[PotentialImprovement]:
         """Find unclassified PIs."""
         return self.queries.find_unclassified()
 
@@ -423,14 +443,14 @@ class PISystem:
         """Get statistics."""
         return self.queries.get_stats()
 
-    def get_clusters(self) -> List[str]:
+    def get_clusters(self) -> list[str]:
         """Get all clusters."""
         return self.queries.get_clusters()
 
-    def get_relationships(self, pi_id: str) -> List[PIRelationship]:
+    def get_relationships(self, pi_id: str) -> list[PIRelationship]:
         """Get relationships for a PI."""
         return self.queries.get_relationships(pi_id)
 
-    def get_evidence(self, pi_id: str) -> List[PIEvidence]:
+    def get_evidence(self, pi_id: str) -> list[PIEvidence]:
         """Get evidence for a PI."""
         return self.queries.get_evidence(pi_id)

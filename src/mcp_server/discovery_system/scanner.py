@@ -6,20 +6,18 @@ using simple markdown parsing (no LLM required for P05 MVP).
 """
 
 import hashlib
-import json
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 
 @dataclass
 class DiscoveredSection:
     """A discovered section from a knowledge source."""
+
     source_file: str
     source_type: str  # CLAUDE_MD, WIKI, DOCS
-    section_title: Optional[str]
+    section_title: str | None
     section_content: str
     content_hash: str
     keywords: list[str] = field(default_factory=list)
@@ -37,16 +35,99 @@ class DiscoveryScanner:
 
     # Common words to exclude from keywords
     STOP_WORDS = {
-        "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
-        "of", "with", "by", "from", "as", "is", "was", "are", "were", "be",
-        "been", "being", "have", "has", "had", "do", "does", "did", "will",
-        "would", "could", "should", "may", "might", "must", "shall", "can",
-        "this", "that", "these", "those", "it", "its", "they", "them", "their",
-        "we", "us", "our", "you", "your", "he", "she", "him", "her", "his",
-        "if", "then", "else", "when", "where", "what", "which", "who", "whom",
-        "how", "why", "all", "each", "every", "both", "few", "more", "most",
-        "other", "some", "such", "no", "not", "only", "same", "so", "than",
-        "too", "very", "just", "also", "now", "here", "there", "any", "into",
+        "the",
+        "a",
+        "an",
+        "and",
+        "or",
+        "but",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "from",
+        "as",
+        "is",
+        "was",
+        "are",
+        "were",
+        "be",
+        "been",
+        "being",
+        "have",
+        "has",
+        "had",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "could",
+        "should",
+        "may",
+        "might",
+        "must",
+        "shall",
+        "can",
+        "this",
+        "that",
+        "these",
+        "those",
+        "it",
+        "its",
+        "they",
+        "them",
+        "their",
+        "we",
+        "us",
+        "our",
+        "you",
+        "your",
+        "he",
+        "she",
+        "him",
+        "her",
+        "his",
+        "if",
+        "then",
+        "else",
+        "when",
+        "where",
+        "what",
+        "which",
+        "who",
+        "whom",
+        "how",
+        "why",
+        "all",
+        "each",
+        "every",
+        "both",
+        "few",
+        "more",
+        "most",
+        "other",
+        "some",
+        "such",
+        "no",
+        "not",
+        "only",
+        "same",
+        "so",
+        "than",
+        "too",
+        "very",
+        "just",
+        "also",
+        "now",
+        "here",
+        "there",
+        "any",
+        "into",
     }
 
     def __init__(self, project_root: Path):
@@ -105,7 +186,7 @@ class DiscoveryScanner:
             return self._scan_folder(docs_path, "DOCS")
         return []
 
-    def _find_folder(self, folder_names: list[str]) -> Optional[Path]:
+    def _find_folder(self, folder_names: list[str]) -> Path | None:
         """Find first existing folder from list of candidates."""
         for name in folder_names:
             candidate = self.project_root / name
@@ -167,9 +248,7 @@ class DiscoveryScanner:
 
         return discoveries
 
-    def _split_by_headers(
-        self, content: str
-    ) -> list[tuple[Optional[str], str]]:
+    def _split_by_headers(self, content: str) -> list[tuple[str | None, str]]:
         """
         Split markdown content by H2 (##) and H3 (###) headers.
 
@@ -179,14 +258,14 @@ class DiscoveryScanner:
         # Pattern to match H2 and H3 headers
         header_pattern = re.compile(r"^(#{2,3})\s+(.+)$", re.MULTILINE)
 
-        sections = []
+        sections: list[tuple[str | None, str]] = []
         last_end = 0
-        last_title = None
+        last_title: str | None = None
 
         for match in header_pattern.finditer(content):
             # Save previous section if it exists
             if last_end > 0 or match.start() > 0:
-                section_content = content[last_end:match.start()]
+                section_content = content[last_end : match.start()]
                 if section_content.strip():
                     sections.append((last_title, section_content))
 
@@ -205,9 +284,7 @@ class DiscoveryScanner:
 
         return sections
 
-    def _extract_keywords(
-        self, title: Optional[str], content: str
-    ) -> list[str]:
+    def _extract_keywords(self, title: str | None, content: str) -> list[str]:
         """
         Extract keywords from section title and content.
 
@@ -216,7 +293,7 @@ class DiscoveryScanner:
         - Extract code identifiers (functions, classes)
         - Extract frequently occurring words
         """
-        keywords = set()
+        keywords: set[str] = set()
 
         # Add words from title (these are high signal)
         if title:
@@ -227,10 +304,10 @@ class DiscoveryScanner:
         # Look for patterns like: def func_name, class ClassName, function funcName
         code_patterns = [
             r"\bdef\s+([a-zA-Z_][a-zA-Z0-9_]*)",  # Python functions
-            r"\bclass\s+([A-Z][a-zA-Z0-9_]*)",     # Python/JS classes
+            r"\bclass\s+([A-Z][a-zA-Z0-9_]*)",  # Python/JS classes
             r"\bfunction\s+([a-zA-Z_][a-zA-Z0-9_]*)",  # JS functions
             r"\bconst\s+([a-zA-Z_][a-zA-Z0-9_]*)",  # JS const
-            r"`([a-zA-Z_][a-zA-Z0-9_]*)`",          # Backtick identifiers
+            r"`([a-zA-Z_][a-zA-Z0-9_]*)`",  # Backtick identifiers
         ]
         for pattern in code_patterns:
             matches = re.findall(pattern, content)
@@ -244,7 +321,7 @@ class DiscoveryScanner:
 
         # Word frequency analysis (words appearing 3+ times)
         words = re.findall(r"\b[a-zA-Z][a-zA-Z0-9_]{2,}\b", content.lower())
-        word_counts = {}
+        word_counts: dict[str, int] = {}
         for word in words:
             if word not in self.STOP_WORDS and len(word) > 3:
                 word_counts[word] = word_counts.get(word, 0) + 1
@@ -264,28 +341,30 @@ class DiscoveryScanner:
         Returns:
             Dictionary with counts by source type
         """
-        summary = {
-            "total": len(discoveries),
-            "by_source": {},
-            "files_scanned": set(),
-        }
+        from typing import Any
+
+        by_source: dict[str, dict[str, Any]] = {}
+        files_scanned: set[str] = set()
 
         for d in discoveries:
             # Count by source type
-            if d.source_type not in summary["by_source"]:
-                summary["by_source"][d.source_type] = {
+            if d.source_type not in by_source:
+                by_source[d.source_type] = {
                     "files": set(),
                     "sections": 0,
                 }
-            summary["by_source"][d.source_type]["files"].add(d.source_file)
-            summary["by_source"][d.source_type]["sections"] += 1
-            summary["files_scanned"].add(d.source_file)
+            by_source[d.source_type]["files"].add(d.source_file)
+            by_source[d.source_type]["sections"] += 1
+            files_scanned.add(d.source_file)
 
         # Convert sets to counts for JSON serialization
-        summary["files_scanned"] = len(summary["files_scanned"])
-        for source_type in summary["by_source"]:
-            summary["by_source"][source_type]["files"] = len(
-                summary["by_source"][source_type]["files"]
-            )
+        for source_type in by_source:
+            by_source[source_type]["files"] = len(by_source[source_type]["files"])
+
+        summary: dict[str, Any] = {
+            "total": len(discoveries),
+            "by_source": by_source,
+            "files_scanned": len(files_scanned),
+        }
 
         return summary

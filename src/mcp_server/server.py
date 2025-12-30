@@ -15,38 +15,44 @@ Phase 1 Scope: 54+ instruction files across 14+ categories
 Future: Wiki pages, tactical guides, pattern library
 """
 
-import asyncio
 import logging
 import signal
 import sys
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
 
 from mcp.server.fastmcp import FastMCP
+from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler, FileSystemEvent
-
-from mcp_server.instruction_handler import InstructionHandler
-from mcp_server.router import InstructionRouter, RuleBasedRouter
-from mcp_server.routing_engine import RoutingEngine, create_router, get_available_engines, get_engine_features
-from mcp_server.config import load_config, get_knowledge_path, get_routing_config, get_core_instructions_path, ConfigurationError
-
-# Discovery system for observation-triggered promotion
-from mcp_server.discovery_system import DiscoverySystem
 
 # Import engines package to auto-register frozen engine versions
 import mcp_server.engines  # noqa: F401 - imported for side effect (engine registration)
+from mcp_server.config import (
+    get_core_instructions_path,
+    get_knowledge_path,
+    get_routing_config,
+    load_config,
+)
+
+# Discovery system for observation-triggered promotion
+from mcp_server.discovery_system import DiscoverySystem
+from mcp_server.instruction_handler import InstructionHandler
+from mcp_server.routing_engine import (
+    RoutingEngine,
+    create_router,
+    get_available_engines,
+    get_engine_features,
+)
+from mcp_server.upgrade import detect_install_method, get_current_version
 
 # Upgrade functionality
-from mcp_server.upgrade import upgrade as do_upgrade, detect_install_method, get_current_version
+from mcp_server.upgrade import upgrade as do_upgrade
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -63,7 +69,9 @@ server_config = load_config(server_dir=SERVER_DIR)
 KNOWLEDGE_BASE_PATH = get_knowledge_path(server_config, SERVER_DIR)
 # Core instructions path (bundled in package, protected from deletion)
 CORE_INSTRUCTIONS_PATH = get_core_instructions_path()
-instruction_handler = InstructionHandler(KNOWLEDGE_BASE_PATH, core_path=CORE_INSTRUCTIONS_PATH)
+instruction_handler = InstructionHandler(
+    KNOWLEDGE_BASE_PATH, core_path=CORE_INSTRUCTIONS_PATH
+)
 
 # Create router with config
 # Config specifies engine version and feature flags
@@ -75,7 +83,7 @@ router: RoutingEngine = create_router(instruction_handler, routing_config)
 # Initialize discovery system for observation-triggered promotion
 # Project root is parent of .pongogo directory (which is parent of instructions/)
 PROJECT_ROOT = KNOWLEDGE_BASE_PATH.parent.parent
-discovery_system: Optional[DiscoverySystem] = None
+discovery_system: DiscoverySystem | None = None
 try:
     if (PROJECT_ROOT / ".pongogo" / "discovery.db").exists():
         discovery_system = DiscoverySystem(PROJECT_ROOT)
@@ -86,13 +94,13 @@ except Exception as e:
 # Reindex state management
 _reindex_lock = threading.Lock()
 _last_reindex_time = time.time()
-_debounce_timer: Optional[threading.Timer] = None
+_debounce_timer: threading.Timer | None = None
 _last_manual_reindex = 0.0  # Timestamp of last manual reindex
 MIN_MANUAL_REINDEX_INTERVAL = 10.0  # Minimum 10 seconds between manual reindexes
 
 # Shutdown management (graceful shutdown on SIGTERM/SIGINT)
 _shutdown_event = threading.Event()
-_observer: Optional[Observer] = None
+_observer: Observer | None = None
 
 
 class InstructionFileEventHandler(FileSystemEventHandler):
@@ -131,10 +139,7 @@ class InstructionFileEventHandler(FileSystemEventHandler):
 
         # Only process .instructions.md files
         src_path = Path(event.src_path)
-        if not src_path.name.endswith('.instructions.md'):
-            return False
-
-        return True
+        return src_path.name.endswith(".instructions.md")
 
     def _handle_event(self, event: FileSystemEvent):
         """
@@ -159,10 +164,7 @@ class InstructionFileEventHandler(FileSystemEventHandler):
             _debounce_timer.cancel()
 
         # Start new debounce timer
-        _debounce_timer = threading.Timer(
-            self.debounce_seconds,
-            self._trigger_reindex
-        )
+        _debounce_timer = threading.Timer(self.debounce_seconds, self._trigger_reindex)
         _debounce_timer.start()
 
     def on_modified(self, event: FileSystemEvent):
@@ -191,7 +193,9 @@ class InstructionFileEventHandler(FileSystemEventHandler):
             return
 
         event_count = len(self._pending_events)
-        logger.info(f"Debounce period complete - triggering reindex ({event_count} file(s) changed)")
+        logger.info(
+            f"Debounce period complete - triggering reindex ({event_count} file(s) changed)"
+        )
 
         # Clear pending events
         self._pending_events.clear()
@@ -216,7 +220,9 @@ def _reindex_knowledge_base():
 
             # Create new handler instance (loads fresh from disk)
             # Core path is constant (bundled), user path reloads from disk
-            new_handler = InstructionHandler(KNOWLEDGE_BASE_PATH, core_path=CORE_INSTRUCTIONS_PATH)
+            new_handler = InstructionHandler(
+                KNOWLEDGE_BASE_PATH, core_path=CORE_INSTRUCTIONS_PATH
+            )
             new_count = new_handler.load_instructions()
 
             # Create new router with new handler (factory pattern - )
@@ -241,7 +247,7 @@ def _reindex_knowledge_base():
                 "new_count": new_count,
                 "elapsed_ms": elapsed_ms,
                 "engine": new_router.version,  # Include engine version
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
@@ -249,15 +255,14 @@ def _reindex_knowledge_base():
             return {
                 "success": False,
                 "error": str(e),
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
+
 
 # Server lifecycle hooks
 @mcp.tool()
 async def get_instructions(
-    topic: Optional[str] = None,
-    category: Optional[str] = None,
-    exact_match: bool = False
+    topic: str | None = None, category: str | None = None, exact_match: bool = False
 ) -> dict:
     """
     Get relevant instruction files by topic or category.
@@ -284,7 +289,9 @@ async def get_instructions(
         get_instructions(category="project_management", topic="epic_management", exact_match=True)
     """
     try:
-        logger.info(f"get_instructions called: topic={topic}, category={category}, exact_match={exact_match}")
+        logger.info(
+            f"get_instructions called: topic={topic}, category={category}, exact_match={exact_match}"
+        )
 
         if exact_match and topic and category:
             # Exact match: get specific file
@@ -293,14 +300,22 @@ async def get_instructions(
                 return {
                     "instructions": [instruction],
                     "count": 1,
-                    "query": {"topic": topic, "category": category, "exact_match": True}
+                    "query": {
+                        "topic": topic,
+                        "category": category,
+                        "exact_match": True,
+                    },
                 }
             else:
                 return {
                     "instructions": [],
                     "count": 0,
-                    "query": {"topic": topic, "category": category, "exact_match": True},
-                    "error": f"Instruction not found: {category}/{topic}"
+                    "query": {
+                        "topic": topic,
+                        "category": category,
+                        "exact_match": True,
+                    },
+                    "error": f"Instruction not found: {category}/{topic}",
                 }
 
         elif category:
@@ -308,12 +323,17 @@ async def get_instructions(
             instructions = instruction_handler.get_instructions_by_category(category)
             if topic:
                 # Further filter by topic within category
-                instructions = [i for i in instructions if topic.lower() in i['id'].lower() or topic.lower() in i['content'].lower()]
+                instructions = [
+                    i
+                    for i in instructions
+                    if topic.lower() in i["id"].lower()
+                    or topic.lower() in i["content"].lower()
+                ]
 
             return {
                 "instructions": instructions,
                 "count": len(instructions),
-                "query": {"topic": topic, "category": category, "exact_match": False}
+                "query": {"topic": topic, "category": category, "exact_match": False},
             }
 
         elif topic:
@@ -322,7 +342,7 @@ async def get_instructions(
             return {
                 "instructions": instructions,
                 "count": len(instructions),
-                "query": {"topic": topic, "exact_match": False}
+                "query": {"topic": topic, "exact_match": False},
             }
 
         else:
@@ -331,7 +351,7 @@ async def get_instructions(
             return {
                 "instructions": instructions,
                 "count": len(instructions),
-                "query": {"all": True}
+                "query": {"all": True},
             }
 
     except Exception as e:
@@ -340,15 +360,12 @@ async def get_instructions(
             "instructions": [],
             "count": 0,
             "query": {"topic": topic, "category": category, "exact_match": exact_match},
-            "error": str(e)
+            "error": str(e),
         }
 
 
 @mcp.tool()
-async def search_instructions(
-    query: str,
-    limit: int = 10
-) -> dict:
+async def search_instructions(query: str, limit: int = 10) -> dict:
     """
     Full-text search across all instruction files.
 
@@ -374,27 +391,16 @@ async def search_instructions(
 
         results = instruction_handler.search_instructions(query, limit=limit)
 
-        return {
-            "results": results,
-            "count": len(results),
-            "query": query
-        }
+        return {"results": results, "count": len(results), "query": query}
 
     except Exception as e:
         logger.error(f"Error in search_instructions: {e}", exc_info=True)
-        return {
-            "results": [],
-            "count": 0,
-            "query": query,
-            "error": str(e)
-        }
+        return {"results": [], "count": 0, "query": query, "error": str(e)}
 
 
 @mcp.tool()
 async def route_instructions(
-    message: str,
-    context: Optional[dict] = None,
-    limit: int = 5
+    message: str, context: dict | None = None, limit: int = 5
 ) -> dict:
     """
     Intelligently route to relevant instruction files using NLP + taxonomy + context.
@@ -416,7 +422,7 @@ async def route_instructions(
         - count: Number of results
         - routing_analysis: Breakdown of how routing decision was made
         - routing_engine_version: Version of routing engine that produced results
-        - procedural_warning: Warning when procedural instructions routed 
+        - procedural_warning: Warning when procedural instructions routed
           Contains warning message, list of procedural instructions, and enforcement guidance
 
     Examples:
@@ -430,13 +436,15 @@ async def route_instructions(
         )
     """
     try:
-        logger.info(f"route_instructions called: message={message}, context={context}, limit={limit}")
+        logger.info(
+            f"route_instructions called: message={message}, context={context}, limit={limit}"
+        )
 
         results = router.route(message, context=context, limit=limit)
 
         # Add routing engine version to response
         # Use router.version from RoutingEngine interface instead of hardcoded constant
-        results['routing_engine_version'] = router.version
+        results["routing_engine_version"] = router.version
 
         # Observation-triggered discovery promotion
         # Check discoveries for matches and auto-promote on first observation
@@ -444,8 +452,10 @@ async def route_instructions(
             try:
                 promoted_discoveries = _check_and_promote_discoveries(message, results)
                 if promoted_discoveries:
-                    results['promoted_discoveries'] = promoted_discoveries
-                    logger.info(f"Auto-promoted {len(promoted_discoveries)} discoveries")
+                    results["promoted_discoveries"] = promoted_discoveries
+                    logger.info(
+                        f"Auto-promoted {len(promoted_discoveries)} discoveries"
+                    )
             except Exception as e:
                 logger.warning(f"Discovery promotion check failed: {e}")
 
@@ -458,7 +468,7 @@ async def route_instructions(
             "count": 0,
             "routing_analysis": {},
             "routing_engine_version": router.version if router else "unknown",
-            "error": str(e)
+            "error": str(e),
         }
 
 
@@ -480,15 +490,16 @@ def _check_and_promote_discoveries(message: str, routing_results: dict) -> list:
 
     # Extract keywords from routing analysis if available
     keywords = []
-    routing_analysis = routing_results.get('routing_analysis', {})
-    if 'query_keywords' in routing_analysis:
-        keywords = routing_analysis['query_keywords']
-    elif 'keywords' in routing_analysis:
-        keywords = routing_analysis['keywords']
+    routing_analysis = routing_results.get("routing_analysis", {})
+    if "query_keywords" in routing_analysis:
+        keywords = routing_analysis["query_keywords"]
+    elif "keywords" in routing_analysis:
+        keywords = routing_analysis["keywords"]
     else:
         # Fallback: extract simple keywords from message
         import re
-        words = re.findall(r'\b[a-zA-Z][a-zA-Z0-9_]{2,}\b', message.lower())
+
+        words = re.findall(r"\b[a-zA-Z][a-zA-Z0-9_]{2,}\b", message.lower())
         keywords = list(set(words))[:20]
 
     if not keywords:
@@ -502,19 +513,19 @@ def _check_and_promote_discoveries(message: str, routing_results: dict) -> list:
             # Auto-promote: create instruction file
             instruction_path = discovery_system.promote(discovery.id)
             if instruction_path:
-                promoted.append({
-                    "discovery_id": discovery.id,
-                    "source_file": discovery.source_file,
-                    "section_title": discovery.section_title,
-                    "instruction_file": instruction_path,
-                    "message": f"Auto-created instruction from {discovery.source_type} discovery"
-                })
+                promoted.append(
+                    {
+                        "discovery_id": discovery.id,
+                        "source_file": discovery.source_file,
+                        "section_title": discovery.section_title,
+                        "instruction_file": instruction_path,
+                        "message": f"Auto-created instruction from {discovery.source_type} discovery",
+                    }
+                )
 
                 # Trigger reindex to include new instruction file
                 # (async reindex will pick it up on next file watcher event)
-                logger.info(
-                    f"Discovery #{discovery.id} promoted to {instruction_path}"
-                )
+                logger.info(f"Discovery #{discovery.id} promoted to {instruction_path}")
 
     return promoted
 
@@ -536,7 +547,7 @@ async def get_instruction_resource(category: str, name: str) -> str:
 
         instruction = instruction_handler.get_instruction(category, name)
         if instruction:
-            return instruction['content']
+            return instruction["content"]
         else:
             raise ValueError(f"Instruction not found: {category}/{name}")
 
@@ -590,7 +601,7 @@ async def reindex_knowledge_base(force: bool = False) -> dict:
                     "skipped": True,
                     "reason": "spam_prevention",
                     "wait_seconds": round(wait_time, 1),
-                    "hint": f"Wait {wait_time:.1f}s or use force=true to bypass"
+                    "hint": f"Wait {wait_time:.1f}s or use force=true to bypass",
                 }
 
         # Execute reindex
@@ -607,12 +618,12 @@ async def reindex_knowledge_base(force: bool = False) -> dict:
         return {
             "success": False,
             "error": str(e),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
 
 @mcp.tool()
-async def switch_engine(engine_version: Optional[str] = None) -> dict:
+async def switch_engine(engine_version: str | None = None) -> dict:
     """
     Switch routing engine version or list available engines.
 
@@ -648,18 +659,20 @@ async def switch_engine(engine_version: Optional[str] = None) -> dict:
 
             for eng in engines:
                 features = get_engine_features(eng)
-                engine_info.append({
-                    "version": eng,
-                    "current": eng == current,
-                    "features": [f.to_dict() for f in features]
-                })
+                engine_info.append(
+                    {
+                        "version": eng,
+                        "current": eng == current,
+                        "features": [f.to_dict() for f in features],
+                    }
+                )
 
             return {
                 "success": True,
                 "action": "list",
                 "current_engine": current,
                 "available_engines": engine_info,
-                "hint": "Use switch_engine('version') to switch engines"
+                "hint": "Use switch_engine('version') to switch engines",
             }
 
         # Validate engine version exists
@@ -669,7 +682,7 @@ async def switch_engine(engine_version: Optional[str] = None) -> dict:
                 "success": False,
                 "error": f"Unknown engine: '{engine_version}'",
                 "available_engines": available,
-                "hint": f"Available engines: {', '.join(available)}"
+                "hint": f"Available engines: {', '.join(available)}",
             }
 
         # Check if already using requested engine
@@ -679,7 +692,7 @@ async def switch_engine(engine_version: Optional[str] = None) -> dict:
                 "success": True,
                 "action": "no_change",
                 "engine": engine_version,
-                "message": f"Already using engine: {engine_version}"
+                "message": f"Already using engine: {engine_version}",
             }
 
         # Switch engine (atomic swap)
@@ -689,7 +702,7 @@ async def switch_engine(engine_version: Optional[str] = None) -> dict:
         new_routing_config = {
             "routing": {
                 "engine": engine_version,
-                "features": routing_config.get("routing", {}).get("features", {})
+                "features": routing_config.get("routing", {}).get("features", {}),
             }
         }
 
@@ -708,7 +721,7 @@ async def switch_engine(engine_version: Optional[str] = None) -> dict:
             "engine": engine_version,
             "previous": previous,
             "description": new_router.description,
-            "features": [f.to_dict() for f in get_engine_features(engine_version)]
+            "features": [f.to_dict() for f in get_engine_features(engine_version)],
         }
 
     except Exception as e:
@@ -716,7 +729,7 @@ async def switch_engine(engine_version: Optional[str] = None) -> dict:
         return {
             "success": False,
             "error": str(e),
-            "current_engine": router.version if router else "unknown"
+            "current_engine": router.version if router else "unknown",
         }
 
 
@@ -791,7 +804,9 @@ def _check_consistency():
                 )
                 _reindex_knowledge_base()
             else:
-                logger.debug(f"Consistency check passed: {disk_count} instruction files")
+                logger.debug(
+                    f"Consistency check passed: {disk_count} instruction files"
+                )
 
         except Exception as e:
             logger.error(f"Consistency check error: {e}", exc_info=True)
@@ -810,11 +825,7 @@ def _start_file_watcher():
     try:
         event_handler = InstructionFileEventHandler(debounce_seconds=3.0)
         _observer = Observer()
-        _observer.schedule(
-            event_handler,
-            str(KNOWLEDGE_BASE_PATH),
-            recursive=True
-        )
+        _observer.schedule(event_handler, str(KNOWLEDGE_BASE_PATH), recursive=True)
         _observer.start()
         logger.info(f"File watcher started: {KNOWLEDGE_BASE_PATH}")
 
@@ -838,7 +849,9 @@ def _signal_handler(sig, frame):
 
     Coordinates shutdown of file watcher, health check, and MCP server.
     """
-    logger.info(f"Received signal {sig} ({signal.Signals(sig).name}), initiating graceful shutdown...")
+    logger.info(
+        f"Received signal {sig} ({signal.Signals(sig).name}), initiating graceful shutdown..."
+    )
 
     # Set shutdown event (background threads will terminate)
     _shutdown_event.set()
@@ -900,22 +913,20 @@ def main():
         )
         sys.exit(1)
     else:
-        logger.info(f"Startup routing test passed: '{test_query}' → {test_count} results")
+        logger.info(
+            f"Startup routing test passed: '{test_query}' → {test_count} results"
+        )
 
     # Start file watcher in background thread
     watcher_thread = threading.Thread(
-        target=_start_file_watcher,
-        daemon=True,
-        name="FileWatcher"
+        target=_start_file_watcher, daemon=True, name="FileWatcher"
     )
     watcher_thread.start()
     logger.info("File watcher thread started (auto-reindex enabled)")
 
     # Start consistency check in background thread
     health_check_thread = threading.Thread(
-        target=_check_consistency,
-        daemon=True,
-        name="HealthCheck"
+        target=_check_consistency, daemon=True, name="HealthCheck"
     )
     health_check_thread.start()
     logger.info("Health check thread started (5-minute interval)")

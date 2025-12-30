@@ -235,6 +235,69 @@ Current capabilities:
 
 See [pongogo/pongogo](https://github.com/pongogo/pongogo) for development progress.
 
+## Development
+
+### Setup
+
+```bash
+# Clone repository
+git clone https://github.com/pongogo/pongogo-to-go.git
+cd pongogo-to-go
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # or `.venv\Scripts\activate` on Windows
+
+# Install with dev dependencies
+pip install -e ".[dev]"
+
+# Install pre-commit hooks
+pre-commit install
+
+# Verify setup
+pre-commit run --all-files
+```
+
+### Development Commands
+
+```bash
+# Run all pre-commit hooks
+make pre-commit
+
+# Linting only
+make lint
+
+# Formatting only
+make format
+
+# Type checking only
+make typecheck
+
+# Run tests
+make test
+```
+
+### Daily Workflow
+
+Pre-commit hooks run automatically on `git commit`. To run manually:
+
+```bash
+# Check all files
+pre-commit run --all-files
+
+# Skip hooks (emergency only)
+git commit --no-verify -m "Emergency fix"
+```
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Hook fails on first run | Run `pre-commit run --all-files` to fix formatting |
+| Mypy import errors | Add type stubs to `additional_dependencies` in `.pre-commit-config.yaml` |
+| Slow mypy execution | Mypy caches results; subsequent runs are faster |
+| ruff conflict with editor | Configure editor to use project ruff settings |
+
 ## License
 
 MIT License - see [LICENSE](LICENSE)

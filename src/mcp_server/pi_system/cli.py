@@ -14,13 +14,11 @@ Usage:
 """
 
 import argparse
-import json
 import sys
-from pathlib import Path
 
+from .models import PIConfidence, PIStatus
 from .operations import PISystem
 from .sync import PISync
-from .models import PIConfidence, PIStatus
 
 
 def cmd_sync(args):
@@ -31,18 +29,18 @@ def cmd_sync(args):
     print(f"Syncing PI files from {sync.pi_dir}...")
     stats = sync.sync_from_files(reset_db=args.reset)
 
-    print(f"\nSync Results:")
+    print("\nSync Results:")
     print(f"  Files found: {stats['files_found']}")
     print(f"  Files parsed: {stats['files_parsed']}")
     print(f"  PIs created: {stats['pis_created']}")
     print(f"  PIs updated: {stats['pis_updated']}")
 
-    if stats['files_failed']:
+    if stats["files_failed"]:
         print(f"\n  Failed ({len(stats['files_failed'])}):")
-        for failure in stats['files_failed']:
+        for failure in stats["files_failed"]:
             print(f"    - {failure['file']}: {failure['error']}")
 
-    return 0 if not stats['files_failed'] else 1
+    return 0 if not stats["files_failed"] else 1
 
 
 def cmd_stats(args):
@@ -58,20 +56,20 @@ def cmd_stats(args):
     print(f"Evidence Records:  {stats['evidence_records']}")
 
     print("\nBy Confidence:")
-    for conf, count in stats.get('by_confidence', {}).items():
+    for conf, count in stats.get("by_confidence", {}).items():
         print(f"  {conf}: {count}")
 
     print("\nBy Status:")
-    for status, count in stats.get('by_status', {}).items():
+    for status, count in stats.get("by_status", {}).items():
         print(f"  {status}: {count}")
 
     print("\nBy Classification:")
-    for cls, count in stats.get('by_classification', {}).items():
+    for cls, count in stats.get("by_classification", {}).items():
         print(f"  {cls}: {count}")
 
-    if stats.get('by_cluster'):
+    if stats.get("by_cluster"):
         print("\nBy Cluster:")
-        for cluster, count in stats['by_cluster'].items():
+        for cluster, count in stats["by_cluster"].items():
             print(f"  {cluster}: {count}")
 
     return 0
@@ -89,7 +87,11 @@ def cmd_stale(args):
     print(f"Stale PIs ({args.days}+ days without evidence):")
     print("-" * 60)
     for pi in stale:
-        conf = pi.confidence.value if isinstance(pi.confidence, PIConfidence) else pi.confidence
+        conf = (
+            pi.confidence.value
+            if isinstance(pi.confidence, PIConfidence)
+            else pi.confidence
+        )
         print(f"  {pi.id}: {pi.title} [{conf}]")
 
     print(f"\nTotal: {len(stale)}")
@@ -128,10 +130,16 @@ def cmd_ready(args):
     print("PIs Ready for Implementation:")
     print("-" * 60)
     for pi in ready:
-        conf = pi.confidence.value if isinstance(pi.confidence, PIConfidence) else pi.confidence
+        conf = (
+            pi.confidence.value
+            if isinstance(pi.confidence, PIConfidence)
+            else pi.confidence
+        )
         status = pi.status.value if isinstance(pi.status, PIStatus) else pi.status
         print(f"  {pi.id}: {pi.title}")
-        print(f"    Confidence: {conf}, Status: {status}, Occurrences: {pi.occurrence_count}")
+        print(
+            f"    Confidence: {conf}, Status: {status}, Occurrences: {pi.occurrence_count}"
+        )
 
     print(f"\nTotal: {len(ready)}")
     return 0
@@ -149,7 +157,11 @@ def cmd_unclassified(args):
     print("Unclassified PIs:")
     print("-" * 60)
     for pi in unclassified:
-        conf = pi.confidence.value if isinstance(pi.confidence, PIConfidence) else pi.confidence
+        conf = (
+            pi.confidence.value
+            if isinstance(pi.confidence, PIConfidence)
+            else pi.confidence
+        )
         print(f"  {pi.id}: {pi.title} [{conf}]")
 
     print(f"\nTotal: {len(unclassified)}")
@@ -175,20 +187,20 @@ def cmd_validate(args):
     print("Validating consistency...")
     results = sync.validate_consistency()
 
-    if results['valid']:
+    if results["valid"]:
         print("✓ Files and database are consistent")
         return 0
 
     print("Inconsistencies found:")
 
-    if results['files_without_db']:
+    if results["files_without_db"]:
         print(f"\n  Files without DB records ({len(results['files_without_db'])}):")
-        for pi_id in results['files_without_db']:
+        for pi_id in results["files_without_db"]:
             print(f"    - {pi_id}")
 
-    if results['db_without_files']:
+    if results["db_without_files"]:
         print(f"\n  DB records without files ({len(results['db_without_files'])}):")
-        for pi_id in results['db_without_files']:
+        for pi_id in results["db_without_files"]:
             print(f"    - {pi_id}")
 
     return 1
@@ -202,7 +214,11 @@ def cmd_list(args):
     print(f"{'All' if args.all else 'Active'} PIs:")
     print("-" * 80)
     for pi in sorted(all_pis, key=lambda p: int(p.id.split("-")[1])):
-        conf = pi.confidence.value if isinstance(pi.confidence, PIConfidence) else pi.confidence
+        conf = (
+            pi.confidence.value
+            if isinstance(pi.confidence, PIConfidence)
+            else pi.confidence
+        )
         status = pi.status.value if isinstance(pi.status, PIStatus) else pi.status
         cls = ""
         if pi.classification:
@@ -223,14 +239,18 @@ def main():
 
     # sync command
     sync_parser = subparsers.add_parser("sync", help="Sync markdown files to database")
-    sync_parser.add_argument("--reset", action="store_true", help="Reset database before sync")
+    sync_parser.add_argument(
+        "--reset", action="store_true", help="Reset database before sync"
+    )
 
     # stats command
     subparsers.add_parser("stats", help="Show statistics")
 
     # stale command
     stale_parser = subparsers.add_parser("stale", help="List stale PIs")
-    stale_parser.add_argument("--days", type=int, default=90, help="Days threshold (default: 90)")
+    stale_parser.add_argument(
+        "--days", type=int, default=90, help="Days threshold (default: 90)"
+    )
 
     # duplicates command
     subparsers.add_parser("duplicates", help="List duplicate relationships")

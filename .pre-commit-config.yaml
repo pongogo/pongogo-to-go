@@ -1,0 +1,81 @@
+# .pre-commit-config.yaml
+# Pre-commit hooks for pongogo-to-go
+# Run: pre-commit run --all-files
+
+# Minimum pre-commit version required
+minimum_pre_commit_version: "3.0.0"
+
+# Default stages (can be overridden per hook)
+default_stages: [pre-commit]
+
+# Fail fast - stop on first failure
+fail_fast: false
+
+repos:
+  # =========================================================================
+  # Ruff - Fast Python linting and formatting
+  # =========================================================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4  # Use latest stable version
+    hooks:
+      # Linting with auto-fix
+      - id: ruff
+        name: ruff (lint)
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi]
+
+      # Formatting (replaces black)
+      - id: ruff-format
+        name: ruff (format)
+        types_or: [python, pyi]
+
+  # =========================================================================
+  # Mypy - Static type checking
+  # =========================================================================
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1  # Use latest stable version
+    hooks:
+      - id: mypy
+        name: mypy (type check)
+        # Only check src/ and tests/ directories
+        files: ^(src|tests)/
+        # Additional type stubs
+        additional_dependencies:
+          - types-PyYAML>=6.0.0
+          - types-requests>=2.31.0
+          - pydantic>=2.0.0
+        args:
+          - --config-file=pyproject.toml
+
+  # =========================================================================
+  # Standard pre-commit hooks
+  # =========================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Prevent large files from being committed
+      - id: check-added-large-files
+        args: [--maxkb=500]
+
+      # Check for files that would conflict on case-insensitive filesystems
+      - id: check-case-conflict
+
+      # Check for merge conflict markers
+      - id: check-merge-conflict
+
+      # Ensure files end with newline
+      - id: end-of-file-fixer
+
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+      # Check YAML syntax
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom tags
+
+      # Check TOML syntax
+      - id: check-toml
+
+      # Validate Python AST
+      - id: check-ast

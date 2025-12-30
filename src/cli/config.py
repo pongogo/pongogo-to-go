@@ -1,12 +1,11 @@
 """Configuration file generation for Pongogo."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
-
-DEFAULT_CONFIG = {
+DEFAULT_CONFIG: dict[str, Any] = {
     "version": "1.0.0",
     "categories": {
         "software_engineering": True,
@@ -102,4 +101,4 @@ def load_config(config_path: Path) -> dict[str, Any]:
         Configuration dictionary
     """
     with open(config_path) as f:
-        return yaml.safe_load(f)
+        return cast(dict[str, Any], yaml.safe_load(f))

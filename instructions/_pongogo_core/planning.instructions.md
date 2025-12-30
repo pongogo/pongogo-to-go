@@ -210,7 +210,7 @@ For significant decisions during planning:
 
 **Decision**: Zustand
 
-**Rationale**: 
+**Rationale**:
 - Simpler than Redux for our use case
 - Better DX than Context for debugging
 - Team prefers minimal boilerplate

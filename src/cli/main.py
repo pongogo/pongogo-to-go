@@ -4,8 +4,8 @@ import typer
 from rich.console import Console
 
 from . import __version__
-from .init_command import init_command
 from .discoveries import app as discoveries_app
+from .init_command import init_command
 from .setup_mcp import setup_mcp_command
 
 app = typer.Typer(

@@ -1,22 +1,25 @@
 """Discovery CLI commands for managing repository knowledge discoveries."""
 
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
+from rich.table import Table
+
 
 # Lazy import to avoid circular dependencies
 def get_discovery_system():
     """Lazy import of DiscoverySystem."""
     import sys
+
     mcp_server_path = Path(__file__).parent.parent / "mcp-server"
     if str(mcp_server_path) not in sys.path:
         sys.path.insert(0, str(mcp_server_path))
     from discovery_system import DiscoverySystem
+
     return DiscoverySystem
+
 
 console = Console()
 app = typer.Typer(
@@ -55,13 +58,13 @@ def _ensure_discovery_system():
 
 @app.command(name="list")
 def list_discoveries(
-    status: Optional[str] = typer.Option(
+    status: str | None = typer.Option(
         None,
         "--status",
         "-s",
         help="Filter by status: DISCOVERED, PROMOTED, or ARCHIVED",
     ),
-    source_type: Optional[str] = typer.Option(
+    source_type: str | None = typer.Option(
         None,
         "--type",
         "-t",
@@ -179,7 +182,9 @@ def show_discovery(
     # Truncate very long content
     content = discovery.section_content
     if len(content) > 2000:
-        content = content[:2000] + "\n\n[dim]... (truncated, showing first 2000 chars)[/dim]"
+        content = (
+            content[:2000] + "\n\n[dim]... (truncated, showing first 2000 chars)[/dim]"
+        )
     content_lines.append(content)
 
     title = discovery.section_title or "(Untitled Section)"
@@ -216,7 +221,7 @@ def promote_discovery(
 
     if discovery.status == "ARCHIVED":
         console.print(
-            f"[red]Error:[/red] Cannot promote archived discovery. "
+            "[red]Error:[/red] Cannot promote archived discovery. "
             "Unarchive it first."
         )
         raise typer.Exit(1)
@@ -228,7 +233,7 @@ def promote_discovery(
             f"[green]Promoted[/green] Discovery #{discovery_id} → {instruction_path}"
         )
     else:
-        console.print(f"[red]Error:[/red] Failed to promote discovery.")
+        console.print("[red]Error:[/red] Failed to promote discovery.")
         raise typer.Exit(1)
 
 
@@ -261,11 +266,9 @@ def archive_discovery(
 
     # Archive
     if ds.archive_discovery(discovery_id, reason):
-        console.print(
-            f"[green]Archived[/green] Discovery #{discovery_id}: {reason}"
-        )
+        console.print(f"[green]Archived[/green] Discovery #{discovery_id}: {reason}")
     else:
-        console.print(f"[red]Error:[/red] Failed to archive discovery.")
+        console.print("[red]Error:[/red] Failed to archive discovery.")
         raise typer.Exit(1)
 
 

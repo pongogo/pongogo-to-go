@@ -5,18 +5,24 @@ Provides SQLite database for PI metadata, evidence, and relationships.
 """
 
 import sqlite3
-from pathlib import Path
-from typing import Optional
 from contextlib import contextmanager
+from pathlib import Path
 
 # Default database location
-DEFAULT_DB_PATH = Path(__file__).parent.parent.parent / "docs" / "project_management" / "potential_improvements.db"
+DEFAULT_DB_PATH = (
+    Path(__file__).parent.parent.parent
+    / "docs"
+    / "project_management"
+    / "potential_improvements.db"
+)
 
 
 class PIDatabase:
     """SQLite database for Potential Improvements system."""
 
-    SCHEMA_VERSION = 2  # v2: Added classification_reason, classification_model, classification_date
+    SCHEMA_VERSION = (
+        2  # v2: Added classification_reason, classification_model, classification_date
+    )
 
     SCHEMA = """
     -- Schema version tracking
@@ -88,7 +94,7 @@ class PIDatabase:
     CREATE INDEX IF NOT EXISTS idx_relationships_type ON pi_relationships(relationship_type);
     """
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         """
         Initialize database connection.
 
@@ -106,7 +112,7 @@ class PIDatabase:
             # Set schema version
             conn.execute(
                 "INSERT OR REPLACE INTO schema_info (key, value) VALUES (?, ?)",
-                ("schema_version", str(self.SCHEMA_VERSION))
+                ("schema_version", str(self.SCHEMA_VERSION)),
             )
 
     @contextmanager
@@ -135,7 +141,7 @@ class PIDatabase:
             cursor = conn.execute(sql, params)
             return cursor.fetchall()
 
-    def execute_one(self, sql: str, params: tuple = ()) -> Optional[sqlite3.Row]:
+    def execute_one(self, sql: str, params: tuple = ()) -> sqlite3.Row | None:
         """Execute SQL and return first result."""
         with self.connection() as conn:
             cursor = conn.execute(sql, params)
@@ -149,14 +155,16 @@ class PIDatabase:
 
     def get_schema_version(self) -> int:
         """Get current schema version."""
-        result = self.execute_one("SELECT value FROM schema_info WHERE key = ?", ("schema_version",))
+        result = self.execute_one(
+            "SELECT value FROM schema_info WHERE key = ?", ("schema_version",)
+        )
         return int(result["value"]) if result else 0
 
     def table_exists(self, table_name: str) -> bool:
         """Check if a table exists."""
         result = self.execute_one(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-            (table_name,)
+            (table_name,),
         )
         return result is not None
 

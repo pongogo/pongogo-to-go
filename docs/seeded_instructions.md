@@ -108,7 +108,7 @@ Example query processing:
 ```
 Query: "how do I use time free project management"
 Extracted: ["how", "use", "time", "free", "project", "management"]
-Generated n-grams: ["time_free", "free_project", "project_management", 
+Generated n-grams: ["time_free", "free_project", "project_management",
                     "time_free_project", "free_project_management"]
 Matches: "time_free" keyword → EXACT MATCH (score +15)
 ```
@@ -217,4 +217,3 @@ The update mechanism is designed but not yet implemented:
 4. **Add versioning** frontmatter with `version` and `last_updated`
 5. **Update manifest** with file entry
 6. **Test routing** to ensure keywords trigger correctly
-

@@ -117,7 +117,7 @@ What actually happens.
 
 ## Environment
 
-- OS: 
+- OS:
 - Browser/Runtime:
 - Version:
 

@@ -21,18 +21,20 @@ References:
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any, Optional
+from typing import Any
 
 from mcp_server.instruction_handler import InstructionHandler
 
 
 class RoutingError(Exception):
     """Raised when routing cannot complete due to system error."""
+
     pass
 
 
 class ConfigurationError(Exception):
     """Raised when routing configuration is invalid."""
+
     pass
 
 
@@ -44,7 +46,7 @@ class FeatureSpec:
         name: str,
         description: str,
         default: bool = True,
-        category: str = "general"
+        category: str = "general",
     ):
         """
         Define a feature flag specification.
@@ -60,7 +62,7 @@ class FeatureSpec:
         self.default = default
         self.category = category
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "name": self.name,
@@ -93,11 +95,8 @@ class RoutingEngine(ABC):
 
     @abstractmethod
     def route(
-        self,
-        message: str,
-        context: Optional[Dict[str, Any]] = None,
-        limit: int = 5
-    ) -> Dict[str, Any]:
+        self, message: str, context: dict[str, Any] | None = None, limit: int = 5
+    ) -> dict[str, Any]:
         """
         Route a message to relevant instructions.
 
@@ -139,7 +138,7 @@ class RoutingEngine(ABC):
         pass
 
     @classmethod
-    def get_available_features(cls) -> List[FeatureSpec]:
+    def get_available_features(cls) -> list[FeatureSpec]:
         """
         Return list of feature flags available for this engine.
 
@@ -160,7 +159,7 @@ class RoutingEngine(ABC):
         return []
 
     @classmethod
-    def get_default_features(cls) -> Dict[str, bool]:
+    def get_default_features(cls) -> dict[str, bool]:
         """
         Return dict of feature defaults for this engine.
 
@@ -171,7 +170,7 @@ class RoutingEngine(ABC):
 
 
 # Engine registry for factory function
-_ENGINE_REGISTRY: Dict[str, type] = {}
+_ENGINE_REGISTRY: dict[str, type] = {}
 
 
 def register_engine(version: str):
@@ -189,15 +188,17 @@ def register_engine(version: str):
     Returns:
         Decorator function that registers the class
     """
+
     def decorator(cls):
         _ENGINE_REGISTRY[version] = cls
         return cls
+
     return decorator
 
 
 # Default engine version - set after router module registers its engine
 # This allows the factory to work without hardcoding the version here
-DEFAULT_ENGINE_VERSION: Optional[str] = None
+DEFAULT_ENGINE_VERSION: str | None = None
 
 
 def set_default_engine(version: str):
@@ -217,8 +218,7 @@ def get_default_engine() -> str:
 
 
 def create_router(
-    handler: InstructionHandler,
-    config: Optional[Dict[str, Any]] = None
+    handler: InstructionHandler, config: dict[str, Any] | None = None
 ) -> RoutingEngine:
     """
     Factory function to create routing engine based on configuration.
@@ -263,7 +263,7 @@ def create_router(
         routing_config = config.get("routing", {})
         # Use 'or' to handle None values from config (not just missing keys)
         engine_version = routing_config.get("engine") or default_version
-        features = routing_config.get("features")  # 
+        features = routing_config.get("features")  #
 
     # Look up engine class in registry
     if engine_version not in _ENGINE_REGISTRY:
@@ -294,7 +294,7 @@ def create_router(
         return engine_class(handler)
 
 
-def get_available_engines() -> List[str]:
+def get_available_engines() -> list[str]:
     """
     Return list of available engine versions.
 
@@ -304,7 +304,7 @@ def get_available_engines() -> List[str]:
     return list(_ENGINE_REGISTRY.keys())
 
 
-def get_engine_features(version: str) -> List[FeatureSpec]:
+def get_engine_features(version: str) -> list[FeatureSpec]:
     """
     Get available feature flags for a specific engine version.
 
@@ -320,15 +320,14 @@ def get_engine_features(version: str) -> List[FeatureSpec]:
     if version not in _ENGINE_REGISTRY:
         available = list(_ENGINE_REGISTRY.keys())
         raise ConfigurationError(
-            f"Unknown routing engine: '{version}'. "
-            f"Available engines: {available}"
+            f"Unknown routing engine: '{version}'. " f"Available engines: {available}"
         )
 
     engine_class = _ENGINE_REGISTRY[version]
     return engine_class.get_available_features()
 
 
-def get_engine_default_features(version: str) -> Dict[str, bool]:
+def get_engine_default_features(version: str) -> dict[str, bool]:
     """
     Get default feature values for a specific engine version.
 
@@ -345,7 +344,7 @@ def get_engine_default_features(version: str) -> Dict[str, bool]:
     return engine_class.get_default_features()
 
 
-def validate_features(version: str, features: Dict[str, bool]) -> None:
+def validate_features(version: str, features: dict[str, bool]) -> None:
     """
     Validate that provided features are valid for the engine.
 
@@ -359,7 +358,7 @@ def validate_features(version: str, features: Dict[str, bool]) -> None:
     available_features = get_engine_features(version)
     available_names = {f.name for f in available_features}
 
-    for feature_name in features.keys():
+    for feature_name in features:
         if feature_name not in available_names:
             raise ConfigurationError(
                 f"Feature '{feature_name}' is not available for engine '{version}'. "
