@@ -194,3 +194,47 @@ module = [
     "watchdog.*",
 ]
 ignore_missing_imports = true
+
+# =============================================================================
+# Pytest - Testing
+# =============================================================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+
+# Markers
+markers = [
+    "unit: Unit tests (fast, no external deps)",
+    "integration: Integration tests (component interactions)",
+    "e2e: End-to-end tests (full workflows in Docker)",
+    "slow: Tests that take > 5 seconds",
+]
+
+# =============================================================================
+# Coverage - Test Coverage
+# =============================================================================
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+# Coverage targets from design spec
+# Unit: ≥ 80% lines, ≥ 70% branches
+# NOTE: fail_under disabled until more tests implemented
+# fail_under = 70  # Re-enable when coverage improves
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]

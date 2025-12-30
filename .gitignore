@@ -41,3 +41,4 @@ Thumbs.db
 .pongogo/*.db
 .observability_db/
 logs/
+.coverage
