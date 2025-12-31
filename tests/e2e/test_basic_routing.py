@@ -87,8 +87,10 @@ class TestErrorHandling:
             {"arg": "value"},
         )
 
-        # Should be an error response
-        assert not response.success
+        # MCP returns success=True but with isError=True in the result
+        # This is correct behavior - the JSON-RPC call succeeded, but the tool returned an error
+        assert response.raw is not None
+        assert response.raw.get("result", {}).get("isError") is True
 
     async def test_response_has_raw_data(self, mock_mcp_client):
         """Test that all responses include raw JSON-RPC data."""
