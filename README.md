@@ -26,13 +26,13 @@ curl -sSL https://get.pongogo.com | bash
 ```
 
 The installer will:
-1. Detect if Docker is available
+1. Check if Docker is available
 2. If Docker present: Pull the Docker image and configure Claude Code
-3. If no Docker: Offer interactive menu (install Docker or use pip)
+3. If no Docker: Help you install Docker first
 
 ### Docker Installation
 
-Docker is the recommended method for security and consistency:
+Docker is **required** for the MCP server to ensure proper multi-repo isolation:
 
 ```bash
 # Pull the image
@@ -42,18 +42,12 @@ docker pull ghcr.io/pongogo/pongogo-server:latest
 pongogo setup-mcp
 ```
 
-### pip Installation
-
-For developers who prefer local Python:
-
-```bash
-pip install pongogo
-pongogo setup-mcp
-```
+> **Why Docker?** When using Pongogo across multiple repositories on the same machine, Docker ensures each workspace gets isolated state via volume mounts. Direct Python installation doesn't yet support reliable multi-repo isolation.
 
 ### Requirements
 
-- **Docker** (recommended) OR Python 3.10+
+- **Docker** (required for MCP server)
+- **Python 3.10+** (for CLI tools)
 - Claude Code installed
 
 ### Install from source
@@ -194,7 +188,7 @@ Pongogo includes an MCP (Model Context Protocol) server that routes instructions
 ### Configure Claude Code
 
 ```bash
-# Auto-detect Docker/pip and configure Claude Code
+# Configure Claude Code (requires Docker)
 pongogo setup-mcp
 
 # Preview configuration without changes
@@ -204,7 +198,7 @@ pongogo setup-mcp --dry-run
 pongogo setup-mcp --force
 ```
 
-This adds the Pongogo MCP server to your `~/.claude.json` configuration.
+This adds the Pongogo MCP server to your `~/.claude.json` configuration. Docker is required to ensure proper isolation when using Pongogo across multiple repositories.
 
 ### Upgrade Pongogo
 
@@ -228,10 +222,11 @@ This separation ensures external users get a clean, focused product while intern
 Current capabilities:
 - ✅ `pongogo init` CLI
 - ✅ Seeded instruction files (31 files, 12 categories)
-- ✅ MCP server with Docker/pip distribution
+- ✅ MCP server with Docker distribution
 - ✅ `pongogo setup-mcp` Claude Code integration
 - ✅ Upgrade mechanism via MCP tool
 - 📋 CI/CD for Docker image publishing (planned)
+- 📋 Direct Python installation (planned, pending multi-repo isolation verification)
 
 See [pongogo/pongogo](https://github.com/pongogo/pongogo) for development progress.
 

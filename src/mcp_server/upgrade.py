@@ -1,7 +1,12 @@
 """Pongogo upgrade functionality.
 
-Provides upgrade capabilities for both Docker and pip installations.
+Provides upgrade capabilities for Docker installations.
 Used by the upgrade_pongogo MCP tool.
+
+Note: Docker is currently the only supported method for MCP server deployment.
+The pip upgrade code is retained for development use (editable installs) and
+future support once multi-repo isolation is verified for direct Python installs.
+See: https://github.com/pongogo/pongogo-to-go/issues/1
 """
 
 import logging
@@ -39,8 +44,12 @@ def detect_install_method() -> InstallMethod:
     - /.dockerenv file existence
     - /proc/1/cgroup containing docker
 
+    In production, this should always detect Docker since Docker is required
+    for MCP server deployment. The PIP fallback is only for development
+    environments (editable installs).
+
     Returns:
-        InstallMethod indicating docker, pip, or unknown.
+        InstallMethod indicating docker or pip.
     """
     # Check for Docker container markers
     if Path("/.dockerenv").exists():
@@ -53,7 +62,7 @@ def detect_install_method() -> InstallMethod:
     except (FileNotFoundError, PermissionError):
         pass
 
-    # If not Docker, assume pip (or editable install during development)
+    # Not in Docker - this is a development environment (editable install)
     return InstallMethod.PIP
 
 
@@ -117,11 +126,12 @@ def upgrade_docker() -> UpgradeResult:
 
 
 def upgrade_pip() -> UpgradeResult:
-    """Upgrade Pongogo via pip.
+    """Upgrade Pongogo via pip (development environments only).
 
     Uses pip install --upgrade pongogo to get latest version.
 
-    Note: The upgrade takes effect on next restart of Claude Code.
+    Note: This is only used in development environments (editable installs).
+    Production deployments use Docker and should never hit this path.
     """
     previous = get_current_version()
 
@@ -169,8 +179,8 @@ def upgrade_pip() -> UpgradeResult:
 def upgrade() -> UpgradeResult:
     """Upgrade Pongogo using detected installation method.
 
-    Automatically detects whether running in Docker or via pip
-    and executes the appropriate upgrade command.
+    In production (Docker), pulls the latest image. In development
+    environments (editable pip installs), upgrades via pip.
 
     Returns:
         UpgradeResult with status and message.

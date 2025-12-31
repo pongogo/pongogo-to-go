@@ -98,27 +98,10 @@ install_docker() {
     esac
 }
 
-# Install via pip
-install_pip() {
-    if command -v pip3 &> /dev/null; then
-        info "Installing Pongogo via pip..."
-        pip3 install --user pongogo
-        info "Configuring Claude Code..."
-        # Run setup-mcp if available
-        if command -v pongogo &> /dev/null; then
-            pongogo setup-mcp --force
-        else
-            warn "Run 'pongogo setup-mcp' to configure Claude Code"
-        fi
-    elif command -v pip &> /dev/null; then
-        info "Installing Pongogo via pip..."
-        pip install --user pongogo
-        info "Configuring Claude Code..."
-        pongogo setup-mcp --force 2>/dev/null || warn "Run 'pongogo setup-mcp' to configure Claude Code"
-    else
-        error "pip not found. Please install Python 3.10+ first."
-    fi
-}
+# Note: Direct pip installation is not yet supported for MCP server setup
+# because Claude Code's ${workspaceFolder} expansion in the env section
+# is unverified. Docker volume mounts are the only verified method for
+# multi-repo isolation. See: https://github.com/pongogo/pongogo-to-go/issues/1
 
 # Docker-based installation
 install_docker_based() {
@@ -186,30 +169,34 @@ JSON
     echo "  2. Run 'pongogo init' in your project to create .pongogo/"
 }
 
-# Interactive menu when Docker not available
+# Menu when Docker not available
 show_menu() {
     echo ""
-    echo "Docker not detected. Choose an installation method:"
+    echo "Docker is required for Pongogo MCP server."
     echo ""
-    echo "  1) Install Docker (recommended)"
-    echo "  2) Install via pip (requires Python 3.10+)"
-    echo "  3) Exit"
+    echo "Docker ensures proper isolation when using Pongogo across"
+    echo "multiple repositories on the same machine."
     echo ""
-    read -p "Enter choice [1-3]: " choice
+    echo "  1) Install Docker"
+    echo "  2) Exit"
+    echo ""
+    read -p "Enter choice [1-2]: " choice
 
     case "$choice" in
         1)
             install_docker
             ;;
         2)
-            install_pip
-            ;;
-        3)
             echo "Installation cancelled."
+            echo ""
+            echo "To install Docker manually:"
+            echo "  macOS:   brew install --cask docker"
+            echo "  Linux:   https://docs.docker.com/engine/install/"
+            echo "  Windows: https://docs.docker.com/desktop/install/windows-install/"
             exit 0
             ;;
         *)
-            warn "Invalid choice. Please enter 1, 2, or 3."
+            warn "Invalid choice. Please enter 1 or 2."
             show_menu
             ;;
     esac

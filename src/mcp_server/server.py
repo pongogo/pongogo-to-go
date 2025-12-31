@@ -738,17 +738,16 @@ async def upgrade_pongogo() -> dict:
     """
     Upgrade Pongogo to the latest version.
 
-    Automatically detects installation method (Docker or pip) and executes
-    the appropriate upgrade command. The upgrade takes effect after restarting
-    Claude Code.
+    In production (Docker deployment), pulls the latest Docker image.
+    The upgrade takes effect after restarting Claude Code.
 
     Returns:
         Dictionary with:
         - success: True if upgrade succeeded
-        - method: Installation method (docker/pip)
+        - method: Installation method (docker in production)
         - message: Human-readable status message
         - previous_version: Version before upgrade (if known)
-        - new_version: Version after upgrade (for pip only)
+        - new_version: Version after upgrade (development only)
 
     Example:
         # Upgrade Pongogo
