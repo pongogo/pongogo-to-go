@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ground Truth Dataset",
+  "description": "Schema for pongogo-to-go routing accuracy ground truth",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Dataset version (semver)",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "created": {
+      "type": "string",
+      "format": "date",
+      "description": "Dataset creation date"
+    },
+    "description": {
+      "type": "string",
+      "description": "Dataset purpose and scope"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/GroundTruthEvent"
+      },
+      "minItems": 1
+    }
+  },
+  "required": ["version", "events"],
+  "definitions": {
+    "GroundTruthEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^GT-[0-9]{3}$",
+          "description": "Unique event ID (GT-001, GT-002, ...)"
+        },
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "description": "User query/message to route"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "_pongogo_core",
+            "agentic_workflows",
+            "architecture",
+            "development",
+            "devops",
+            "github_integration",
+            "project_management",
+            "quality",
+            "safety_prevention",
+            "software_engineering",
+            "testing",
+            "trust_execution",
+            "validation"
+          ],
+          "description": "Primary instruction category"
+        },
+        "expected_instructions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "Expected instruction file names (without .instructions.md)"
+        },
+        "context": {
+          "type": "object",
+          "description": "Optional conversation context",
+          "properties": {
+            "prior_topic": {
+              "type": "string"
+            },
+            "task_type": {
+              "type": "string"
+            }
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Test classification tags"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes about this test case"
+        }
+      },
+      "required": ["id", "query", "category", "expected_instructions"]
+    }
+  }
+}

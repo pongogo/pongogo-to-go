@@ -1,0 +1,487 @@
+{
+  "version": "1.0.0",
+  "created": "2025-12-30",
+  "description": "Ground truth dataset for pongogo-to-go routing accuracy testing. Contains representative queries for all seeded instruction categories.",
+  "events": [
+    {
+      "id": "GT-001",
+      "query": "how do I conduct a learning loop?",
+      "category": "_pongogo_core",
+      "expected_instructions": ["learning_loop"],
+      "tags": ["core-loop", "explicit-request"],
+      "notes": "Direct request for learning loop instruction"
+    },
+    {
+      "id": "GT-002",
+      "query": "I'm done with this task",
+      "category": "_pongogo_core",
+      "expected_instructions": ["learning_loop"],
+      "tags": ["core-loop", "implicit-trigger"],
+      "notes": "Task completion should trigger retrospective"
+    },
+    {
+      "id": "GT-003",
+      "query": "/pongogo-retro",
+      "category": "_pongogo_core",
+      "expected_instructions": ["learning_loop"],
+      "tags": ["core-loop", "slash-command"],
+      "notes": "Slash command for retrospective"
+    },
+    {
+      "id": "GT-004",
+      "query": "how should I close this issue?",
+      "category": "_pongogo_core",
+      "expected_instructions": ["issue_closure"],
+      "tags": ["explicit-request"],
+      "notes": "Issue closure workflow"
+    },
+    {
+      "id": "GT-005",
+      "query": "add a work log entry",
+      "category": "_pongogo_core",
+      "expected_instructions": ["work_logging"],
+      "tags": ["core-loop", "explicit-request"],
+      "notes": "Work logging request"
+    },
+    {
+      "id": "GT-006",
+      "query": "/pongogo-log",
+      "category": "_pongogo_core",
+      "expected_instructions": ["work_logging"],
+      "tags": ["core-loop", "slash-command"],
+      "notes": "Slash command for work logging"
+    },
+    {
+      "id": "GT-007",
+      "query": "I noticed a pattern that could be improved",
+      "category": "_pongogo_core",
+      "expected_instructions": ["pi_tracking"],
+      "tags": ["core-loop", "implicit-trigger"],
+      "notes": "Pattern improvement triggers PI tracking"
+    },
+    {
+      "id": "GT-008",
+      "query": "how do I create a new issue?",
+      "category": "_pongogo_core",
+      "expected_instructions": ["issue_creation"],
+      "tags": ["explicit-request"],
+      "notes": "Issue creation workflow"
+    },
+    {
+      "id": "GT-009",
+      "query": "what's the status of this issue?",
+      "category": "_pongogo_core",
+      "expected_instructions": ["issue_status"],
+      "tags": ["explicit-request"],
+      "notes": "Issue status inquiry"
+    },
+    {
+      "id": "GT-010",
+      "query": "there was an incident in production",
+      "category": "_pongogo_core",
+      "expected_instructions": ["incident_handling"],
+      "tags": ["implicit-trigger"],
+      "notes": "Production incident triggers incident handling"
+    },
+    {
+      "id": "GT-011",
+      "query": "let me plan this feature",
+      "category": "_pongogo_core",
+      "expected_instructions": ["planning"],
+      "tags": ["explicit-request"],
+      "notes": "Feature planning request"
+    },
+    {
+      "id": "GT-012",
+      "query": "what went well and what could improve?",
+      "category": "_pongogo_core",
+      "expected_instructions": ["learning_loop"],
+      "tags": ["core-loop", "implicit-trigger"],
+      "notes": "Retrospective phrasing"
+    },
+    {
+      "id": "GT-013",
+      "query": "let's do a retrospective",
+      "category": "_pongogo_core",
+      "expected_instructions": ["learning_loop"],
+      "tags": ["core-loop", "explicit-request"],
+      "notes": "Direct retrospective request"
+    },
+    {
+      "id": "GT-014",
+      "query": "document today's progress",
+      "category": "_pongogo_core",
+      "expected_instructions": ["work_logging"],
+      "tags": ["core-loop", "implicit-trigger"],
+      "notes": "Progress documentation triggers work log"
+    },
+    {
+      "id": "GT-015",
+      "query": "this should be tracked as a potential improvement",
+      "category": "_pongogo_core",
+      "expected_instructions": ["pi_tracking"],
+      "tags": ["core-loop", "explicit-request"],
+      "notes": "Explicit PI tracking request"
+    },
+    {
+      "id": "GT-016",
+      "query": "the issue is ready to be closed",
+      "category": "_pongogo_core",
+      "expected_instructions": ["issue_closure"],
+      "tags": ["implicit-trigger"],
+      "notes": "Issue closure readiness"
+    },
+    {
+      "id": "GT-017",
+      "query": "how do I work with pongogo?",
+      "category": "_pongogo_core",
+      "expected_instructions": ["_pongogo_collaboration"],
+      "tags": ["explicit-request"],
+      "notes": "Pongogo collaboration overview"
+    },
+    {
+      "id": "GT-018",
+      "query": "I need to create a task for this bug",
+      "category": "_pongogo_core",
+      "expected_instructions": ["issue_creation"],
+      "tags": ["implicit-trigger"],
+      "notes": "Bug task creation"
+    },
+    {
+      "id": "GT-019",
+      "query": "what lessons did we learn?",
+      "category": "_pongogo_core",
+      "expected_instructions": ["learning_loop"],
+      "tags": ["core-loop", "explicit-request"],
+      "notes": "Lessons learned inquiry"
+    },
+    {
+      "id": "GT-020",
+      "query": "how do I estimate this task?",
+      "category": "project_management",
+      "expected_instructions": ["time_free_project_management"],
+      "tags": ["explicit-request"],
+      "notes": "Task estimation (time-free approach)"
+    },
+    {
+      "id": "GT-021",
+      "query": "this task is growing beyond the original scope",
+      "category": "project_management",
+      "expected_instructions": ["scope_creep_prevention"],
+      "tags": ["implicit-trigger"],
+      "notes": "Scope creep detection"
+    },
+    {
+      "id": "GT-022",
+      "query": "what goes in a weekly work log summary?",
+      "category": "project_management",
+      "expected_instructions": ["work_log_weekly_summary"],
+      "tags": ["explicit-request"],
+      "notes": "Weekly summary format"
+    },
+    {
+      "id": "GT-023",
+      "query": "prepare the monthly summary",
+      "category": "project_management",
+      "expected_instructions": ["work_log_monthly_summary"],
+      "tags": ["explicit-request"],
+      "notes": "Monthly summary request"
+    },
+    {
+      "id": "GT-024",
+      "query": "I need to add a term to the glossary",
+      "category": "project_management",
+      "expected_instructions": ["glossary_maintenance"],
+      "tags": ["explicit-request"],
+      "notes": "Glossary maintenance"
+    },
+    {
+      "id": "GT-025",
+      "query": "we're adding more features than planned",
+      "category": "project_management",
+      "expected_instructions": ["scope_creep_prevention"],
+      "tags": ["implicit-trigger"],
+      "notes": "Scope expansion warning"
+    },
+    {
+      "id": "GT-026",
+      "query": "how do I track work without time estimates?",
+      "category": "project_management",
+      "expected_instructions": ["time_free_project_management"],
+      "tags": ["explicit-request"],
+      "notes": "Time-free PM approach"
+    },
+    {
+      "id": "GT-027",
+      "query": "document what I worked on today",
+      "category": "project_management",
+      "expected_instructions": ["work_logging"],
+      "tags": ["explicit-request"],
+      "notes": "Daily work documentation"
+    },
+    {
+      "id": "GT-028",
+      "query": "how should I format this commit message?",
+      "category": "software_engineering",
+      "expected_instructions": ["commit_message_format"],
+      "tags": ["explicit-request"],
+      "notes": "Commit message formatting"
+    },
+    {
+      "id": "GT-029",
+      "query": "is it safe to force push?",
+      "category": "software_engineering",
+      "expected_instructions": ["git_safety"],
+      "tags": ["explicit-request"],
+      "notes": "Git safety inquiry"
+    },
+    {
+      "id": "GT-030",
+      "query": "writing a Python script for data processing",
+      "category": "software_engineering",
+      "expected_instructions": ["python_script_development"],
+      "tags": ["implicit-trigger"],
+      "notes": "Python development context"
+    },
+    {
+      "id": "GT-031",
+      "query": "I need to push to main branch",
+      "category": "software_engineering",
+      "expected_instructions": ["git_safety"],
+      "tags": ["implicit-trigger"],
+      "notes": "Main branch push warning"
+    },
+    {
+      "id": "GT-032",
+      "query": "what's the commit message convention?",
+      "category": "software_engineering",
+      "expected_instructions": ["commit_message_format"],
+      "tags": ["explicit-request"],
+      "notes": "Commit convention inquiry"
+    },
+    {
+      "id": "GT-033",
+      "query": "create a data migration script in python",
+      "category": "software_engineering",
+      "expected_instructions": ["python_script_development"],
+      "tags": ["explicit-request"],
+      "notes": "Python script creation"
+    },
+    {
+      "id": "GT-034",
+      "query": "should I validate before executing?",
+      "category": "safety_prevention",
+      "expected_instructions": ["validation_first_execution"],
+      "tags": ["explicit-request"],
+      "notes": "Validation-first approach"
+    },
+    {
+      "id": "GT-035",
+      "query": "about to run a destructive command",
+      "category": "safety_prevention",
+      "expected_instructions": ["git_safety", "systematic_prevention_framework"],
+      "tags": ["multi-instruction", "implicit-trigger"],
+      "notes": "Destructive command warning"
+    },
+    {
+      "id": "GT-036",
+      "query": "how do I prevent mistakes?",
+      "category": "safety_prevention",
+      "expected_instructions": ["systematic_prevention_framework"],
+      "tags": ["explicit-request"],
+      "notes": "Mistake prevention"
+    },
+    {
+      "id": "GT-037",
+      "query": "validate this change before applying",
+      "category": "safety_prevention",
+      "expected_instructions": ["validation_first_execution"],
+      "tags": ["explicit-request"],
+      "notes": "Change validation"
+    },
+    {
+      "id": "GT-038",
+      "query": "I'm about to delete this branch",
+      "category": "safety_prevention",
+      "expected_instructions": ["git_safety"],
+      "tags": ["implicit-trigger"],
+      "notes": "Branch deletion warning"
+    },
+    {
+      "id": "GT-039",
+      "query": "how should an agent make decisions?",
+      "category": "agentic_workflows",
+      "expected_instructions": ["agentic_decision_making"],
+      "tags": ["explicit-request"],
+      "notes": "Agent decision-making"
+    },
+    {
+      "id": "GT-040",
+      "query": "set up the agent environment",
+      "category": "agentic_workflows",
+      "expected_instructions": ["agent_environment_setup"],
+      "tags": ["explicit-request"],
+      "notes": "Agent environment setup"
+    },
+    {
+      "id": "GT-041",
+      "query": "what compliance rules should agents follow?",
+      "category": "agentic_workflows",
+      "expected_instructions": ["agent_compliance_framework"],
+      "tags": ["explicit-request"],
+      "notes": "Agent compliance"
+    },
+    {
+      "id": "GT-042",
+      "query": "this requires multiple passes to analyze",
+      "category": "agentic_workflows",
+      "expected_instructions": ["multi_pass_iterative_analysis"],
+      "tags": ["implicit-trigger"],
+      "notes": "Multi-pass analysis trigger"
+    },
+    {
+      "id": "GT-043",
+      "query": "how do I create a pull request?",
+      "category": "quality",
+      "expected_instructions": ["pull_request_workflow"],
+      "tags": ["explicit-request"],
+      "notes": "PR workflow"
+    },
+    {
+      "id": "GT-044",
+      "query": "set up the development environment",
+      "category": "quality",
+      "expected_instructions": ["environment_configuration"],
+      "tags": ["explicit-request"],
+      "notes": "Environment setup"
+    },
+    {
+      "id": "GT-045",
+      "query": "how do I use the github api?",
+      "category": "github_integration",
+      "expected_instructions": ["github_essentials"],
+      "tags": ["explicit-request"],
+      "notes": "GitHub API usage"
+    },
+    {
+      "id": "GT-046",
+      "query": "create a sub-issue for this task",
+      "category": "github_integration",
+      "expected_instructions": ["github_sub_issues"],
+      "tags": ["explicit-request"],
+      "notes": "Sub-issue creation"
+    },
+    {
+      "id": "GT-047",
+      "query": "how is the repository organized?",
+      "category": "architecture",
+      "expected_instructions": ["repository_organization"],
+      "tags": ["explicit-request"],
+      "notes": "Repository structure"
+    },
+    {
+      "id": "GT-048",
+      "query": "I'm running low on context tokens",
+      "category": "development",
+      "expected_instructions": ["token_usage_context_management"],
+      "tags": ["implicit-trigger"],
+      "notes": "Token management trigger"
+    },
+    {
+      "id": "GT-049",
+      "query": "how do I add audit logging?",
+      "category": "devops",
+      "expected_instructions": ["audit_logging_patterns"],
+      "tags": ["explicit-request"],
+      "notes": "Audit logging"
+    },
+    {
+      "id": "GT-050",
+      "query": "what observability patterns should I use?",
+      "category": "devops",
+      "expected_instructions": ["observability_patterns"],
+      "tags": ["explicit-request"],
+      "notes": "Observability patterns"
+    },
+    {
+      "id": "GT-051",
+      "query": "how do I test observability?",
+      "category": "testing",
+      "expected_instructions": ["observability_testing"],
+      "tags": ["explicit-request"],
+      "notes": "Observability testing"
+    },
+    {
+      "id": "GT-052",
+      "query": "what's the trust-based approach to tasks?",
+      "category": "trust_execution",
+      "expected_instructions": ["trust_based_task_execution"],
+      "tags": ["explicit-request"],
+      "notes": "Trust-based execution"
+    },
+    {
+      "id": "GT-053",
+      "query": "I'm starting a new feature",
+      "category": "trust_execution",
+      "expected_instructions": ["feature_development"],
+      "tags": ["implicit-trigger"],
+      "notes": "Feature development start"
+    },
+    {
+      "id": "GT-054",
+      "query": "what's the development workflow?",
+      "category": "trust_execution",
+      "expected_instructions": ["development_workflow_essentials"],
+      "tags": ["explicit-request"],
+      "notes": "Development workflow"
+    },
+    {
+      "id": "GT-055",
+      "query": "how do I validate this output?",
+      "category": "validation",
+      "expected_instructions": ["validation_essentials"],
+      "tags": ["explicit-request"],
+      "notes": "Output validation"
+    },
+    {
+      "id": "GT-056",
+      "query": "use a deterministic approach to validation",
+      "category": "validation",
+      "expected_instructions": ["deterministic_validation_framework"],
+      "tags": ["explicit-request"],
+      "notes": "Deterministic validation"
+    },
+    {
+      "id": "GT-057",
+      "query": "how can I verify this efficiently?",
+      "category": "validation",
+      "expected_instructions": ["verification_efficiency"],
+      "tags": ["explicit-request"],
+      "notes": "Efficient verification"
+    },
+    {
+      "id": "GT-058",
+      "query": "the build failed, what happened?",
+      "category": "_pongogo_core",
+      "expected_instructions": ["incident_handling"],
+      "tags": ["implicit-trigger"],
+      "notes": "Build failure incident"
+    },
+    {
+      "id": "GT-059",
+      "query": "let's summarize this week",
+      "category": "project_management",
+      "expected_instructions": ["work_log_weekly_summary"],
+      "tags": ["implicit-trigger"],
+      "notes": "Weekly summary trigger"
+    },
+    {
+      "id": "GT-060",
+      "query": "I need to review this PR",
+      "category": "quality",
+      "expected_instructions": ["pull_request_workflow"],
+      "tags": ["implicit-trigger"],
+      "notes": "PR review trigger"
+    }
+  ]
+}
