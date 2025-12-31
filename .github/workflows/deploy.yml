@@ -100,7 +100,7 @@ jobs:
 
           if ! docker info &> /dev/null 2>&1; then
               echo -e "${YELLOW}⚠${NC} Docker is installed but not running."
-              read -p "Would you like to start Docker? [Y/n] " -n 1 -r
+              read -p "Would you like to start Docker? [Y/n] " -n 1 -r < /dev/tty
               echo ""
               if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
                   echo "Starting Docker..."
@@ -187,7 +187,7 @@ jobs:
           # Check if in a git repo and offer to init
           if git rev-parse --git-dir > /dev/null 2>&1; then
               echo "You're in a git repository: $(basename "$(pwd)")"
-              read -p "Would you like to initialize Pongogo here? [Y/n] " -n 1 -r
+              read -p "Would you like to initialize Pongogo here? [Y/n] " -n 1 -r < /dev/tty
               echo ""
               if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
                   info "Initializing Pongogo..."
