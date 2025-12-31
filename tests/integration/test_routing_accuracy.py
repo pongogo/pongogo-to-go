@@ -215,9 +215,10 @@ def aggregate_scores(event_scores: list[EventScore]) -> AggregateScore:
 # =============================================================================
 
 # Mark all tests as integration tests
-pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
+pytestmark = [pytest.mark.integration]
 
 
+@pytest.mark.asyncio
 class TestRoutingAccuracy:
     """Test routing accuracy against ground truth."""
 

@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     pass  # AsyncGenerator imported above for runtime use
 
 import pytest
+import pytest_asyncio
 
 # Optional docker import - only needed for integration/E2E tests
 try:
@@ -212,7 +213,7 @@ def temp_pongogo_dir(temp_project: Path) -> Path:
 # =============================================================================
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def mock_mcp_client(
     tmp_path: Path,
     sample_instructions: Path,
@@ -226,6 +227,7 @@ async def mock_mcp_client(
     current environment (e.g., via `pip install -e .`).
     """
     import shutil
+    import sys
 
     from tests.helpers.mock_mcp_client import MockMCPClient
 
@@ -241,9 +243,13 @@ async def mock_mcp_client(
         pongogo_dir / "instructions",
     )
 
+    # Get pongogo-server path from current Python's bin directory
+    python_bin = Path(sys.executable).parent
+    server_cmd = str(python_bin / "pongogo-server")
+
     # Create mock MCP client
     client = MockMCPClient(
-        server_command=["pongogo-server"],
+        server_command=[server_cmd],
         working_dir=project_dir,
         env={
             "PONGOGO_KNOWLEDGE_PATH": str(pongogo_dir / "instructions"),

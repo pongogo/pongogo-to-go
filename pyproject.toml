@@ -66,8 +66,14 @@ Documentation = "https://github.com/pongogo/pongogo-to-go#readme"
 Repository = "https://github.com/pongogo/pongogo-to-go"
 Issues = "https://github.com/pongogo/pongogo-to-go/issues"
 
+[tool.hatch.build]
+# src layout - dev-mode-dirs needed for editable installs
+dev-mode-dirs = ["src"]
+
 [tool.hatch.build.targets.wheel]
-packages = ["src/cli", "src/mcp_server"]
+# Use src layout - packages importable without 'src.' prefix
+sources = ["src"]
+packages = ["cli", "mcp_server"]
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -200,6 +206,7 @@ ignore_missing_imports = true
 # =============================================================================
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]  # Add src/ to Python path for imports
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
