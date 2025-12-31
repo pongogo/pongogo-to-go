@@ -142,8 +142,8 @@ jobs:
           echo ""
           echo "Next steps:"
           echo "  1. Restart Claude Code"
-          echo "  2. cd your-project"
-          echo "  3. pipx install pongogo && pongogo init"
+          echo "  2. cd your-project && mkdir -p .pongogo"
+          echo "  3. Ask Claude to help you get started with Pongogo"
           SCRIPT
 
           chmod +x deploy/install.sh
