@@ -51,6 +51,7 @@ jobs:
       contents: write
       packages: write
       actions: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -123,17 +124,39 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to ACR
+        run: az acr login --name pongogo
+
       - name: Build and push stable Docker image
         run: |
           # Build the image
           docker build -t ghcr.io/${{ github.repository }}:v${{ inputs.version }} .
+
+          # Tag for GHCR
           docker tag ghcr.io/${{ github.repository }}:v${{ inputs.version }} ghcr.io/${{ github.repository }}:stable
           docker tag ghcr.io/${{ github.repository }}:v${{ inputs.version }} ghcr.io/${{ github.repository }}:latest
 
-          # Push all tags
+          # Tag for ACR
+          docker tag ghcr.io/${{ github.repository }}:v${{ inputs.version }} pongogo.azurecr.io/pongogo:v${{ inputs.version }}
+          docker tag ghcr.io/${{ github.repository }}:v${{ inputs.version }} pongogo.azurecr.io/pongogo:stable
+          docker tag ghcr.io/${{ github.repository }}:v${{ inputs.version }} pongogo.azurecr.io/pongogo:latest
+
+          # Push to GHCR
           docker push ghcr.io/${{ github.repository }}:v${{ inputs.version }}
           docker push ghcr.io/${{ github.repository }}:stable
           docker push ghcr.io/${{ github.repository }}:latest
+
+          # Push to ACR
+          docker push pongogo.azurecr.io/pongogo:v${{ inputs.version }}
+          docker push pongogo.azurecr.io/pongogo:stable
+          docker push pongogo.azurecr.io/pongogo:latest
 
       - name: Trigger deploy
         uses: actions/github-script@v7

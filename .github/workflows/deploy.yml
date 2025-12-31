@@ -107,7 +107,7 @@ jobs:
 
           # Pull the image
           info "Pulling Pongogo Docker image..."
-          docker pull ghcr.io/pongogo/pongogo-to-go:stable
+          docker pull pongogo.azurecr.io/pongogo:stable
 
           # Check for Python (for CLI tools)
           if command -v python3 &> /dev/null; then
@@ -137,13 +137,13 @@ jobs:
               c = json.load(open(p))
           except:
               c = {}
-          c.setdefault('mcpServers', {})['pongogo-knowledge'] = {'command': 'docker', 'args': ['run', '-i', '--rm', '-v', '\${workspaceFolder}/.pongogo:/project/.pongogo:ro', 'ghcr.io/pongogo/pongogo-to-go:stable']}
+          c.setdefault('mcpServers', {})['pongogo-knowledge'] = {'command': 'docker', 'args': ['run', '-i', '--rm', '-v', '\${workspaceFolder}/.pongogo:/project/.pongogo:ro', 'pongogo.azurecr.io/pongogo:stable']}
           json.dump(c, open(p, 'w'), indent=2)
           " "$CLAUDE_CONFIG"
           else
               # Fallback if Python not available - create new config only
               if [ ! -f "$CLAUDE_CONFIG" ]; then
-                  echo '{"mcpServers":{"pongogo-knowledge":{"command":"docker","args":["run","-i","--rm","-v","${workspaceFolder}/.pongogo:/project/.pongogo:ro","ghcr.io/pongogo/pongogo-to-go:stable"]}}}' > "$CLAUDE_CONFIG"
+                  echo '{"mcpServers":{"pongogo-knowledge":{"command":"docker","args":["run","-i","--rm","-v","${workspaceFolder}/.pongogo:/project/.pongogo:ro","pongogo.azurecr.io/pongogo:stable"]}}}' > "$CLAUDE_CONFIG"
               else
                   warn "Cannot modify existing config without Python. Please install Python 3."
               fi
