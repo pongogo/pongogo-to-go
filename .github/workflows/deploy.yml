@@ -138,12 +138,43 @@ jobs:
               fi
           fi
 
+          # Install pongogo CLI wrapper
+          PONGOGO_BIN="$HOME/.local/bin"
+          mkdir -p "$PONGOGO_BIN"
+          cat > "$PONGOGO_BIN/pongogo" << 'PONGOGO_CLI'
+          #!/bin/bash
+          docker run --rm -v "$(pwd)":/project -w /project pongogo.azurecr.io/pongogo:stable "$@"
+          PONGOGO_CLI
+          chmod +x "$PONGOGO_BIN/pongogo"
+
+          # Add to PATH if not already there
+          if [[ ":$PATH:" != *":$PONGOGO_BIN:"* ]]; then
+              warn "Add ~/.local/bin to your PATH to use 'pongogo' command"
+              echo "  Add this to your shell config: export PATH=\"\$HOME/.local/bin:\$PATH\""
+          fi
+
           info "Pongogo installed successfully!"
           echo ""
-          echo "Next steps:"
-          echo "  1. Restart Claude Code"
-          echo "  2. cd your-project && mkdir -p .pongogo"
-          echo "  3. Ask Claude to help you get started with Pongogo"
+
+          # Check if in a git repo and offer to init
+          if git rev-parse --git-dir > /dev/null 2>&1; then
+              echo "You're in a git repository: $(basename "$(pwd)")"
+              read -p "Would you like to initialize Pongogo here? [Y/n] " -n 1 -r
+              echo ""
+              if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+                  info "Initializing Pongogo..."
+                  "$PONGOGO_BIN/pongogo" init
+              else
+                  echo ""
+                  echo "Run 'pongogo init' when you're ready."
+              fi
+          else
+              echo "Navigate to your project and run:"
+              echo "  pongogo init"
+          fi
+
+          echo ""
+          echo "Then restart Claude Code to activate the MCP server."
           SCRIPT
 
           chmod +x deploy/install.sh
