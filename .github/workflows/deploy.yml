@@ -107,7 +107,22 @@ jobs:
                   if [[ "$OSTYPE" == "darwin"* ]]; then
                       open -a Docker
                   elif command -v systemctl &> /dev/null; then
-                      sudo systemctl start docker
+                      # Try rootless docker first, then system docker
+                      if systemctl --user start docker 2>/dev/null; then
+                          echo "Started rootless Docker"
+                      elif sudo systemctl start docker 2>/dev/null; then
+                          echo "Started system Docker"
+                      else
+                          echo ""
+                          echo -e "${RED}Failed to start Docker.${NC}"
+                          echo ""
+                          echo "Try one of these:"
+                          echo "  sudo systemctl start docker"
+                          echo "  sudo usermod -aG docker \$USER && newgrp docker"
+                          echo ""
+                          error "Please start Docker manually and re-run the installer."
+                          exit 1
+                      fi
                   else
                       error "Unable to start Docker automatically. Please start it manually."
                       exit 1
