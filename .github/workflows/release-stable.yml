@@ -143,5 +143,8 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'deploy.yml',
-              ref: 'v${{ inputs.version }}'
+              ref: 'v${{ inputs.version }}',
+              inputs: {
+                version: 'v${{ inputs.version }}'
+              }
             })
