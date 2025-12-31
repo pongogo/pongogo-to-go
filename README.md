@@ -5,8 +5,11 @@ Portable AI agent knowledge routing system. Install Pongogo on any repository to
 ## Quick Start
 
 ```bash
-# Install Pongogo
+# Install Pongogo CLI
 pip install pongogo
+
+# Configure MCP server for Claude Code (requires Docker)
+pongogo setup-mcp
 
 # Initialize in your repository
 cd your-project
