@@ -51,6 +51,7 @@ jobs:
       contents: write
       packages: write
       actions: write
+      workflows: write
 
     steps:
       - uses: actions/checkout@v4
