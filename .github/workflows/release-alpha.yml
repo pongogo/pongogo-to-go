@@ -1,0 +1,74 @@
+# Alpha Release workflow - Automated on push to main
+name: Alpha Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  alpha-release:
+    name: Create Alpha Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version info
+        id: version
+        run: |
+          # Get short SHA
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          # Get date in YYYYMMDD format
+          DATE=$(date +%Y%m%d)
+          # Create alpha version
+          VERSION="alpha-${DATE}-${SHORT_SHA}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        id: check-tag
+        run: |
+          if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create alpha tag
+        if: steps.check-tag.outputs.exists == 'false'
+        run: |
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }}
+
+      - name: Create GitHub Release
+        if: steps.check-tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Alpha ${{ steps.version.outputs.version }}
+          prerelease: true
+          generate_release_notes: true
+          body: |
+            ## Alpha Release
+
+            **Channel**: Alpha (internal testing)
+            **Commit**: ${{ github.sha }}
+
+            This is an automated alpha release. Use for internal testing only.
+
+            ### Install
+
+            ```bash
+            pip install pongogo==${{ steps.version.outputs.version }}
+            ```
+
+            Or use Docker:
+            ```bash
+            docker pull ghcr.io/${{ github.repository }}:${{ steps.version.outputs.tag }}
+            ```

@@ -1,0 +1,84 @@
+# Deploy workflow - Deploy install script on stable releases
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version being deployed'
+        required: true
+        type: string
+  release:
+    types: [published]
+
+jobs:
+  deploy-install-script:
+    name: Deploy Install Script
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'release' && !github.event.release.prerelease)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Prepare install script
+        run: |
+          # Ensure scripts directory exists
+          mkdir -p scripts
+
+          # Create or update install script with version
+          cat > scripts/install.sh << 'SCRIPT'
+          #!/bin/bash
+          # Pongogo Installer
+          # Usage: curl -sSL https://get.pongogo.com | bash
+
+          set -euo pipefail
+
+          PONGOGO_VERSION="${{ steps.version.outputs.version }}"
+
+          echo "Installing Pongogo ${PONGOGO_VERSION}..."
+
+          # Check for Python
+          if ! command -v python3 &> /dev/null; then
+              echo "Error: Python 3 is required but not installed."
+              exit 1
+          fi
+
+          # Install via pip
+          python3 -m pip install --upgrade pip
+          python3 -m pip install "pongogo==${PONGOGO_VERSION}"
+
+          echo ""
+          echo "Pongogo ${PONGOGO_VERSION} installed successfully!"
+          echo ""
+          echo "Get started:"
+          echo "  cd your-project"
+          echo "  pongogo init"
+          echo "  pongogo setup-mcp"
+          SCRIPT
+
+          chmod +x scripts/install.sh
+
+          # Verify script is valid bash
+          bash -n scripts/install.sh
+
+      - name: Deploy to Azure Static Web Apps
+        if: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN != '' }}
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "scripts"
+          skip_app_build: true
+          output_location: ""

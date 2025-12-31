@@ -1,0 +1,226 @@
+# CI workflow - Run all tests in Docker container
+name: CI
+
+on:
+  push:
+    branches: [main, beta, stable]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # =========================================================================
+  # Pre-commit Hooks (Lint, Format, Type Check)
+  # =========================================================================
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files --show-diff-on-failure
+
+  # =========================================================================
+  # Build Test Container
+  # =========================================================================
+  build-test-image:
+    name: Build Test Image
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: tests/Dockerfile
+          target: test
+          push: false
+          load: true
+          tags: pongogo-test:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Save image
+        run: docker save pongogo-test:${{ github.sha }} | gzip > /tmp/test-image.tar.gz
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-image
+          path: /tmp/test-image.tar.gz
+          retention-days: 1
+
+  # =========================================================================
+  # Unit Tests
+  # =========================================================================
+  unit-tests:
+    name: Unit Tests
+    needs: build-test-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: test-image
+          path: /tmp
+
+      - name: Load image
+        run: gunzip -c /tmp/test-image.tar.gz | docker load
+
+      - name: Create coverage directory
+        run: mkdir -p coverage
+
+      - name: Run unit tests
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/coverage:/app/coverage \
+            pongogo-test:${{ github.sha }} \
+            pytest tests/unit/ -v \
+              --cov=src \
+              --cov-report=xml:/app/coverage/unit-coverage.xml \
+              --cov-fail-under=80 \
+              --junitxml=/app/coverage/unit-results.xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/unit-coverage.xml
+          flags: unit
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results
+          path: coverage/unit-results.xml
+
+  # =========================================================================
+  # Integration Tests
+  # =========================================================================
+  integration-tests:
+    name: Integration Tests
+    needs: build-test-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: test-image
+          path: /tmp
+
+      - name: Load image
+        run: gunzip -c /tmp/test-image.tar.gz | docker load
+
+      - name: Create coverage directory
+        run: mkdir -p coverage
+
+      - name: Run integration tests
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/coverage:/app/coverage \
+            pongogo-test:${{ github.sha }} \
+            pytest tests/integration/ -v \
+              --cov=src \
+              --cov-report=xml:/app/coverage/integration-coverage.xml \
+              --junitxml=/app/coverage/integration-results.xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/integration-coverage.xml
+          flags: integration
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: coverage/integration-results.xml
+
+  # =========================================================================
+  # E2E Tests
+  # =========================================================================
+  e2e-tests:
+    name: E2E Tests
+    needs: [unit-tests, integration-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: test-image
+          path: /tmp
+
+      - name: Load image
+        run: gunzip -c /tmp/test-image.tar.gz | docker load
+
+      - name: Create coverage directory
+        run: mkdir -p coverage
+
+      - name: Run E2E tests
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${{ github.workspace }}/coverage:/app/coverage \
+            pongogo-test:${{ github.sha }} \
+            pytest tests/e2e/ -v \
+              --junitxml=/app/coverage/e2e-results.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: coverage/e2e-results.xml
+
+  # =========================================================================
+  # Final Status Check
+  # =========================================================================
+  ci-success:
+    name: CI Success
+    needs: [lint, unit-tests, integration-tests, e2e-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" ]] || \
+             [[ "${{ needs.unit-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.integration-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.e2e-tests.result }}" != "success" ]]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
+          echo "All CI jobs passed!"
