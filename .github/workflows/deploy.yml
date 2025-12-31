@@ -99,8 +99,36 @@ jobs:
           fi
 
           if ! docker info &> /dev/null 2>&1; then
-              error "Docker is installed but not running. Please start Docker."
-              exit 1
+              echo -e "${YELLOW}⚠${NC} Docker is installed but not running."
+              read -p "Would you like to start Docker? [Y/n] " -n 1 -r
+              echo ""
+              if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+                  echo "Starting Docker..."
+                  if [[ "$OSTYPE" == "darwin"* ]]; then
+                      open -a Docker
+                  elif command -v systemctl &> /dev/null; then
+                      sudo systemctl start docker
+                  else
+                      error "Unable to start Docker automatically. Please start it manually."
+                      exit 1
+                  fi
+                  # Wait for Docker to be ready
+                  echo "Waiting for Docker to start..."
+                  for i in {1..30}; do
+                      if docker info &> /dev/null 2>&1; then
+                          info "Docker is now running"
+                          break
+                      fi
+                      sleep 2
+                  done
+                  if ! docker info &> /dev/null 2>&1; then
+                      error "Docker failed to start. Please start it manually and re-run the installer."
+                      exit 1
+                  fi
+              else
+                  error "Docker must be running to continue."
+                  exit 1
+              fi
           fi
 
           info "Docker is available"
