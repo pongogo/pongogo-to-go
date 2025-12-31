@@ -228,7 +228,7 @@ Current capabilities:
 - ✅ MCP server with Docker distribution
 - ✅ `pongogo setup-mcp` Claude Code integration
 - ✅ Upgrade mechanism via MCP tool
-- 📋 CI/CD for Docker image publishing (planned)
+- ✅ CI/CD with Docker image publishing and release train (alpha/beta/stable)
 - 📋 Direct Python installation (planned, pending multi-repo isolation verification)
 
 See [pongogo/pongogo](https://github.com/pongogo/pongogo) for development progress.
