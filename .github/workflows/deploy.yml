@@ -52,7 +52,7 @@ jobs:
           <!DOCTYPE html>
           <html>
           <head>
-            <title>Pongogo Installer</title>
+            <title>🦧 Pongogo Installer</title>
             <meta http-equiv="refresh" content="0; url=install.sh">
           </head>
           <body>
@@ -83,8 +83,8 @@ jobs:
           warn() { echo -e "${YELLOW}⚠${NC} $1"; }
           error() { echo -e "${RED}✗${NC} $1"; exit 1; }
 
-          echo "Pongogo Installer"
-          echo "================="
+          echo "🦧 Pongogo Installer"
+          echo "===================="
           echo ""
 
           # Check Docker
