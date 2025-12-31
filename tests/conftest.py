@@ -5,9 +5,12 @@ and E2E tests. Unit tests run without Docker.
 """
 
 import time
-from collections.abc import Generator
+from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    pass  # AsyncGenerator imported above for runtime use
 
 import pytest
 
@@ -202,3 +205,52 @@ def temp_pongogo_dir(temp_project: Path) -> Path:
     pongogo_dir = temp_project / ".pongogo"
     pongogo_dir.mkdir()
     return pongogo_dir
+
+
+# =============================================================================
+# Mock MCP Client Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+async def mock_mcp_client(
+    tmp_path: Path,
+    sample_instructions: Path,
+) -> AsyncGenerator[Any, None]:
+    """Provide MockMCPClient connected to pongogo-server.
+
+    Server runs as subprocess (not Docker) for faster tests.
+    Use `mock_mcp_client_docker` for full Docker isolation.
+
+    Note: This fixture requires pongogo-server to be installed in the
+    current environment (e.g., via `pip install -e .`).
+    """
+    import shutil
+
+    from tests.helpers.mock_mcp_client import MockMCPClient
+
+    # Create test project structure
+    project_dir = tmp_path / "test-project"
+    project_dir.mkdir()
+    pongogo_dir = project_dir / ".pongogo"
+    pongogo_dir.mkdir()
+
+    # Copy sample instructions
+    shutil.copytree(
+        sample_instructions,
+        pongogo_dir / "instructions",
+    )
+
+    # Create mock MCP client
+    client = MockMCPClient(
+        server_command=["pongogo-server"],
+        working_dir=project_dir,
+        env={
+            "PONGOGO_KNOWLEDGE_PATH": str(pongogo_dir / "instructions"),
+            "PONGOGO_TEST_MODE": "1",
+        },
+        timeout=30.0,
+    )
+
+    async with client:
+        yield client

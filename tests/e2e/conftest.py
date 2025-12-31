@@ -8,17 +8,21 @@ Uses pytest-docker for container lifecycle management.
 from tests.conftest import (
     docker_client,
     fixtures_dir,
+    mock_mcp_client,
     pongogo_server,
     pongogo_server_image,
     project_root,
+    sample_instructions,
     server_port,
 )
 
 __all__ = [
     "docker_client",
     "fixtures_dir",
+    "mock_mcp_client",
     "pongogo_server",
     "pongogo_server_image",
     "project_root",
+    "sample_instructions",
     "server_port",
 ]
