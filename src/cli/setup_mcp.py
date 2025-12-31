@@ -31,32 +31,28 @@ def get_claude_config_path() -> Path:
 
 
 def get_mcp_config() -> dict:
-    """Generate MCP server configuration for Claude Code."""
-    # Detect whether to use Docker or direct Python
-    use_docker = has_docker()
+    """Generate MCP server configuration for Claude Code.
 
-    if use_docker:
-        # Docker-based configuration
-        config = {
-            "command": "docker",
-            "args": [
-                "run",
-                "-i",
-                "--rm",
-                "-v",
-                "${workspaceFolder}/.pongogo:/project/.pongogo:ro",
-                "ghcr.io/pongogo/pongogo-server:latest",
-            ],
-        }
-    else:
-        # Direct Python configuration (pip install)
-        config = {
-            "command": "pongogo-server",
-            "args": [],
-            "env": {
-                "PONGOGO_KNOWLEDGE_PATH": "${workspaceFolder}/.pongogo/instructions"
-            },
-        }
+    Currently requires Docker for guaranteed multi-repo isolation.
+    The ${workspaceFolder} variable expansion in Docker volume mounts
+    ensures each workspace gets its own isolated .pongogo directory.
+
+    Note: Direct Python installation (pip) is not yet supported because
+    Claude Code's ${workspaceFolder} variable expansion in the `env`
+    section is unverified. See GitHub issue for tracking.
+    """
+    # Docker-based configuration (required for multi-repo isolation)
+    config = {
+        "command": "docker",
+        "args": [
+            "run",
+            "-i",
+            "--rm",
+            "-v",
+            "${workspaceFolder}/.pongogo:/project/.pongogo:ro",
+            "ghcr.io/pongogo/pongogo-server:latest",
+        ],
+    }
 
     return config
 
@@ -112,12 +108,25 @@ def setup_mcp_command(
 ) -> None:
     """Configure Claude Code to use Pongogo MCP server.
 
-    Automatically detects Docker availability and configures the appropriate
-    connection method (Docker container or direct Python).
+    Requires Docker for guaranteed multi-repo isolation. Each workspace
+    gets its own isolated .pongogo directory via volume mounts.
     """
+    # Docker is required for multi-repo isolation
+    if not has_docker():
+        console.print("[red]Error: Docker is required for Pongogo MCP server.[/red]")
+        console.print("\nDocker ensures proper isolation when using Pongogo across")
+        console.print("multiple repositories on the same machine.")
+        console.print("\n[bold]To install Docker:[/bold]")
+        console.print("  macOS: brew install --cask docker")
+        console.print("  Linux: https://docs.docker.com/engine/install/")
+        console.print(
+            "  Windows: https://docs.docker.com/desktop/install/windows-install/"
+        )
+        console.print("\nAfter installing, ensure Docker is running and try again.")
+        raise typer.Exit(1)
+
     config_path = get_claude_config_path()
     mcp_config = get_mcp_config()
-    use_docker = has_docker()
 
     # Load existing config
     existing_config = load_claude_config(config_path)
@@ -138,7 +147,7 @@ def setup_mcp_command(
     if dry_run:
         console.print("[bold]Dry run - no changes made[/bold]\n")
         console.print(f"Config path: {config_path}")
-        console.print(f"Method: {'Docker' if use_docker else 'Direct Python'}\n")
+        console.print("Method: Docker (required for multi-repo isolation)\n")
         console.print("[bold]Configuration to add:[/bold]")
         console.print_json(
             json.dumps({"mcpServers": {"pongogo-knowledge": mcp_config}})
@@ -155,8 +164,7 @@ def setup_mcp_command(
         json.dump(merged_config, f, indent=2)
 
     # Success message
-    method = "Docker" if use_docker else "Direct Python"
-    console.print(f"[green]Pongogo MCP server configured ({method})[/green]")
+    console.print("[green]Pongogo MCP server configured (Docker)[/green]")
     console.print(f"[dim]Config: {config_path}[/dim]")
     console.print("\n[bold]Next steps:[/bold]")
     console.print("1. Restart Claude Code to pick up the new configuration")
