@@ -90,7 +90,7 @@ jobs:
         run: gunzip -c /tmp/test-image.tar.gz | docker load
 
       - name: Create coverage directory
-        run: mkdir -p coverage
+        run: mkdir -p coverage && chmod 777 coverage
 
       - name: Run unit tests
         run: |
@@ -139,7 +139,7 @@ jobs:
         run: gunzip -c /tmp/test-image.tar.gz | docker load
 
       - name: Create coverage directory
-        run: mkdir -p coverage
+        run: mkdir -p coverage && chmod 777 coverage
 
       - name: Run integration tests
         run: |
@@ -187,7 +187,7 @@ jobs:
         run: gunzip -c /tmp/test-image.tar.gz | docker load
 
       - name: Create coverage directory
-        run: mkdir -p coverage
+        run: mkdir -p coverage && chmod 777 coverage
 
       - name: Run E2E tests
         run: |
