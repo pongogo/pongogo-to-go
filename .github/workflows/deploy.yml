@@ -128,43 +128,26 @@ jobs:
               cp "$CLAUDE_CONFIG" "$CLAUDE_CONFIG.backup_$(date +%Y%m%d_%H%M%S)"
           fi
 
-          # Create or update config using Python (handles JSON properly)
-          python3 - "$CLAUDE_CONFIG" << 'PYTHON' 2>/dev/null || {
-              # Fallback if Python not available
-              if [ ! -f "$CLAUDE_CONFIG" ]; then
-                  cat > "$CLAUDE_CONFIG" << 'JSON'
-          {
-            "mcpServers": {
-              "pongogo-knowledge": {
-                "command": "docker",
-                "args": ["run", "-i", "--rm", "-v", "${workspaceFolder}/.pongogo:/project/.pongogo:ro", "ghcr.io/pongogo/pongogo-to-go:stable"]
-              }
-            }
-          }
-          JSON
-              fi
-          }
-          import json
-          import sys
-
-          config_path = sys.argv[1]
+          # Configure Claude Code using Python (or bash fallback)
+          if command -v python3 &> /dev/null; then
+              python3 -c "
+          import json, sys
+          p = sys.argv[1]
           try:
-              with open(config_path) as f:
-                  config = json.load(f)
-          except (FileNotFoundError, json.JSONDecodeError):
-              config = {}
-
-          if "mcpServers" not in config:
-              config["mcpServers"] = {}
-
-          config["mcpServers"]["pongogo-knowledge"] = {
-              "command": "docker",
-              "args": ["run", "-i", "--rm", "-v", "${workspaceFolder}/.pongogo:/project/.pongogo:ro", "ghcr.io/pongogo/pongogo-to-go:stable"]
-          }
-
-          with open(config_path, "w") as f:
-              json.dump(config, f, indent=2)
-          PYTHON
+              c = json.load(open(p))
+          except:
+              c = {}
+          c.setdefault('mcpServers', {})['pongogo-knowledge'] = {'command': 'docker', 'args': ['run', '-i', '--rm', '-v', '\${workspaceFolder}/.pongogo:/project/.pongogo:ro', 'ghcr.io/pongogo/pongogo-to-go:stable']}
+          json.dump(c, open(p, 'w'), indent=2)
+          " "$CLAUDE_CONFIG"
+          else
+              # Fallback if Python not available - create new config only
+              if [ ! -f "$CLAUDE_CONFIG" ]; then
+                  echo '{"mcpServers":{"pongogo-knowledge":{"command":"docker","args":["run","-i","--rm","-v","${workspaceFolder}/.pongogo:/project/.pongogo:ro","ghcr.io/pongogo/pongogo-to-go:stable"]}}}' > "$CLAUDE_CONFIG"
+              else
+                  warn "Cannot modify existing config without Python. Please install Python 3."
+              fi
+          fi
 
           info "Pongogo installed successfully!"
           echo ""
