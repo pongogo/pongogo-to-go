@@ -109,12 +109,19 @@ jobs:
           info "Pulling Pongogo Docker image..."
           docker pull pongogo.azurecr.io/pongogo:stable
 
-          # Check for Python (for CLI tools)
+          # Check for Python (for CLI tools - optional, Docker is primary)
           if command -v python3 &> /dev/null; then
               info "Installing Pongogo CLI..."
-              python3 -m pip install --upgrade pip --quiet
-              python3 -m pip install pongogo --quiet
-              info "CLI installed"
+              if command -v pipx &> /dev/null; then
+                  # Prefer pipx for CLI apps (handles venv automatically)
+                  pipx install pongogo --quiet 2>/dev/null && info "CLI installed (via pipx)" || warn "CLI install failed (pipx)"
+              elif python3 -m pip install --user pongogo --quiet 2>/dev/null; then
+                  # Fall back to --user install
+                  info "CLI installed (via pip --user)"
+              else
+                  warn "CLI install failed - try: pipx install pongogo"
+                  echo "  The MCP server (Docker) still works without the CLI"
+              fi
           else
               warn "Python not found - CLI tools not installed"
               echo "  Install Python 3.10+ to use 'pongogo init' and 'pongogo setup-mcp'"
