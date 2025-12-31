@@ -177,6 +177,7 @@ jobs:
             --destination '$web' \
             --source deploy \
             --overwrite \
+            --auth-mode login \
             --content-type "text/html" \
             --pattern "*.html"
 
@@ -185,6 +186,7 @@ jobs:
             --destination '$web' \
             --source deploy \
             --overwrite \
+            --auth-mode login \
             --content-type "text/x-shellscript" \
             --pattern "*.sh"
 
