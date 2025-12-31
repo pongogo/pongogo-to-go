@@ -1,15 +1,19 @@
-# Deploy workflow - Deploy install script on stable releases
+# Deploy workflow - Deploy install script to get.pongogo.com
 name: Deploy
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version being deployed'
+        description: 'Version being deployed (e.g., v0.1.0)'
         required: true
         type: string
   release:
     types: [published]
+
+env:
+  AZURE_STORAGE_ACCOUNT: pongogodownloads
+  AZURE_RESOURCE_GROUP: pongogo-rg
 
 jobs:
   deploy-install-script:
@@ -19,6 +23,10 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'release' && !github.event.release.prerelease)
 
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
       - uses: actions/checkout@v4
 
@@ -26,59 +34,184 @@ jobs:
         id: version
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+            VERSION="${{ inputs.version }}"
           else
-            echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+            VERSION="${{ github.event.release.tag_name }}"
           fi
+          # Remove 'v' prefix if present for pip install
+          VERSION_CLEAN="${VERSION#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_clean=${VERSION_CLEAN}" >> $GITHUB_OUTPUT
 
       - name: Prepare install script
         run: |
-          # Ensure scripts directory exists
-          mkdir -p scripts
+          mkdir -p deploy
 
-          # Create or update install script with version
-          cat > scripts/install.sh << 'SCRIPT'
+          # Create index.html that serves the script
+          cat > deploy/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Pongogo Installer</title>
+            <meta http-equiv="refresh" content="0; url=install.sh">
+          </head>
+          <body>
+            <p>Redirecting to <a href="install.sh">install.sh</a>...</p>
+          </body>
+          </html>
+          EOF
+
+          # Create install script with Docker requirement
+          cat > deploy/install.sh << 'SCRIPT'
           #!/bin/bash
           # Pongogo Installer
           # Usage: curl -sSL https://get.pongogo.com | bash
 
-          set -euo pipefail
+          set -e
 
-          PONGOGO_VERSION="${{ steps.version.outputs.version }}"
+          # Colors (only if terminal supports it)
+          if [ -t 1 ]; then
+              GREEN='\033[0;32m'
+              YELLOW='\033[1;33m'
+              RED='\033[0;31m'
+              NC='\033[0m'
+          else
+              GREEN='' YELLOW='' RED='' NC=''
+          fi
 
-          echo "Installing Pongogo ${PONGOGO_VERSION}..."
+          info() { echo -e "${GREEN}✓${NC} $1"; }
+          warn() { echo -e "${YELLOW}⚠${NC} $1"; }
+          error() { echo -e "${RED}✗${NC} $1"; exit 1; }
 
-          # Check for Python
-          if ! command -v python3 &> /dev/null; then
-              echo "Error: Python 3 is required but not installed."
+          echo "Pongogo Installer"
+          echo "================="
+          echo ""
+
+          # Check Docker
+          if ! command -v docker &> /dev/null; then
+              error "Docker is required but not installed."
+              echo ""
+              echo "Install Docker:"
+              echo "  macOS:   brew install --cask docker"
+              echo "  Linux:   https://docs.docker.com/engine/install/"
+              echo "  Windows: https://docs.docker.com/desktop/install/windows-install/"
               exit 1
           fi
 
-          # Install via pip
-          python3 -m pip install --upgrade pip
-          python3 -m pip install "pongogo==${PONGOGO_VERSION}"
+          if ! docker info &> /dev/null 2>&1; then
+              error "Docker is installed but not running. Please start Docker."
+              exit 1
+          fi
 
+          info "Docker is available"
+
+          # Pull the image
+          info "Pulling Pongogo Docker image..."
+          docker pull ghcr.io/pongogo/pongogo-to-go:stable
+
+          # Check for Python (for CLI tools)
+          if command -v python3 &> /dev/null; then
+              info "Installing Pongogo CLI..."
+              python3 -m pip install --upgrade pip --quiet
+              python3 -m pip install pongogo --quiet
+              info "CLI installed"
+          else
+              warn "Python not found - CLI tools not installed"
+              echo "  Install Python 3.10+ to use 'pongogo init' and 'pongogo setup-mcp'"
+          fi
+
+          # Configure Claude Code
+          CLAUDE_CONFIG="$HOME/.claude.json"
+          info "Configuring Claude Code..."
+
+          if [ -f "$CLAUDE_CONFIG" ]; then
+              cp "$CLAUDE_CONFIG" "$CLAUDE_CONFIG.backup_$(date +%Y%m%d_%H%M%S)"
+          fi
+
+          # Create or update config using Python (handles JSON properly)
+          python3 - "$CLAUDE_CONFIG" << 'PYTHON' 2>/dev/null || {
+              # Fallback if Python not available
+              if [ ! -f "$CLAUDE_CONFIG" ]; then
+                  cat > "$CLAUDE_CONFIG" << 'JSON'
+          {
+            "mcpServers": {
+              "pongogo-knowledge": {
+                "command": "docker",
+                "args": ["run", "-i", "--rm", "-v", "${workspaceFolder}/.pongogo:/project/.pongogo:ro", "ghcr.io/pongogo/pongogo-to-go:stable"]
+              }
+            }
+          }
+          JSON
+              fi
+          }
+          import json
+          import sys
+
+          config_path = sys.argv[1]
+          try:
+              with open(config_path) as f:
+                  config = json.load(f)
+          except (FileNotFoundError, json.JSONDecodeError):
+              config = {}
+
+          if "mcpServers" not in config:
+              config["mcpServers"] = {}
+
+          config["mcpServers"]["pongogo-knowledge"] = {
+              "command": "docker",
+              "args": ["run", "-i", "--rm", "-v", "${workspaceFolder}/.pongogo:/project/.pongogo:ro", "ghcr.io/pongogo/pongogo-to-go:stable"]
+          }
+
+          with open(config_path, "w") as f:
+              json.dump(config, f, indent=2)
+          PYTHON
+
+          info "Pongogo installed successfully!"
           echo ""
-          echo "Pongogo ${PONGOGO_VERSION} installed successfully!"
-          echo ""
-          echo "Get started:"
-          echo "  cd your-project"
-          echo "  pongogo init"
-          echo "  pongogo setup-mcp"
+          echo "Next steps:"
+          echo "  1. Restart Claude Code"
+          echo "  2. cd your-project"
+          echo "  3. pongogo init"
           SCRIPT
 
-          chmod +x scripts/install.sh
+          chmod +x deploy/install.sh
 
           # Verify script is valid bash
-          bash -n scripts/install.sh
+          bash -n deploy/install.sh
 
-      - name: Deploy to Azure Static Web Apps
-        if: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN != '' }}
-        uses: Azure/static-web-apps-deploy@v1
+      - name: Azure Login
+        uses: azure/login@v2
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: "upload"
-          app_location: "scripts"
-          skip_app_build: true
-          output_location: ""
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Storage
+        run: |
+          # Upload to $web container (static website)
+          az storage blob upload-batch \
+            --account-name ${{ env.AZURE_STORAGE_ACCOUNT }} \
+            --destination '$web' \
+            --source deploy \
+            --overwrite \
+            --content-type "text/html" \
+            --pattern "*.html"
+
+          az storage blob upload-batch \
+            --account-name ${{ env.AZURE_STORAGE_ACCOUNT }} \
+            --destination '$web' \
+            --source deploy \
+            --overwrite \
+            --content-type "text/x-shellscript" \
+            --pattern "*.sh"
+
+          echo "Deployed to https://get.pongogo.com"
+
+      - name: Purge CDN cache
+        run: |
+          az afd endpoint purge \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --profile-name pongogo-cdn \
+            --endpoint-name pongogo-downloads \
+            --content-paths "/*" \
+            --no-wait || true
