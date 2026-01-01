@@ -116,9 +116,11 @@ jobs:
                           echo ""
                           echo -e "${RED}Failed to start Docker.${NC}"
                           echo ""
-                          echo "Try one of these:"
-                          echo "  sudo systemctl start docker"
-                          echo "  sudo usermod -aG docker \$USER && newgrp docker"
+                          echo "Try: sudo systemctl start docker"
+                          echo ""
+                          echo "If Docker requires sudo, add yourself to the docker group:"
+                          echo "  sudo usermod -aG docker \$USER"
+                          echo "  (then log out and back in)"
                           echo ""
                           error "Please start Docker manually and re-run the installer."
                           exit 1
@@ -156,11 +158,9 @@ jobs:
                   echo "To fix this, run:"
                   echo "  sudo usermod -aG docker \$USER"
                   echo ""
-                  echo "Then either:"
-                  echo "  - Log out and back in, OR"
-                  echo "  - Run: newgrp docker"
+                  echo "Then log out and back in (required for group changes to take effect)."
                   echo ""
-                  echo "After that, re-run this installer."
+                  echo "After logging back in, re-run this installer."
                   exit 1
               else
                   error "Docker is not accessible."
