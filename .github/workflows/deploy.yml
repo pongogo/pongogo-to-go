@@ -127,21 +127,43 @@ jobs:
                       error "Unable to start Docker automatically. Please start it manually."
                       exit 1
                   fi
-                  # Wait for Docker to be ready
+                  # Wait for Docker to be ready (try with and without sudo)
                   echo "Waiting for Docker to start..."
                   for i in {1..30}; do
-                      if docker info &> /dev/null 2>&1; then
+                      if docker info &> /dev/null 2>&1 || sudo docker info &> /dev/null 2>&1; then
                           info "Docker is now running"
                           break
                       fi
                       sleep 2
                   done
-                  if ! docker info &> /dev/null 2>&1; then
+                  # Verify Docker is accessible
+                  if ! docker info &> /dev/null 2>&1 && ! sudo docker info &> /dev/null 2>&1; then
                       error "Docker failed to start. Please start it manually and re-run the installer."
                       exit 1
                   fi
               else
                   error "Docker must be running to continue."
+                  exit 1
+              fi
+          fi
+
+          # Check if docker works without sudo
+          if ! docker info &> /dev/null 2>&1; then
+              if sudo docker info &> /dev/null 2>&1; then
+                  echo ""
+                  echo -e "${YELLOW}⚠${NC} Docker requires sudo (you're not in the docker group)."
+                  echo ""
+                  echo "To fix this, run:"
+                  echo "  sudo usermod -aG docker \$USER"
+                  echo ""
+                  echo "Then either:"
+                  echo "  - Log out and back in, OR"
+                  echo "  - Run: newgrp docker"
+                  echo ""
+                  echo "After that, re-run this installer."
+                  exit 1
+              else
+                  error "Docker is not accessible."
                   exit 1
               fi
           fi
