@@ -199,7 +199,15 @@ jobs:
               if [ ! -f "$CLAUDE_CONFIG" ]; then
                   echo '{"mcpServers":{"pongogo-knowledge":{"command":"docker","args":["run","-i","--rm","-v","${workspaceFolder}/.pongogo:/project/.pongogo:ro","pongogo.azurecr.io/pongogo:stable"]}}}' > "$CLAUDE_CONFIG"
               else
-                  warn "Cannot modify existing config without Python. Please install Python 3."
+                  warn "Cannot auto-configure existing ~/.claude.json (Python 3 not found)."
+                  echo ""
+                  echo "Please manually add this to your ~/.claude.json mcpServers section:"
+                  echo ""
+                  echo '  "pongogo-knowledge": {'
+                  echo '    "command": "docker",'
+                  echo '    "args": ["run", "-i", "--rm", "-v", "\${workspaceFolder}/.pongogo:/project/.pongogo:ro", "pongogo.azurecr.io/pongogo:stable"]'
+                  echo '  }'
+                  echo ""
               fi
           fi
 
