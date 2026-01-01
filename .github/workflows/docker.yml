@@ -37,19 +37,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check if ACR push needed
-        id: acr-check
-        run: |
-          # Only push to ACR for main branch or stable semver tags (not beta)
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]] || [[ "${{ github.ref }}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "push_acr=true" >> $GITHUB_OUTPUT
-          else
-            echo "push_acr=false" >> $GITHUB_OUTPUT
-            echo "Skipping ACR push for ref: ${{ github.ref }}"
-          fi
-
       - name: Azure Login
-        if: steps.acr-check.outputs.push_acr == 'true'
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -57,7 +45,6 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Log in to ACR
-        if: steps.acr-check.outputs.push_acr == 'true'
         run: az acr login --name pongogo
 
       - name: Extract metadata
@@ -66,7 +53,7 @@ jobs:
         with:
           images: |
             ${{ env.GHCR_REGISTRY }}/${{ github.repository }}
-            ${{ steps.acr-check.outputs.push_acr == 'true' && format('{0}/{1}', env.ACR_REGISTRY, env.IMAGE_NAME) || '' }}
+            ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
