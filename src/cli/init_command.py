@@ -245,12 +245,12 @@ def init_command(
         )
     )
 
-    # Interactive mode: prompt for options
-    if not no_interactive and not minimal:
-        minimal = typer.confirm(
-            "Use minimal installation (core instructions only)?",
-            default=False,
-        )
+    # Interactive mode: confirm before proceeding
+    if not no_interactive:
+        if not typer.confirm("Continue with installation?", default=True):
+            console.print("[yellow]Installation cancelled.[/yellow]")
+            console.print("Run 'pongogo init --minimal' for a minimal installation.")
+            raise typer.Exit(0)
 
     # Check for wiki/docs folders and offer to create them
     # Philosophy: "red x's are scary" - show solutions alongside findings
