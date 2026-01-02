@@ -208,13 +208,36 @@ def init_command(
 
             shutil.rmtree(pongogo_dir)
 
+    # Detect existing knowledge folders BEFORE showing welcome
+    wiki_path, docs_path = detect_knowledge_folders(cwd)
+    missing_folders = []
+    if wiki_path is None:
+        missing_folders.append("wiki/")
+    if docs_path is None:
+        missing_folders.append("docs/")
+
+    # Build welcome message based on what exists
+    welcome_lines = [
+        "[bold blue]Pongogo[/bold blue] - AI agent knowledge routing\n",
+        "This will create:",
+        "  [cyan].pongogo/[/cyan]",
+        "    - config.yaml (configuration)",
+        "    - instructions/ (seeded instruction files)",
+    ]
+
+    if missing_folders:
+        welcome_lines.append("")
+        welcome_lines.append(
+            "[yellow]Pongogo uses wiki/ and docs/ folders to store knowledge.[/yellow]"
+        )
+        welcome_lines.append("Missing folders that will be created:")
+        for folder in missing_folders:
+            welcome_lines.append(f"  [cyan]{folder}[/cyan]")
+
     # Show welcome message
     console.print(
         Panel(
-            "[bold blue]Pongogo[/bold blue] - AI agent knowledge routing\n\n"
-            "This will create a .pongogo/ directory with:\n"
-            "  - config.yaml (configuration)\n"
-            "  - instructions/ (seeded instruction files)",
+            "\n".join(welcome_lines),
             title="Initializing Pongogo",
             border_style="blue",
         )
@@ -222,13 +245,11 @@ def init_command(
 
     # Interactive mode: confirm before proceeding
     if not no_interactive:
-        if not typer.confirm("Continue with installation?", default=True):
+        if not typer.confirm("Continue?", default=True):
             console.print("[yellow]Installation cancelled.[/yellow]")
-            console.print("Run 'pongogo init --minimal' for a minimal installation.")
             raise typer.Exit(0)
 
-    # Create wiki/docs folders if missing (needed for Pongogo)
-    wiki_path, docs_path = detect_knowledge_folders(cwd)
+    # Create wiki/docs folders if missing
     created_wiki, created_docs = create_knowledge_folders(cwd, wiki_path, docs_path)
 
     # Track created folders for config
