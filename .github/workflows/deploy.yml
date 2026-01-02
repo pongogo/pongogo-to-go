@@ -346,14 +346,26 @@ jobs:
           # Check if in a git repo and offer to init
           if git rev-parse --git-dir > /dev/null 2>&1; then
               echo "You're in a git repository: $(basename "$(pwd)")"
-              read -p "Would you like to initialize Pongogo here? [Y/n] " -n 1 -r < /dev/tty
-              echo ""
-              if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
-                  info "Initializing Pongogo..."
-                  "$PONGOGO_BIN/pongogo" init
-              else
+              if [ -d ".pongogo" ]; then
+                  read -p "Pongogo is already initialized. Reinitialize? [y/N] " -n 1 -r < /dev/tty
                   echo ""
-                  echo "Run 'pongogo init' when you're ready."
+                  if [[ $REPLY =~ ^[Yy]$ ]]; then
+                      info "Reinitializing Pongogo..."
+                      "$PONGOGO_BIN/pongogo" init --force
+                  else
+                      echo ""
+                      info "Keeping existing .pongogo/ configuration."
+                  fi
+              else
+                  read -p "Would you like to initialize Pongogo here? [Y/n] " -n 1 -r < /dev/tty
+                  echo ""
+                  if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+                      info "Initializing Pongogo..."
+                      "$PONGOGO_BIN/pongogo" init
+                  else
+                      echo ""
+                      echo "Run 'pongogo init' when you're ready."
+                  fi
               fi
           else
               echo "Navigate to your project and run:"
