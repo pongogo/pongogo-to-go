@@ -314,7 +314,8 @@ jobs:
               echo ""
               if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
                   info "Initializing Pongogo..."
-                  "$PONGOGO_BIN/pongogo" init
+                  # Use -y for non-interactive since we already asked the user
+                  "$PONGOGO_BIN/pongogo" init -y
               else
                   echo ""
                   echo "Run 'pongogo init' when you're ready."
