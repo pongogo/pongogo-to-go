@@ -347,15 +347,9 @@ jobs:
           if git rev-parse --git-dir > /dev/null 2>&1; then
               echo "You're in a git repository: $(basename "$(pwd)")"
               if [ -d ".pongogo" ]; then
-                  read -p "Pongogo is already initialized. Reinitialize? [y/N] " -n 1 -r < /dev/tty
-                  echo ""
-                  if [[ $REPLY =~ ^[Yy]$ ]]; then
-                      info "Reinitializing Pongogo..."
-                      "$PONGOGO_BIN/pongogo" init --force
-                  else
-                      echo ""
-                      info "Keeping existing .pongogo/ configuration."
-                  fi
+                  # Already initialized - this is an upgrade, don't prompt
+                  info "Pongogo is already initialized in this repo."
+                  echo "  To reinitialize: pongogo init --force"
               else
                   read -p "Would you like to initialize Pongogo here? [Y/n] " -n 1 -r < /dev/tty
                   echo ""
