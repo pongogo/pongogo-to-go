@@ -1,5 +1,6 @@
 """The pongogo init command implementation."""
 
+import json
 from pathlib import Path
 
 import typer
@@ -315,6 +316,47 @@ def init_command(
     except Exception:
         pass  # Silently skip - discovery is optional enhancement
 
+    # Create Claude Code MCP config for this project
+    console.print("\n[bold]Configuring Claude Code MCP server...[/bold]")
+    claude_dir = cwd / ".claude"
+    claude_dir.mkdir(exist_ok=True)
+    mcp_config_path = claude_dir / "mcp.json"
+
+    # Use absolute path to .pongogo directory
+    pongogo_abs_path = str(pongogo_dir.resolve())
+    mcp_config = {
+        "mcpServers": {
+            "pongogo-knowledge": {
+                "command": "docker",
+                "args": [
+                    "run",
+                    "-i",
+                    "--rm",
+                    "-v",
+                    f"{pongogo_abs_path}:/project/.pongogo:ro",
+                    "pongogo.azurecr.io/pongogo:stable",
+                ],
+            }
+        }
+    }
+
+    # Write or merge MCP config
+    if mcp_config_path.exists():
+        try:
+            existing = json.loads(mcp_config_path.read_text())
+            existing.setdefault("mcpServers", {})
+            existing["mcpServers"]["pongogo-knowledge"] = mcp_config["mcpServers"][
+                "pongogo-knowledge"
+            ]
+            mcp_config_path.write_text(json.dumps(existing, indent=2) + "\n")
+            console.print("  [green]Updated[/green] .claude/mcp.json")
+        except (json.JSONDecodeError, KeyError):
+            mcp_config_path.write_text(json.dumps(mcp_config, indent=2) + "\n")
+            console.print("  [green]Created[/green] .claude/mcp.json")
+    else:
+        mcp_config_path.write_text(json.dumps(mcp_config, indent=2) + "\n")
+        console.print("  [green]Created[/green] .claude/mcp.json")
+
     # Get repo name from current directory
     repo_name = cwd.name
 
@@ -326,6 +368,11 @@ def init_command(
         f"  - {CONFIG_FILE} [dim](auto-configured, no edits needed)[/dim]"
     )
     created_lines.append(f"  - {INSTRUCTIONS_DIR}/ ({files_copied} files)")
+    created_lines.append("")
+    created_lines.append("Created: .claude/")
+    created_lines.append(
+        "  - mcp.json [dim](MCP server config for Claude Code)[/dim]"
+    )
 
     if created_wiki or created_docs:
         created_lines.append("")

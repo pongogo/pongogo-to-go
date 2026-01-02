@@ -208,43 +208,6 @@ jobs:
           info "Pulling Pongogo Docker image..."
           docker pull pongogo.azurecr.io/pongogo:stable
 
-          # Configure Claude Code
-          CLAUDE_CONFIG="$HOME/.claude.json"
-          info "Configuring Claude Code..."
-
-          if [ -f "$CLAUDE_CONFIG" ]; then
-              cp "$CLAUDE_CONFIG" "$CLAUDE_CONFIG.backup_$(date +%Y%m%d_%H%M%S)"
-          fi
-
-          # Configure Claude Code using Python (or bash fallback)
-          if command -v python3 &> /dev/null; then
-              python3 -c "
-          import json, sys
-          p = sys.argv[1]
-          try:
-              c = json.load(open(p))
-          except:
-              c = {}
-          c.setdefault('mcpServers', {})['pongogo-knowledge'] = {'command': 'docker', 'args': ['run', '-i', '--rm', '-v', '\${workspaceFolder}/.pongogo:/project/.pongogo:ro', 'pongogo.azurecr.io/pongogo:stable']}
-          json.dump(c, open(p, 'w'), indent=2)
-          " "$CLAUDE_CONFIG"
-          else
-              # Fallback if Python not available - create new config only
-              if [ ! -f "$CLAUDE_CONFIG" ]; then
-                  echo '{"mcpServers":{"pongogo-knowledge":{"command":"docker","args":["run","-i","--rm","-v","${workspaceFolder}/.pongogo:/project/.pongogo:ro","pongogo.azurecr.io/pongogo:stable"]}}}' > "$CLAUDE_CONFIG"
-              else
-                  warn "Cannot auto-configure existing ~/.claude.json (Python 3 not found)."
-                  echo ""
-                  echo "Please manually add this to your ~/.claude.json mcpServers section:"
-                  echo ""
-                  echo '  "pongogo-knowledge": {'
-                  echo '    "command": "docker",'
-                  echo '    "args": ["run", "-i", "--rm", "-v", "\${workspaceFolder}/.pongogo:/project/.pongogo:ro", "pongogo.azurecr.io/pongogo:stable"]'
-                  echo '  }'
-                  echo ""
-              fi
-          fi
-
           # Install pongogo CLI wrapper
           PONGOGO_BIN="$HOME/.local/bin"
           mkdir -p "$PONGOGO_BIN"
