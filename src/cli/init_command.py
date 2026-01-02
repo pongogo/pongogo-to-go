@@ -221,7 +221,7 @@ def init_command(
         "[bold blue]Pongogo[/bold blue] - AI agent knowledge routing\n",
         "This will create:",
         "  [cyan].pongogo/[/cyan]",
-        "    - config.yaml (configuration)",
+        "    - config.yaml [dim](auto-configured, no edits needed)[/dim]",
         "    - instructions/ (seeded instruction files)",
     ]
 
