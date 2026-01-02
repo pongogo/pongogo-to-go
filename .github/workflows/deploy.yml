@@ -216,8 +216,80 @@ jobs:
           mkdir -p "$PONGOGO_BIN"
           cat > "$PONGOGO_BIN/pongogo" << 'PONGOGO_CLI'
           #!/bin/bash
-          # Use --entrypoint to run pongogo CLI (not pongogo-server which is the default)
-          docker run --rm -v "$(pwd)":/project -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
+          # Pongogo CLI wrapper - runs commands in Docker container
+          # Special commands (uninstall, help) run on host
+
+          case "$1" in
+            uninstall)
+              echo "🦧 Pongogo Uninstaller"
+              echo "====================="
+              echo ""
+
+              # Remove CLI wrapper
+              if [ -f "$HOME/.local/bin/pongogo" ]; then
+                rm "$HOME/.local/bin/pongogo"
+                echo "✓ Removed ~/.local/bin/pongogo"
+              fi
+
+              # Remove MCP config from Claude Code
+              CLAUDE_CONFIG="$HOME/.claude.json"
+              if [ -f "$CLAUDE_CONFIG" ] && command -v python3 &> /dev/null; then
+                python3 -c "
+          import json, sys
+          p = sys.argv[1]
+          try:
+              c = json.load(open(p))
+              if 'mcpServers' in c and 'pongogo-knowledge' in c['mcpServers']:
+                  del c['mcpServers']['pongogo-knowledge']
+                  json.dump(c, open(p, 'w'), indent=2)
+                  print('✓ Removed pongogo-knowledge from ~/.claude.json')
+              else:
+                  print('✓ No pongogo-knowledge config found in ~/.claude.json')
+          except Exception as e:
+              print(f'⚠ Could not modify ~/.claude.json: {e}')
+          " "$CLAUDE_CONFIG"
+              elif [ -f "$CLAUDE_CONFIG" ]; then
+                echo "⚠ Cannot auto-remove from ~/.claude.json (Python 3 not found)"
+                echo "  Manually remove 'pongogo-knowledge' from mcpServers in ~/.claude.json"
+              fi
+
+              # Offer to remove Docker image
+              if docker image inspect pongogo.azurecr.io/pongogo:stable &> /dev/null 2>&1; then
+                echo ""
+                read -p "Remove Docker image? [y/N] " -n 1 -r
+                echo ""
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                  docker rmi pongogo.azurecr.io/pongogo:stable
+                  echo "✓ Removed Docker image"
+                fi
+              fi
+
+              echo ""
+              echo "Pongogo uninstalled. Restart Claude Code to complete."
+              ;;
+
+            --help|-h|help)
+              echo "🦧 Pongogo - AI agent knowledge routing"
+              echo ""
+              echo "Usage: pongogo <command> [options]"
+              echo ""
+              echo "Commands:"
+              echo "  init          Initialize Pongogo in current directory"
+              echo "  setup-mcp     Configure Claude Code MCP server"
+              echo "  uninstall     Remove Pongogo from this machine"
+              echo "  --help        Show this help message"
+              echo ""
+              echo "Examples:"
+              echo "  pongogo init              # Initialize in current repo"
+              echo "  pongogo init --minimal    # Minimal installation"
+              echo "  pongogo uninstall         # Remove Pongogo"
+              ;;
+
+            *)
+              # All other commands run in Docker container
+              docker run --rm -v "$(pwd)":/project -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
+              ;;
+          esac
           PONGOGO_CLI
           chmod +x "$PONGOGO_BIN/pongogo"
 
