@@ -78,6 +78,9 @@ def create_knowledge_folders(
 
     Returns:
         Tuple of (created_wiki_path, created_docs_path)
+
+    Raises:
+        PermissionError: If unable to create folders (with helpful message)
     """
     created_wiki = None
     created_docs = None
@@ -85,7 +88,28 @@ def create_knowledge_folders(
     # Create wiki if missing
     if wiki_path is None:
         created_wiki = cwd / "wiki"
-        created_wiki.mkdir(exist_ok=True)
+        try:
+            created_wiki.mkdir(exist_ok=True)
+        except PermissionError:
+            console.print(
+                "\n[red]Error:[/red] Permission denied creating wiki/ folder.",
+                style="bold",
+            )
+            console.print(
+                "\n[yellow]This is likely a Docker volume permission issue.[/yellow]"
+            )
+            console.print("\nPossible fixes:")
+            console.print(
+                "  1. Check directory permissions: [cyan]ls -la $(pwd)[/cyan]"
+            )
+            console.print(
+                "  2. On SELinux systems (Fedora/RHEL), try: [cyan]sudo chcon -Rt svirt_sandbox_file_t $(pwd)[/cyan]"
+            )
+            console.print("  3. Run with sudo: [cyan]sudo pongogo init[/cyan]")
+            console.print(
+                "\nFor more help, see: https://github.com/pongogo/pongogo-to-go/issues"
+            )
+            raise
         console.print("  [green]Created[/green] wiki/")
 
         # Create a starter file
@@ -102,7 +126,28 @@ def create_knowledge_folders(
     # Create docs if missing
     if docs_path is None:
         created_docs = cwd / "docs"
-        created_docs.mkdir(exist_ok=True)
+        try:
+            created_docs.mkdir(exist_ok=True)
+        except PermissionError:
+            console.print(
+                "\n[red]Error:[/red] Permission denied creating docs/ folder.",
+                style="bold",
+            )
+            console.print(
+                "\n[yellow]This is likely a Docker volume permission issue.[/yellow]"
+            )
+            console.print("\nPossible fixes:")
+            console.print(
+                "  1. Check directory permissions: [cyan]ls -la $(pwd)[/cyan]"
+            )
+            console.print(
+                "  2. On SELinux systems (Fedora/RHEL), try: [cyan]sudo chcon -Rt svirt_sandbox_file_t $(pwd)[/cyan]"
+            )
+            console.print("  3. Run with sudo: [cyan]sudo pongogo init[/cyan]")
+            console.print(
+                "\nFor more help, see: https://github.com/pongogo/pongogo-to-go/issues"
+            )
+            raise
         console.print("  [green]Created[/green] docs/")
 
         # Create a starter README
