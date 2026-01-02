@@ -291,8 +291,16 @@ def init_command(
     # Copy manifest
     copy_manifest(source_dir, dest_instructions_dir)
 
-    console.print(f"  [green]Copied[/green] {files_copied} instruction files")
-    console.print(f"  [green]Categories:[/green] {', '.join(enabled_categories)}")
+    console.print(f"  [green]Seeded[/green] {files_copied} instruction files")
+    console.print(
+        "  [dim]Covers: engineering, project management, agentic workflows,[/dim]"
+    )
+    console.print(
+        "  [dim]architecture, quality, security, testing, DevOps, and more.[/dim]"
+    )
+    console.print(
+        "  [dim]These instructions evolve and adapt organically through usage.[/dim]"
+    )
 
     # Scan repository for existing knowledge patterns
     console.print("\n[bold]Discovering repository knowledge...[/bold]")
@@ -303,30 +311,46 @@ def init_command(
         scan_result = ds.scan_repository()
         discovery_summary = ds.format_scan_summary(scan_result)
         console.print(discovery_summary)
-    except Exception as e:
-        console.print(f"  [yellow]Warning:[/yellow] Discovery scan failed: {e}")
-        console.print("  [dim]You can run 'pongogo discoveries rescan' later[/dim]")
+    except Exception:
+        console.print("  [dim]Skipped (optional feature)[/dim]")
 
-    # Build success message with created folders
-    created_items = [
-        f"  - {CONFIG_FILE}",
-        f"  - {INSTRUCTIONS_DIR}/ ({files_copied} files)",
-    ]
-    if created_wiki:
-        created_items.append("  - wiki/ (new)")
-    if created_docs:
-        created_items.append("  - docs/ (new)")
+    # Get repo name from current directory
+    repo_name = cwd.name
+
+    # Build success message with created folders and their purposes
+    created_lines = [f"[green]Pongogo is now initialized in {repo_name}![/green]\n"]
+
+    created_lines.append(f"Created: {PONGOGO_DIR}/")
+    created_lines.append(
+        f"  - {CONFIG_FILE} [dim](auto-configured, no edits needed)[/dim]"
+    )
+    created_lines.append(f"  - {INSTRUCTIONS_DIR}/ ({files_copied} files)")
+
+    if created_wiki or created_docs:
+        created_lines.append("")
+        if created_wiki:
+            created_lines.append(
+                "  - [cyan]wiki/[/cyan] - Knowledge repository for institutional learnings"
+            )
+        if created_docs:
+            created_lines.append(
+                "  - [cyan]docs/[/cyan] - Information to help developers and agents "
+                "work effectively"
+            )
+
+    created_lines.append("")
+    created_lines.append(
+        "[dim]Next:[/dim] Restart Claude Code and run [cyan]/mcp[/cyan] to verify "
+        "Pongogo is connected."
+    )
+    created_lines.append("")
+    created_lines.append("[dim]Learn more:[/dim] https://pongogo.com")
 
     # Success message
     console.print(
         Panel(
-            f"[green]Pongogo initialized successfully![/green]\n\n"
-            f"Created: {PONGOGO_DIR}/\n" + "\n".join(created_items) + "\n\n"
-            "[dim]Next steps:[/dim]\n"
-            "  1. Review and customize .pongogo/config.yaml\n"
-            "  2. Configure MCP server for Claude Code integration\n"
-            "  3. See https://github.com/pongogo/pongogo-to-go for documentation",
-            title="Success",
+            "\n".join(created_lines),
+            title="Ready",
             border_style="green",
         )
     )
