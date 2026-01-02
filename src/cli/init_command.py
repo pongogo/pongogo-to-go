@@ -22,8 +22,8 @@ def get_discovery_system():
     import sys
     from pathlib import Path
 
-    # Add mcp-server to path if needed
-    mcp_server_path = Path(__file__).parent.parent / "mcp-server"
+    # Add mcp_server to path if needed
+    mcp_server_path = Path(__file__).parent.parent / "mcp_server"
     if str(mcp_server_path) not in sys.path:
         sys.path.insert(0, str(mcp_server_path))
     from discovery_system import DiscoverySystem
@@ -308,7 +308,7 @@ def init_command(
         ds = DiscoverySystem(cwd)
         scan_result = ds.scan_repository()
         # Only show discovery section if we found something interesting
-        if scan_result and getattr(scan_result, "has_findings", False):
+        if scan_result and scan_result.total_discoveries > 0:
             console.print("\n[bold]Discovered repository knowledge:[/bold]")
             discovery_summary = ds.format_scan_summary(scan_result)
             console.print(discovery_summary)
