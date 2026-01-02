@@ -365,9 +365,6 @@ jobs:
               echo "Navigate to your project and run:"
               echo "  pongogo init"
           fi
-
-          echo ""
-          echo "Then restart any running Claude Code sessions to activate the MCP server."
           SCRIPT
 
           chmod +x deploy/install.sh
