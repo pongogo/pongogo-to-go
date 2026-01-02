@@ -370,9 +370,7 @@ def init_command(
     created_lines.append(f"  - {INSTRUCTIONS_DIR}/ ({files_copied} files)")
     created_lines.append("")
     created_lines.append("Created: .claude/")
-    created_lines.append(
-        "  - mcp.json [dim](MCP server config for Claude Code)[/dim]"
-    )
+    created_lines.append("  - mcp.json [dim](MCP server config for Claude Code)[/dim]")
 
     if created_wiki or created_docs:
         created_lines.append("")
