@@ -288,11 +288,11 @@ jobs:
             *)
               # All other commands run in Docker container
               # Use --user to match host user so created files have correct ownership
-              # Use -it for interactive TTY if available, otherwise just -i
-              if [ -t 0 ] && [ -t 1 ]; then
-                docker run -it --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/project -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
+              # Redirect from /dev/tty for interactive input (works with curl|bash)
+              if [ -t 1 ] && [ -e /dev/tty ]; then
+                docker run -it --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/project -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@" < /dev/tty
               else
-                docker run -i --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/project -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
+                docker run --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/project -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
               fi
               ;;
           esac
@@ -315,8 +315,7 @@ jobs:
               echo ""
               if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
                   info "Initializing Pongogo..."
-                  # Use -y for non-interactive since we already asked the user
-                  "$PONGOGO_BIN/pongogo" init -y
+                  "$PONGOGO_BIN/pongogo" init
               else
                   echo ""
                   echo "Run 'pongogo init' when you're ready."
