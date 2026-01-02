@@ -216,7 +216,8 @@ jobs:
           mkdir -p "$PONGOGO_BIN"
           cat > "$PONGOGO_BIN/pongogo" << 'PONGOGO_CLI'
           #!/bin/bash
-          docker run --rm -v "$(pwd)":/project -w /project pongogo.azurecr.io/pongogo:stable "$@"
+          # Use --entrypoint to run pongogo CLI (not pongogo-server which is the default)
+          docker run --rm -v "$(pwd)":/project -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
           PONGOGO_CLI
           chmod +x "$PONGOGO_BIN/pongogo"
 
