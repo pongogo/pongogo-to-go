@@ -302,17 +302,18 @@ def init_command(
         "  [dim]These instructions evolve and adapt organically through usage.[/dim]"
     )
 
-    # Scan repository for existing knowledge patterns
-    console.print("\n[bold]Discovering repository knowledge...[/bold]")
-    discovery_summary = None
+    # Scan repository for existing knowledge patterns (silently skip if nothing found)
     try:
         DiscoverySystem = get_discovery_system()
         ds = DiscoverySystem(cwd)
         scan_result = ds.scan_repository()
-        discovery_summary = ds.format_scan_summary(scan_result)
-        console.print(discovery_summary)
+        # Only show discovery section if we found something interesting
+        if scan_result and getattr(scan_result, "has_findings", False):
+            console.print("\n[bold]Discovered repository knowledge:[/bold]")
+            discovery_summary = ds.format_scan_summary(scan_result)
+            console.print(discovery_summary)
     except Exception:
-        console.print("  [dim]Skipped (optional feature)[/dim]")
+        pass  # Silently skip - discovery is optional enhancement
 
     # Get repo name from current directory
     repo_name = cwd.name
