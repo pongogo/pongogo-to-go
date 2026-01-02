@@ -287,11 +287,12 @@ jobs:
 
             *)
               # All other commands run in Docker container
+              # Use --user to match host user so created files have correct ownership
               # Use -it for interactive TTY if available, otherwise just -i
               if [ -t 0 ] && [ -t 1 ]; then
-                docker run -it --rm -v "$(pwd)":/project -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
+                docker run -it --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/project -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
               else
-                docker run -i --rm -v "$(pwd)":/project -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
+                docker run -i --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/project -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
               fi
               ;;
           esac
