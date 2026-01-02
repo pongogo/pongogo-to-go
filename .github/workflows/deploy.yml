@@ -265,7 +265,7 @@ jobs:
               fi
 
               echo ""
-              echo "Pongogo uninstalled. Restart Claude Code to complete."
+              echo "Pongogo uninstalled. Restart any running Claude Code sessions to complete."
               ;;
 
             --help|-h|help)
@@ -326,7 +326,7 @@ jobs:
           fi
 
           echo ""
-          echo "Then restart Claude Code to activate the MCP server."
+          echo "Then restart any running Claude Code sessions to activate the MCP server."
           SCRIPT
 
           chmod +x deploy/install.sh
