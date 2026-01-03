@@ -18,6 +18,7 @@ RUN apt-get update && \
 COPY pyproject.toml README.md ./
 COPY src/ ./src/
 COPY instructions/ ./instructions/
+COPY .claude/ ./.claude/
 
 # Install package with dependencies
 RUN pip install --no-cache-dir -e .
