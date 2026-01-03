@@ -30,9 +30,6 @@ uname -s -m
 
 # Docker version
 docker --version 2>/dev/null || echo "Docker not found"
-
-# Check if running in container
-if [ -f /.dockerenv ]; then echo "Running in Docker"; fi
 ```
 
 #### 2. Configuration Validation
@@ -63,7 +60,17 @@ timeout 5 docker run --rm pongogo.azurecr.io/pongogo:stable --version 2>/dev/nul
 
 #### 4. MCP Server Connection
 
-Use MCP tools to verify connection:
+Use MCP tools to verify connection and get version info:
+
+**Get routing engine version**:
+- Call `switch_engine()` (no arguments) via MCP
+- Extract `current` engine from response (e.g., "durian-0.6")
+
+**Get pongogo package version**:
+- Call `upgrade_pongogo()` via MCP
+- Extract `current_version` from response
+
+**Test routing**:
 - [ ] Call `route_instructions` with test query "how do I commit code?"
 - [ ] Verify returns > 0 results
 - [ ] Record response time
@@ -93,7 +100,8 @@ Generate a copyable diagnostic report:
 ## Pongogo Diagnostic Report
 
 **Generated**: [timestamp]
-**Version**: [from config or container]
+**Pongogo Version**: [from upgrade_pongogo MCP tool]
+**Routing Engine**: [from switch_engine MCP tool, e.g., durian-0.6]
 
 ### Environment
 - **OS**: [uname output]
@@ -105,10 +113,9 @@ Generate a copyable diagnostic report:
 - **Instructions**: [count] files in [count] categories
 - **MCP config**: ✅ Valid / ❌ Missing / ⚠️ Invalid
 
-### Container
+### Docker Container
 - **Image**: [tag] ([age])
-- **Status**: ✅ Running / ❌ Not running / ⚠️ Error
-- **Health**: [health check result]
+- **Status**: ✅ Running / ❌ Not found / ⚠️ Error
 
 ### Routing Tests
 | Query | Result | Time |

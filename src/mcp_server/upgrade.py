@@ -67,9 +67,24 @@ def detect_install_method() -> InstallMethod:
 
 
 def get_current_version() -> str:
-    """Get currently installed Pongogo version."""
+    """Get currently installed Pongogo version.
+
+    Version detection order:
+    1. PONGOGO_VERSION environment variable (set in Docker images)
+    2. Package __version__ (fallback for development)
+
+    Returns:
+        Version string (e.g., "0.1.16", "vbeta-20260102-abc123")
+    """
+    import os
+
+    # Docker images set PONGOGO_VERSION during build
+    env_version = os.environ.get("PONGOGO_VERSION")
+    if env_version:
+        return env_version
+
     try:
-        # Try importing version from package
+        # Fallback to package version for development
         from mcp_server import __version__
 
         return __version__

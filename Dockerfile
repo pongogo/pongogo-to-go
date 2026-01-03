@@ -5,6 +5,9 @@
 
 FROM python:3.11-slim
 
+# Build arguments for version injection
+ARG PONGOGO_VERSION=dev
+
 # Set working directory
 WORKDIR /app
 
@@ -32,6 +35,8 @@ RUN mkdir -p /project/.pongogo/instructions && \
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
+# Persist version from build arg into runtime
+ENV PONGOGO_VERSION=${PONGOGO_VERSION}
 # Default to project's local instructions (mounted at runtime)
 ENV PONGOGO_KNOWLEDGE_PATH=/project/.pongogo/instructions
 

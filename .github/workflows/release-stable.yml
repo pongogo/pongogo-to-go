@@ -177,6 +177,8 @@ jobs:
             pongogo.azurecr.io/pongogo:v${{ inputs.version }}
             pongogo.azurecr.io/pongogo:stable
             pongogo.azurecr.io/pongogo:latest
+          build-args: |
+            PONGOGO_VERSION=${{ inputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
