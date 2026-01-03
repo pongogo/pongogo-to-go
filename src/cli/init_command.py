@@ -359,10 +359,9 @@ def init_command(
         pass  # Silently skip - discovery is optional enhancement
 
     # Create Claude Code MCP config for this project
+    # Official location is .mcp.json at project root (not .claude/mcp.json)
     console.print("\n[bold]Configuring Claude Code MCP server...[/bold]")
-    claude_dir = cwd / ".claude"
-    claude_dir.mkdir(exist_ok=True)
-    mcp_config_path = claude_dir / "mcp.json"
+    mcp_config_path = cwd / ".mcp.json"
 
     # Use HOST path for Docker volume mount (not container path)
     # When running in Docker, HOST_PROJECT_DIR contains the actual host path
@@ -397,13 +396,13 @@ def init_command(
                 "pongogo-knowledge"
             ]
             mcp_config_path.write_text(json.dumps(existing, indent=2) + "\n")
-            console.print("  [green]Updated[/green] .claude/mcp.json")
+            console.print("  [green]Updated[/green] .mcp.json")
         except (json.JSONDecodeError, KeyError):
             mcp_config_path.write_text(json.dumps(mcp_config, indent=2) + "\n")
-            console.print("  [green]Created[/green] .claude/mcp.json")
+            console.print("  [green]Created[/green] .mcp.json")
     else:
         mcp_config_path.write_text(json.dumps(mcp_config, indent=2) + "\n")
-        console.print("  [green]Created[/green] .claude/mcp.json")
+        console.print("  [green]Created[/green] .mcp.json")
 
     # Get repo name from current directory
     repo_name = cwd.name
@@ -417,8 +416,7 @@ def init_command(
     )
     created_lines.append(f"  - {INSTRUCTIONS_DIR}/ ({files_copied} files)")
     created_lines.append("")
-    created_lines.append("Created: .claude/")
-    created_lines.append("  - mcp.json [dim](MCP server config for Claude Code)[/dim]")
+    created_lines.append("Created: .mcp.json [dim](MCP server config for Claude Code)[/dim]")
 
     if created_wiki or created_docs:
         created_lines.append("")
