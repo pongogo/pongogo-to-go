@@ -33,6 +33,7 @@ from .config import generate_config, write_config
 from .instructions import (
     copy_instructions,
     copy_manifest,
+    copy_slash_commands,
     get_enabled_categories,
     get_package_instructions_dir,
     load_manifest,
@@ -346,6 +347,18 @@ def init_command(
         "  [dim]These instructions evolve and adapt organically through usage.[/dim]"
     )
 
+    # Copy slash commands to .claude/commands/
+    console.print("\n[bold]Installing slash commands...[/bold]")
+    claude_commands_dir = cwd / ".claude" / "commands"
+    commands_copied = copy_slash_commands(claude_commands_dir)
+    if commands_copied > 0:
+        console.print(f"  [green]Installed[/green] {commands_copied} slash commands")
+        console.print(
+            "  [dim]Use /pongogo-status, /pongogo-retro, /pongogo-log, and more.[/dim]"
+        )
+    else:
+        console.print("  [yellow]No slash commands found in package[/yellow]")
+
     # Scan repository for existing knowledge patterns (silently skip if nothing found)
     try:
         DiscoverySystem = get_discovery_system()
@@ -421,6 +434,12 @@ def init_command(
         "Created: .mcp.json [dim](MCP server config for Claude Code)[/dim]"
     )
 
+    if commands_copied > 0:
+        created_lines.append("")
+        created_lines.append(
+            f"Created: .claude/commands/ ({commands_copied} slash commands)"
+        )
+
     if created_wiki or created_docs:
         created_lines.append("")
         if created_wiki:
@@ -435,8 +454,11 @@ def init_command(
 
     created_lines.append("")
     created_lines.append(
-        "[dim]Next:[/dim] Restart Claude Code and run [cyan]/mcp[/cyan] to verify "
-        "Pongogo is connected."
+        "[dim]Next:[/dim] Restart Claude Code. When prompted, allow the "
+        "[cyan]pongogo-knowledge[/cyan] MCP server."
+    )
+    created_lines.append(
+        "[dim]      Run [cyan]/pongogo-getting-started[/cyan] for an interactive guide.[/dim]"
     )
     created_lines.append("")
     created_lines.append("[dim]Learn more:[/dim] https://pongogo.com")

@@ -178,3 +178,39 @@ def copy_manifest(source_dir: Path, dest_dir: Path) -> None:
 
     if source_manifest.exists():
         shutil.copy2(source_manifest, dest_manifest)
+
+
+def get_package_commands_dir() -> Path | None:
+    """Get the path to bundled slash commands directory.
+
+    Returns:
+        Path to .claude/commands directory within the package, or None if not found
+    """
+    package_root = Path(__file__).parent.parent.parent
+    commands_dir = package_root / ".claude" / "commands"
+
+    return commands_dir if commands_dir.exists() else None
+
+
+def copy_slash_commands(dest_dir: Path) -> int:
+    """Copy slash commands to user's .claude/commands directory.
+
+    Args:
+        dest_dir: Destination .claude/commands directory
+
+    Returns:
+        Number of command files copied
+    """
+    source_dir = get_package_commands_dir()
+    if source_dir is None:
+        return 0
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    files_copied = 0
+    for source_file in source_dir.glob("*.md"):
+        dest_file = dest_dir / source_file.name
+        shutil.copy2(source_file, dest_file)
+        files_copied += 1
+
+    return files_copied
