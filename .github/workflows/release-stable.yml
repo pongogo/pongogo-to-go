@@ -43,6 +43,30 @@ jobs:
             exit 1
           fi
 
+      - name: Verify CI passed for beta tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get the commit SHA for the beta tag
+          COMMIT_SHA=$(git rev-parse "${{ inputs.beta_tag }}")
+          echo "Checking CI status for commit: $COMMIT_SHA"
+
+          # Check if CI workflow succeeded for this commit
+          CI_STATUS=$(gh api repos/${{ github.repository }}/actions/runs \
+            --jq ".workflow_runs[] | select(.head_sha == \"$COMMIT_SHA\" and .name == \"CI\") | .conclusion" \
+            | head -1)
+
+          if [ "$CI_STATUS" != "success" ]; then
+            echo "Error: CI did not pass for ${{ inputs.beta_tag }}"
+            echo "CI status: ${CI_STATUS:-not found}"
+            echo ""
+            echo "Please ensure CI passes before creating a stable release."
+            echo "Check: https://github.com/${{ github.repository }}/actions?query=branch%3Amain"
+            exit 1
+          fi
+
+          echo "✓ CI passed for ${{ inputs.beta_tag }}"
+
   stable-release:
     name: Create Stable Release
     needs: validate
