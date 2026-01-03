@@ -1,6 +1,7 @@
 """The pongogo init command implementation."""
 
 import json
+import os
 from pathlib import Path
 
 import typer
@@ -322,8 +323,14 @@ def init_command(
     claude_dir.mkdir(exist_ok=True)
     mcp_config_path = claude_dir / "mcp.json"
 
-    # Use absolute path to .pongogo directory
-    pongogo_abs_path = str(pongogo_dir.resolve())
+    # Use HOST path for Docker volume mount (not container path)
+    # When running in Docker, HOST_PROJECT_DIR contains the actual host path
+    # When running natively, fall back to resolved path
+    host_project_dir = os.environ.get("HOST_PROJECT_DIR")
+    if host_project_dir:
+        pongogo_abs_path = f"{host_project_dir}/.pongogo"
+    else:
+        pongogo_abs_path = str(pongogo_dir.resolve())
     mcp_config = {
         "mcpServers": {
             "pongogo-knowledge": {

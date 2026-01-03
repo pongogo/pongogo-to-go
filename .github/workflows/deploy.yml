@@ -286,11 +286,12 @@ jobs:
               # All other commands run in Docker container
               # Use --user to match host user so created files have correct ownership
               # Use :z suffix for SELinux compatibility (Fedora, RHEL, CentOS)
+              # Pass HOST_PROJECT_DIR so init can create correct MCP config paths
               # Redirect from /dev/tty for interactive input (works with curl|bash)
               if [ -t 1 ] && [ -e /dev/tty ]; then
-                docker run -it --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/project:z -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@" < /dev/tty
+                docker run -it --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/project:z -w /project -e HOST_PROJECT_DIR="$(pwd)" --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@" < /dev/tty
               else
-                docker run --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/project:z -w /project --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
+                docker run --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/project:z -w /project -e HOST_PROJECT_DIR="$(pwd)" --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
               fi
               ;;
           esac
