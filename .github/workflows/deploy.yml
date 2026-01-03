@@ -72,13 +72,19 @@ jobs:
           set -e
 
           # Colors (only if terminal supports it)
+          # Aligned with Pongogo style guide: canopy (success), durian (warning),
+          # racer (error), mist (info), orang (brand). Using bold variants for
+          # legibility on both light and dark terminal backgrounds.
           if [ -t 1 ]; then
-              GREEN='\033[0;32m'
-              YELLOW='\033[1;33m'
-              RED='\033[0;31m'
+              GREEN='\033[1;32m'   # canopy - success
+              YELLOW='\033[1;33m'  # durian - warning
+              RED='\033[1;31m'     # racer - error
+              CYAN='\033[1;36m'    # mist - info
+              ORANGE='\033[38;5;208m'  # orang - brand (256-color)
+              BOLD='\033[1m'
               NC='\033[0m'
           else
-              GREEN='' YELLOW='' RED='' NC=''
+              GREEN='' YELLOW='' RED='' CYAN='' ORANGE='' BOLD='' NC=''
           fi
 
           info() { echo -e "${GREEN}✓${NC} $1"; }
@@ -98,18 +104,17 @@ jobs:
               IS_LINUX=true
           fi
 
-          # ASCII art header
+          # ASCII art header (brand orange)
           printf '\n'
+          printf "${ORANGE}"
           printf '     ___  ____  _  ___________  _________\n'
           printf '    / _ \\/ __ \\/ |/ / ___/ __ \\/ ___/ __ \\\n'
           printf '   / ___/ /_/ /    / (_ / /_/ / (_ / /_/ /\n'
           printf '  /_/   \\____/_/|_/\\___/\\____/\\___/\\____/\n'
-          printf '\n'
-          printf '%s\n' '                       ~ Go, Pon-go-go! ~'
-          printf '\n'
-          echo "                     Version: $PONGOGO_VERSION"
+          printf "${NC}\n"
+          printf '  %s               %s~ Go, Pon-go-go! ~%s\n' "$PONGOGO_VERSION" "$BOLD" "$NC"
           if $IS_WSL; then
-              echo "                        (WSL detected)"
+              printf '  %s(WSL detected)%s\n' "$CYAN" "$NC"
           fi
           printf '\n'
 
