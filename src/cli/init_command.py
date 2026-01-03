@@ -28,6 +28,7 @@ def get_git_root(cwd: Path) -> Path | None:
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
 
+
 from .config import generate_config, write_config
 from .instructions import (
     copy_instructions,
