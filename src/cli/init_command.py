@@ -2,11 +2,31 @@
 
 import json
 import os
+import subprocess
 from pathlib import Path
 
 import typer
 from rich.console import Console
 from rich.panel import Panel
+
+
+def get_git_root(cwd: Path) -> Path | None:
+    """Find the root of the git repository.
+
+    Returns:
+        Path to git root, or None if not in a git repository.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return Path(result.stdout.strip())
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
 
 from .config import generate_config, write_config
 from .instructions import (
@@ -44,8 +64,17 @@ WIKI_FOLDER_NAMES = ["wiki", "Wiki", ".wiki"]
 DOCS_FOLDER_NAMES = ["docs", "Docs", "documentation", "Documentation"]
 
 
-def detect_knowledge_folders(cwd: Path) -> tuple[Path | None, Path | None]:
+def detect_knowledge_folders(
+    cwd: Path, git_root: Path | None = None
+) -> tuple[Path | None, Path | None]:
     """Detect existing wiki and docs folders in the project.
+
+    Searches both cwd and git root (if different) to find existing folders.
+    This prevents creating duplicate wiki/docs when running from a subdirectory.
+
+    Args:
+        cwd: Current working directory
+        git_root: Git repository root (if in a git repo)
 
     Returns:
         Tuple of (wiki_path, docs_path) - each is None if not found.
@@ -53,17 +82,25 @@ def detect_knowledge_folders(cwd: Path) -> tuple[Path | None, Path | None]:
     wiki_path = None
     docs_path = None
 
-    for name in WIKI_FOLDER_NAMES:
-        candidate = cwd / name
-        if candidate.is_dir():
-            wiki_path = candidate
-            break
+    # Search locations: cwd first, then git root if different
+    search_locations = [cwd]
+    if git_root and git_root != cwd:
+        search_locations.append(git_root)
 
-    for name in DOCS_FOLDER_NAMES:
-        candidate = cwd / name
-        if candidate.is_dir():
-            docs_path = candidate
-            break
+    for location in search_locations:
+        if wiki_path is None:
+            for name in WIKI_FOLDER_NAMES:
+                candidate = location / name
+                if candidate.is_dir():
+                    wiki_path = candidate
+                    break
+
+        if docs_path is None:
+            for name in DOCS_FOLDER_NAMES:
+                candidate = location / name
+                if candidate.is_dir():
+                    docs_path = candidate
+                    break
 
     return wiki_path, docs_path
 
@@ -210,8 +247,12 @@ def init_command(
 
             shutil.rmtree(pongogo_dir)
 
+    # Find git root (if in a git repo) for detecting existing knowledge folders
+    git_root = get_git_root(cwd)
+
     # Detect existing knowledge folders BEFORE showing welcome
-    wiki_path, docs_path = detect_knowledge_folders(cwd)
+    # Check both cwd and git root to avoid creating duplicates when in subdirectory
+    wiki_path, docs_path = detect_knowledge_folders(cwd, git_root)
     missing_folders = []
     if wiki_path is None:
         missing_folders.append("wiki/")

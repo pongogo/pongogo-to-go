@@ -268,7 +268,7 @@ jobs:
               fi
 
               echo ""
-              echo "Pongogo uninstalled. Restart any running Claude Code sessions to complete."
+              echo "Pongogo uninstalled. Restart any running Claude Code sessions to complete removal."
               ;;
 
             --help|-h|help)
