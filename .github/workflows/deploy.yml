@@ -112,9 +112,9 @@ jobs:
           printf '   / ___/ /_/ /    / (_ / /_/ / (_ / /_/ /\n'
           printf '  /_/   \\____/_/|_/\\___/\\____/\\___/\\____/\n'
           printf "${NC}\n"
-          printf '  %s               %s~ Go, Pon-go-go! ~%s\n' "$PONGOGO_VERSION" "$BOLD" "$NC"
+          echo -e "  $PONGOGO_VERSION               ${BOLD}~ Go, Pon-go-go! ~${NC}"
           if $IS_WSL; then
-              printf '  %s(WSL detected)%s\n' "$CYAN" "$NC"
+              echo -e "  ${CYAN}(WSL detected)${NC}"
           fi
           printf '\n'
 
