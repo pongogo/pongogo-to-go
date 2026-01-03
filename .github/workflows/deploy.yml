@@ -234,7 +234,38 @@ jobs:
                 echo "✓ Removed ~/.local/bin/pongogo"
               fi
 
-              # Remove MCP config from Claude Code
+              # Remove MCP config from project-local .mcp.json (primary location)
+              if [ -f ".mcp.json" ] && command -v python3 &> /dev/null; then
+                python3 -c "
+          import json, sys
+          p = '.mcp.json'
+          try:
+              c = json.load(open(p))
+              if 'mcpServers' in c and 'pongogo-knowledge' in c['mcpServers']:
+                  del c['mcpServers']['pongogo-knowledge']
+                  # Remove file if mcpServers is now empty
+                  if not c['mcpServers']:
+                      import os
+                      os.remove(p)
+                      print('✓ Removed .mcp.json (was only pongogo config)')
+                  else:
+                      json.dump(c, open(p, 'w'), indent=2)
+                      print('✓ Removed pongogo-knowledge from .mcp.json')
+              else:
+                  print('✓ No pongogo-knowledge config found in .mcp.json')
+          except FileNotFoundError:
+              pass
+          except Exception as e:
+              print(f'⚠ Could not modify .mcp.json: {e}')
+          "
+              elif [ -f ".mcp.json" ]; then
+                echo "⚠ Found .mcp.json but Python 3 not available"
+                echo "  Manually remove 'pongogo-knowledge' from mcpServers in .mcp.json"
+              else
+                echo "✓ No .mcp.json found in current directory"
+              fi
+
+              # Also check global ~/.claude.json (legacy location)
               CLAUDE_CONFIG="$HOME/.claude.json"
               if [ -f "$CLAUDE_CONFIG" ] && command -v python3 &> /dev/null; then
                 python3 -c "
@@ -251,9 +282,28 @@ jobs:
           except Exception as e:
               print(f'⚠ Could not modify ~/.claude.json: {e}')
           " "$CLAUDE_CONFIG"
-              elif [ -f "$CLAUDE_CONFIG" ]; then
-                echo "⚠ Cannot auto-remove from ~/.claude.json (Python 3 not found)"
-                echo "  Manually remove 'pongogo-knowledge' from mcpServers in ~/.claude.json"
+              fi
+
+              # Offer to remove .pongogo directory
+              if [ -d ".pongogo" ]; then
+                echo ""
+                read -p "Remove .pongogo/ directory (config and instructions)? [y/N] " -n 1 -r
+                echo ""
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                  rm -rf .pongogo
+                  echo "✓ Removed .pongogo/"
+                fi
+              fi
+
+              # Offer to remove slash commands
+              if ls .claude/commands/pongogo-*.md &> /dev/null 2>&1; then
+                echo ""
+                read -p "Remove Pongogo slash commands from .claude/commands/? [y/N] " -n 1 -r
+                echo ""
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                  rm -f .claude/commands/pongogo-*.md
+                  echo "✓ Removed Pongogo slash commands"
+                fi
               fi
 
               # Offer to remove Docker image
