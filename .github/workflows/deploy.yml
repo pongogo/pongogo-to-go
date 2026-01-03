@@ -96,12 +96,20 @@ jobs:
               IS_LINUX=true
           fi
 
-          echo "🦧 Pongogo Installer"
-          echo "===================="
+          # ASCII art header
+          cat << 'LOGO'
+
+     ___  ____  _  ___________  _________
+    / _ \/ __ \/ |/ / ___/ __ \/ ___/ __ \
+   / ___/ /_/ /    / (_ / /_/ / (_ / /_/ /
+  /_/   \____/_/|_/\___/\____/\___/\____/
+
+                       ~ Go, Pon-go-go! ~
+
+LOGO
           if $IS_WSL; then
-              echo "   (WSL detected)"
+              echo "                     (WSL detected)"
           fi
-          echo ""
 
           # Check Docker
           if ! command -v docker &> /dev/null; then
