@@ -22,6 +22,7 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from mcp.server.fastmcp import FastMCP
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
@@ -771,6 +772,106 @@ async def upgrade_pongogo() -> dict:
             "error": str(e),
             "method": detect_install_method().value,
             "current_version": get_current_version(),
+        }
+
+
+# =============================================================================
+# Time Tools - Provide accurate timestamps for work logging and documentation
+# =============================================================================
+
+
+@mcp.tool()
+async def get_current_time(timezone: str = "America/New_York") -> dict:
+    """
+    Get current time in a specific timezone.
+
+    Provides accurate timestamps for work logs, documentation, and any operation
+    requiring the current time. Prevents AI-hallucinated timestamps.
+
+    Args:
+        timezone: IANA timezone name (e.g., 'America/New_York', 'Europe/London',
+                  'Asia/Tokyo'). Defaults to 'America/New_York'.
+
+    Returns:
+        Dictionary with:
+        - datetime: ISO 8601 formatted datetime with timezone offset
+        - timezone: The timezone used
+        - is_dst: Whether daylight saving time is in effect
+
+    Example:
+        get_current_time("America/New_York")
+        # Returns: {"datetime": "2026-01-03T15:30:00-05:00", "timezone": "America/New_York", "is_dst": false}
+    """
+    try:
+        tz = ZoneInfo(timezone)
+        now = datetime.now(tz)
+
+        return {
+            "datetime": now.isoformat(),
+            "timezone": timezone,
+            "is_dst": bool(now.dst()),
+        }
+    except Exception as e:
+        logger.error(f"Error getting current time: {e}")
+        return {
+            "error": str(e),
+            "timezone": timezone,
+        }
+
+
+@mcp.tool()
+async def convert_time(
+    source_timezone: str,
+    time_str: str,
+    target_timezone: str,
+) -> dict:
+    """
+    Convert time between timezones.
+
+    Args:
+        source_timezone: Source IANA timezone name (e.g., 'America/New_York')
+        time_str: Time to convert in 24-hour format (HH:MM)
+        target_timezone: Target IANA timezone name (e.g., 'Europe/London')
+
+    Returns:
+        Dictionary with:
+        - source: Original time with timezone info
+        - target: Converted time with timezone info
+        - source_timezone: Source timezone name
+        - target_timezone: Target timezone name
+
+    Example:
+        convert_time("America/New_York", "14:30", "Europe/London")
+        # Returns: {"source": "14:30-05:00", "target": "19:30+00:00", ...}
+    """
+    try:
+        # Parse time string
+        hour, minute = map(int, time_str.split(":"))
+
+        # Create datetime for today in source timezone
+        source_tz = ZoneInfo(source_timezone)
+        target_tz = ZoneInfo(target_timezone)
+
+        now = datetime.now(source_tz)
+        source_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+        # Convert to target timezone
+        target_dt = source_dt.astimezone(target_tz)
+
+        return {
+            "source": source_dt.strftime("%H:%M%z"),
+            "target": target_dt.strftime("%H:%M%z"),
+            "source_timezone": source_timezone,
+            "target_timezone": target_timezone,
+            "source_datetime": source_dt.isoformat(),
+            "target_datetime": target_dt.isoformat(),
+        }
+    except Exception as e:
+        logger.error(f"Error converting time: {e}")
+        return {
+            "error": str(e),
+            "source_timezone": source_timezone,
+            "target_timezone": target_timezone,
         }
 
 
