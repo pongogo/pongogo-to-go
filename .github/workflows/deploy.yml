@@ -67,6 +67,8 @@ jobs:
           # Pongogo Installer
           # Usage: curl -sSL https://get.pongogo.com | bash
 
+          PONGOGO_VERSION="__VERSION__"
+
           set -e
 
           # Colors (only if terminal supports it)
@@ -105,9 +107,11 @@ jobs:
           printf '\n'
           printf '%s\n' '                       ~ Go, Pon-go-go! ~'
           printf '\n'
+          echo "                     Version: $PONGOGO_VERSION"
           if $IS_WSL; then
-              echo "                     (WSL detected)"
+              echo "                        (WSL detected)"
           fi
+          printf '\n'
 
           # Check Docker
           if ! command -v docker &> /dev/null; then
@@ -386,6 +390,9 @@ jobs:
               echo "  pongogo init"
           fi
           SCRIPT
+
+          # Embed version into install script
+          sed -i 's/__VERSION__/${{ steps.version.outputs.version }}/g' deploy/install.sh
 
           chmod +x deploy/install.sh
 
