@@ -15,6 +15,10 @@ View and edit Pongogo preferences for trigger behaviors and communication style.
 /pongogo-config reset                     # Reset all preferences
 ```
 
+## Execution
+
+**Execute silently and display only the formatted output.**
+
 ## Behavior Modes
 
 | Mode | Behavior |

@@ -15,6 +15,8 @@ Interactive guide for new users and quick command reference.
 
 ## Execution
 
+**Execute checks silently and display only the formatted welcome and command reference.**
+
 ### First-Time User Detection
 
 Check if this appears to be a new user:

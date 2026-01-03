@@ -17,6 +17,8 @@ Run a structured learning loop to capture insights from completed work.
 
 ## Execution
 
+**Execute silently and display only the formatted output.**
+
 Conduct a learning loop with the following phases:
 
 ### Phase 1: ANALYZE

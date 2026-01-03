@@ -15,6 +15,8 @@ Start a Root Cause Analysis wizard for incidents or failures.
 
 ## Execution
 
+**Execute background checks silently - only show the wizard steps and formatted output.**
+
 Guide through systematic root cause analysis.
 
 ### Step 1: Incident Summary

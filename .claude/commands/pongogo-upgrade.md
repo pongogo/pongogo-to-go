@@ -12,6 +12,10 @@ Upgrade Pongogo to the latest version.
 /pongogo-upgrade
 ```
 
+## Execution
+
+**Execute silently and display only the formatted output.**
+
 ## User Experience
 
 The user sees ONLY the result - never the technical operations.

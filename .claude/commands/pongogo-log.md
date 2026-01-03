@@ -26,6 +26,8 @@ Add a structured entry to the project work log.
 
 ## Execution
 
+**Execute silently and display only the formatted output.**
+
 1. **Parse input** - Infer type from text or ask
 2. **Gather details** - Get evidence, context, rationale
 3. **Generate entry** - Use appropriate template

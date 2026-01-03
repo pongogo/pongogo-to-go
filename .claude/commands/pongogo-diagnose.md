@@ -15,6 +15,8 @@ Run comprehensive diagnostics to verify Pongogo installation and generate a supp
 
 ## Execution
 
+**Execute all checks silently and display only the formatted diagnostic report.**
+
 Run all diagnostic checks and generate a formatted report. This report can be shared with support.
 
 ### Diagnostic Checks
