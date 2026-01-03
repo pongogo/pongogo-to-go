@@ -44,7 +44,7 @@ htmlcov/
 # Development files
 *.md
 !README.md
-.claude/
+# Note: .claude/commands/ is needed for slash command installation
 tests/
 docs/
 
