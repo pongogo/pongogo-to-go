@@ -203,9 +203,25 @@ pongogo setup-mcp --force
 
 This adds the Pongogo MCP server to your `~/.claude.json` configuration. Docker is required to ensure proper isolation when using Pongogo across multiple repositories.
 
-### Upgrade Pongogo
+### Upgrading Pongogo
 
-Use the `/pongogo-upgrade` slash command in Claude Code to upgrade to the latest version.
+**Option 1: Slash Command (Recommended)**
+
+Run `/pongogo-upgrade` in Claude Code. The agent will execute the upgrade and instruct you to restart.
+
+**Option 2: CLI Command**
+
+```bash
+pongogo upgrade
+```
+
+**Option 3: Manual**
+
+```bash
+docker pull pongogo.azurecr.io/pongogo:stable
+```
+
+After upgrading, restart Claude Code and run `/mcp` to verify the new version is active.
 
 ## Architecture
 
