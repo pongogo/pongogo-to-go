@@ -330,6 +330,26 @@ jobs:
               echo "Pongogo uninstalled. Restart any running Claude Code sessions to complete removal."
               ;;
 
+            upgrade)
+              echo "🦧 Upgrading Pongogo..."
+              echo ""
+
+              # Pull latest stable image
+              if docker pull pongogo.azurecr.io/pongogo:stable; then
+                echo ""
+                echo "✅ Upgrade complete!"
+                echo ""
+                echo "To use the new version:"
+                echo "  1. Exit Claude Code (or restart the terminal)"
+                echo "  2. Re-enter Claude Code"
+                echo "  3. Run /mcp to verify Pongogo is connected"
+              else
+                echo ""
+                echo "❌ Upgrade failed. Check your Docker installation and network connection."
+                exit 1
+              fi
+              ;;
+
             --help|-h|help)
               echo "🦧 Pongogo - AI agent knowledge routing"
               echo ""
@@ -338,12 +358,14 @@ jobs:
               echo "Commands:"
               echo "  init          Initialize Pongogo in current directory"
               echo "  setup-mcp     Configure Claude Code MCP server"
+              echo "  upgrade       Update to latest version"
               echo "  uninstall     Remove Pongogo from this machine"
               echo "  --help        Show this help message"
               echo ""
               echo "Examples:"
               echo "  pongogo init              # Initialize in current repo"
               echo "  pongogo init --minimal    # Minimal installation"
+              echo "  pongogo upgrade           # Update to latest version"
               echo "  pongogo uninstall         # Remove Pongogo"
               ;;
 

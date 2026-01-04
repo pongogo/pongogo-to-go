@@ -14,61 +14,34 @@ Upgrade Pongogo to the latest version.
 
 ## Execution
 
-**Execute silently and display only the formatted output.**
+**Execute the upgrade command and display the result.**
 
-## User Experience
+Run the following Bash command:
 
-The user sees ONLY the result - never the technical operations.
+```bash
+pongogo upgrade
+```
 
-**What the user sees**:
-- Version comparison
-- Brief "Upgrading..." indicator
-- Changelog / what's new
-- "Please exit and re-enter Claude Code"
-
-**What the user does NOT see**:
-- Docker commands
-- pip commands
-- Container restarts
-- Download progress
-- Any technical output
-
-## Execution (Invisible to User)
-
-1. Check current vs latest version (silent)
-2. Download artifacts (silent)
-3. Restart MCP server (silent)
-4. Refresh instructions if needed (silent)
-5. Display result to user
+This command:
+1. Pulls the latest Docker image from the registry
+2. Shows upgrade progress
+3. Instructs user to restart Claude Code
 
 ## Output
 
-### Update Available
+The `pongogo upgrade` command will output:
+
+- Progress indicator ("Upgrading Pongogo...")
+- Success message with restart instructions
+- Or error message if upgrade fails
+
+## After Upgrade
+
+After the upgrade completes, tell the user:
 
 ```
-## Pongogo Upgrade
-
-Upgrading v1.2.3 → v1.3.0...
-
-Done.
-
-### What's New
-- [Feature 1]
-- [Feature 2]
-
-Please exit and re-enter Claude Code.
-```
-
-### Already Current
-
-```
-You're on the latest version (v1.2.3).
-```
-
-### Error
-
-```
-Upgrade failed: [brief reason]
-
-Run `/pongogo-status` for diagnostics.
+Upgrade complete! To use the new version:
+1. Exit Claude Code
+2. Re-enter Claude Code
+3. Run /mcp to verify Pongogo is connected
 ```
