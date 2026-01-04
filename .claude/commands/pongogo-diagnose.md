@@ -63,8 +63,8 @@ timeout 5 docker run --rm pongogo.azurecr.io/pongogo:stable --version 2>/dev/nul
 Use MCP tools to verify connection and get version info:
 
 **Get routing engine version**:
-- Call `switch_engine()` (no arguments) via MCP
-- Extract `current` engine from response (e.g., "durian-0.6")
+- Call `get_routing_info()` via MCP
+- Extract `engine` from response (e.g., "durian-0.6.1")
 
 **Get pongogo package version**:
 - Call `upgrade_pongogo()` via MCP
@@ -101,7 +101,7 @@ Generate a copyable diagnostic report:
 
 **Generated**: [timestamp]
 **Pongogo Version**: [from upgrade_pongogo MCP tool]
-**Routing Engine**: [from switch_engine MCP tool, e.g., durian-0.6]
+**Routing Engine**: [from get_routing_info MCP tool, e.g., durian-0.6.1]
 
 ### Environment
 - **OS**: [uname output]

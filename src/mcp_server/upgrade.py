@@ -1,16 +1,15 @@
 """Pongogo upgrade functionality.
 
-Provides upgrade capabilities for Docker installations.
+Provides upgrade instructions for Docker installations.
 Used by the upgrade_pongogo MCP tool.
 
-Note: Docker is currently the only supported method for MCP server deployment.
-The pip upgrade code is retained for development use (editable installs) and
-future support once multi-repo isolation is verified for direct Python installs.
-See: https://github.com/pongogo/pongogo-to-go/issues/1
+Note: The MCP server runs INSIDE a Docker container, so it cannot execute
+docker commands. Instead, we return instructions for the user to run on
+their host machine.
 """
 
 import logging
-import subprocess
+import os
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -33,8 +32,8 @@ class UpgradeResult:
     success: bool
     method: InstallMethod
     message: str
-    previous_version: str | None = None
-    new_version: str | None = None
+    current_version: str | None = None
+    upgrade_command: str | None = None
 
 
 def detect_install_method() -> InstallMethod:
@@ -43,10 +42,6 @@ def detect_install_method() -> InstallMethod:
     Checks for Docker container environment markers:
     - /.dockerenv file existence
     - /proc/1/cgroup containing docker
-
-    In production, this should always detect Docker since Docker is required
-    for MCP server deployment. The PIP fallback is only for development
-    environments (editable installs).
 
     Returns:
         InstallMethod indicating docker or pip.
@@ -62,7 +57,7 @@ def detect_install_method() -> InstallMethod:
     except (FileNotFoundError, PermissionError):
         pass
 
-    # Not in Docker - this is a development environment (editable install)
+    # Not in Docker - this is a development environment
     return InstallMethod.PIP
 
 
@@ -74,10 +69,8 @@ def get_current_version() -> str:
     2. Package __version__ (fallback for development)
 
     Returns:
-        Version string (e.g., "0.1.16", "vbeta-20260102-abc123")
+        Version string (e.g., "0.1.17", "vbeta-20260102-abc123")
     """
-    import os
-
     # Docker images set PONGOGO_VERSION during build
     env_version = os.environ.get("PONGOGO_VERSION")
     if env_version:
@@ -92,123 +85,49 @@ def get_current_version() -> str:
         return "unknown"
 
 
-def upgrade_docker() -> UpgradeResult:
-    """Upgrade Pongogo Docker image.
-
-    Pulls the latest image from ghcr.io/pongogo/pongogo-server.
-
-    Note: This only pulls the image. The container will use the new
-    image on next restart (when user exits and re-enters Claude Code).
-    """
-    previous = get_current_version()
-
-    try:
-        result = subprocess.run(
-            ["docker", "pull", "ghcr.io/pongogo/pongogo-server:latest"],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-
-        if result.returncode == 0:
-            return UpgradeResult(
-                success=True,
-                method=InstallMethod.DOCKER,
-                message="Docker image updated. Restart Claude Code to use new version.",
-                previous_version=previous,
-            )
-        else:
-            return UpgradeResult(
-                success=False,
-                method=InstallMethod.DOCKER,
-                message=f"Docker pull failed: {result.stderr}",
-                previous_version=previous,
-            )
-    except subprocess.TimeoutExpired:
-        return UpgradeResult(
-            success=False,
-            method=InstallMethod.DOCKER,
-            message="Docker pull timed out",
-            previous_version=previous,
-        )
-    except FileNotFoundError:
-        return UpgradeResult(
-            success=False,
-            method=InstallMethod.DOCKER,
-            message="Docker not found",
-            previous_version=previous,
-        )
-
-
-def upgrade_pip() -> UpgradeResult:
-    """Upgrade Pongogo via pip (development environments only).
-
-    Uses pip install --upgrade pongogo to get latest version.
-
-    Note: This is only used in development environments (editable installs).
-    Production deployments use Docker and should never hit this path.
-    """
-    previous = get_current_version()
-
-    try:
-        result = subprocess.run(
-            ["pip", "install", "--upgrade", "pongogo"],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-
-        if result.returncode == 0:
-            # Check new version
-            new_version = get_current_version()
-            return UpgradeResult(
-                success=True,
-                method=InstallMethod.PIP,
-                message="Pongogo upgraded. Restart Claude Code to use new version.",
-                previous_version=previous,
-                new_version=new_version,
-            )
-        else:
-            return UpgradeResult(
-                success=False,
-                method=InstallMethod.PIP,
-                message=f"pip upgrade failed: {result.stderr}",
-                previous_version=previous,
-            )
-    except subprocess.TimeoutExpired:
-        return UpgradeResult(
-            success=False,
-            method=InstallMethod.PIP,
-            message="pip upgrade timed out",
-            previous_version=previous,
-        )
-    except FileNotFoundError:
-        return UpgradeResult(
-            success=False,
-            method=InstallMethod.PIP,
-            message="pip not found",
-            previous_version=previous,
-        )
-
-
 def upgrade() -> UpgradeResult:
-    """Upgrade Pongogo using detected installation method.
+    """Get upgrade instructions for Pongogo.
 
-    In production (Docker), pulls the latest image. In development
-    environments (editable pip installs), upgrades via pip.
+    Since the MCP server runs inside a Docker container, we cannot execute
+    docker commands from within. Instead, we return instructions for the
+    user to run on their host machine.
 
     Returns:
-        UpgradeResult with status and message.
+        UpgradeResult with instructions for upgrading.
     """
+    current = get_current_version()
     method = detect_install_method()
 
     if method == InstallMethod.DOCKER:
-        return upgrade_docker()
+        # Inside Docker - provide instructions for host
+        return UpgradeResult(
+            success=True,
+            method=InstallMethod.DOCKER,
+            message=(
+                "To upgrade Pongogo, run in your terminal:\n\n"
+                "  docker pull ghcr.io/pongogo/pongogo-server:stable\n\n"
+                "Then restart Claude Code to use the new version."
+            ),
+            current_version=current,
+            upgrade_command="docker pull ghcr.io/pongogo/pongogo-server:stable",
+        )
     elif method == InstallMethod.PIP:
-        return upgrade_pip()
+        # Development environment - pip upgrade
+        return UpgradeResult(
+            success=True,
+            method=InstallMethod.PIP,
+            message=(
+                "To upgrade Pongogo, run:\n\n"
+                "  pip install --upgrade pongogo\n\n"
+                "Then restart Claude Code to use the new version."
+            ),
+            current_version=current,
+            upgrade_command="pip install --upgrade pongogo",
+        )
     else:
         return UpgradeResult(
             success=False,
             method=InstallMethod.UNKNOWN,
             message="Could not detect installation method",
+            current_version=current,
         )

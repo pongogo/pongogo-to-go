@@ -43,8 +43,6 @@ from mcp_server.instruction_handler import InstructionHandler
 from mcp_server.routing_engine import (
     RoutingEngine,
     create_router,
-    get_available_engines,
-    get_engine_features,
 )
 from mcp_server.upgrade import detect_install_method, get_current_version
 
@@ -624,135 +622,59 @@ async def reindex_knowledge_base(force: bool = False) -> dict:
 
 
 @mcp.tool()
-async def switch_engine(engine_version: str | None = None) -> dict:
+async def get_routing_info() -> dict:
     """
-    Switch routing engine version or list available engines.
+    Get current routing engine information.
 
-    Runtime engine switching for A/B testing and development.
-
-    Args:
-        engine_version: Engine version to switch to (e.g., "durian-0.5-dev").
-                       If not provided, returns list of available engines.
+    Returns information about the currently active routing engine,
+    including version and enabled features.
 
     Returns:
         Dictionary with:
-        - success: True if switch succeeded
-        - engine: New engine version (if switched)
-        - previous: Previous engine version (if switched)
-        - available: List of available engines (if listing)
-        - features: Available features for the engine
+        - engine: Current routing engine version (e.g., "durian-0.6.1")
+        - description: Engine description
+        - instruction_count: Number of loaded instruction files
 
-    Examples:
-        # List available engines
-        switch_engine()
-
-        # Switch to specific engine
-        switch_engine("durian-0.5-dev")
+    Example:
+        get_routing_info()
+        # Returns {"engine": "durian-0.6.1", "instruction_count": 54, ...}
     """
-    global router, routing_config
-
     try:
-        # If no version specified, list available engines
-        if engine_version is None:
-            engines = get_available_engines()
-            current = router.version
-            engine_info = []
-
-            for eng in engines:
-                features = get_engine_features(eng)
-                engine_info.append(
-                    {
-                        "version": eng,
-                        "current": eng == current,
-                        "features": [f.to_dict() for f in features],
-                    }
-                )
-
-            return {
-                "success": True,
-                "action": "list",
-                "current_engine": current,
-                "available_engines": engine_info,
-                "hint": "Use switch_engine('version') to switch engines",
-            }
-
-        # Validate engine version exists
-        available = get_available_engines()
-        if engine_version not in available:
-            return {
-                "success": False,
-                "error": f"Unknown engine: '{engine_version}'",
-                "available_engines": available,
-                "hint": f"Available engines: {', '.join(available)}",
-            }
-
-        # Check if already using requested engine
-        previous = router.version
-        if engine_version == previous:
-            return {
-                "success": True,
-                "action": "no_change",
-                "engine": engine_version,
-                "message": f"Already using engine: {engine_version}",
-            }
-
-        # Switch engine (atomic swap)
-        logger.info(f"Switching routing engine: {previous} → {engine_version}")
-
-        # Update config for new engine
-        new_routing_config = {
-            "routing": {
-                "engine": engine_version,
-                "features": routing_config.get("routing", {}).get("features", {}),
-            }
-        }
-
-        # Create new router with new engine
-        new_router = create_router(instruction_handler, new_routing_config)
-
-        # Atomic swap
-        router = new_router
-        routing_config = new_routing_config
-
-        logger.info(f"Engine switch complete: {previous} → {engine_version}")
-
         return {
             "success": True,
-            "action": "switched",
-            "engine": engine_version,
-            "previous": previous,
-            "description": new_router.description,
-            "features": [f.to_dict() for f in get_engine_features(engine_version)],
+            "engine": router.version,
+            "description": router.description,
+            "instruction_count": len(instruction_handler.instructions),
         }
 
     except Exception as e:
-        logger.error(f"Error switching engine: {e}", exc_info=True)
+        logger.error(f"Error getting routing info: {e}", exc_info=True)
         return {
             "success": False,
             "error": str(e),
-            "current_engine": router.version if router else "unknown",
         }
 
 
 @mcp.tool()
 async def upgrade_pongogo() -> dict:
     """
-    Upgrade Pongogo to the latest version.
+    Get upgrade instructions for Pongogo.
 
-    In production (Docker deployment), pulls the latest Docker image.
-    The upgrade takes effect after restarting Claude Code.
+    Since the MCP server runs inside a Docker container, it cannot execute
+    docker commands directly. This tool returns instructions for the user
+    to run on their host machine.
 
     Returns:
         Dictionary with:
-        - success: True if upgrade succeeded
+        - success: True
         - method: Installation method (docker in production)
-        - message: Human-readable status message
-        - previous_version: Version before upgrade (if known)
-        - new_version: Version after upgrade (development only)
+        - message: Human-readable upgrade instructions
+        - current_version: Currently installed version
+        - upgrade_command: Command to run on host
 
     Example:
-        # Upgrade Pongogo
-        upgrade_pongogo()  # Returns {"success": True, "method": "docker", ...}
+        upgrade_pongogo()
+        # Returns {"success": True, "message": "To upgrade...", "upgrade_command": "docker pull ..."}
     """
     try:
         result = do_upgrade()
@@ -761,8 +683,8 @@ async def upgrade_pongogo() -> dict:
             "success": result.success,
             "method": result.method.value,
             "message": result.message,
-            "previous_version": result.previous_version,
-            "new_version": result.new_version,
+            "current_version": result.current_version,
+            "upgrade_command": result.upgrade_command,
         }
 
     except Exception as e:
