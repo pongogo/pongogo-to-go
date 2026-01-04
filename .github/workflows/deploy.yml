@@ -365,6 +365,7 @@ jobs:
               echo "Examples:"
               echo "  pongogo init              # Initialize in current repo"
               echo "  pongogo init --minimal    # Minimal installation"
+              echo "  pongogo init --force      # Overwrite existing installation"
               echo "  pongogo upgrade           # Update to latest version"
               echo "  pongogo uninstall         # Remove Pongogo"
               ;;
