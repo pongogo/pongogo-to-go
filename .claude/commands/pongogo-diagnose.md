@@ -152,12 +152,13 @@ Or run `/pongogo-support` to open an issue directly.
 
 | Issue | Fix |
 |-------|-----|
-| Container not running | `docker run -d pongogo.azurecr.io/pongogo:stable` |
-| Image not found | `docker pull pongogo.azurecr.io/pongogo:stable` |
 | MCP not connected | Restart Claude Code, allow MCP server when prompted |
+| Image not found | `pongogo upgrade` or `docker pull pongogo.azurecr.io/pongogo:stable` |
 | Config invalid | `pongogo init --force` |
 | No instructions | `pongogo init` |
 | Routing returns 0 | Check `.pongogo/instructions/` exists and has `.md` files |
+
+**NOTE**: Pongogo-to-Go runs via Claude Code's MCP infrastructure. Do NOT suggest `docker-compose` commands - they don't apply here.
 
 ### Privacy Note
 

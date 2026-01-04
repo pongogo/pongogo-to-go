@@ -1,5 +1,5 @@
 ---
-description: MCP server status (enabled/disabled/simulate)
+description: Check Pongogo MCP server health
 ---
 
 # Pongogo Status
@@ -14,38 +14,38 @@ Quick health check for Pongogo knowledge routing.
 
 ## Execution
 
-Execute silently and display only the formatted output.
+**IMPORTANT**: Do NOT check for state files, docker containers, or docker-compose. Pongogo-to-Go runs via Claude Code's MCP infrastructure, not as a standalone container.
 
-### Checks Performed
+**Step 1**: Call the `get_routing_info()` MCP tool (from pongogo-knowledge server).
 
-1. Read `.pongogo-mcp-state.json` for mode
-2. Check container status
-3. Test routing with sample query
+**Step 2**: Display the result.
 
-## Output
+If the MCP tool call succeeds, output EXACTLY:
 
 ```
-## Pongogo Status
+## Pongogo Status ✅
 
-**Mode**: [ENABLED | DISABLED | SIMULATE]
-**Container**: [Up | Down]
-**Routing**: [Working | Failed]
-```
+**Routing Engine**: [engine value from response]
+**Instructions Loaded**: [instruction_count value from response]
 
-If all pass:
-```
 All systems operational.
 ```
 
-If any fail, show the relevant fix:
+If the MCP tool call fails or is not available, output EXACTLY:
 
-- Container down: `docker-compose up -d pongogo`
-- Routing failed: `docker-compose build pongogo && docker-compose up -d pongogo`
-- MCP unavailable: Check `~/.claude/mcp_settings.json`
+```
+## Pongogo Status ❌
 
-### Related Commands
+MCP server not connected.
 
-- `/pongogo-enable` `/pongogo-disable` - Toggle routing
-- `/pongogo-simulate-enable` `/pongogo-simulate-disable` - Test mode
-- `/pongogo-dry-run` - One-off routing test
-- `/pongogo-config` - Edit preferences
+**Fix**:
+1. Restart Claude Code
+2. When prompted, allow the pongogo-knowledge MCP server
+3. Run `/mcp` to verify connection
+```
+
+**DO NOT**:
+- Check for `.pongogo-mcp-state.json` (doesn't exist in pongogo-to-go)
+- Check for running Docker containers (MCP manages this)
+- Suggest `docker-compose` commands (not used in pongogo-to-go)
+- Show "Mode" (pongogo-to-go is always enabled when connected)

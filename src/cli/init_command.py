@@ -267,7 +267,7 @@ def init_command(
         "This will create:",
         "  [cyan].pongogo/[/cyan]",
         "    - config.yaml [dim](auto-configured, no edits needed)[/dim]",
-        "    - instructions/ (seeded instruction files)",
+        "    - instructions/ [dim](seeded instruction files)[/dim]",
     ]
 
     if missing_folders:
@@ -290,7 +290,8 @@ def init_command(
 
     # Interactive mode: confirm before proceeding
     if not no_interactive:
-        if not typer.confirm("Continue?", default=True):
+        response = console.input("\nContinue? [Y/n]: ").strip().lower()
+        if response and response not in ("y", "yes"):
             console.print("[yellow]Installation cancelled.[/yellow]")
             raise typer.Exit(0)
 
@@ -428,7 +429,9 @@ def init_command(
     created_lines.append(
         f"  - {CONFIG_FILE} [dim](auto-configured, no edits needed)[/dim]"
     )
-    created_lines.append(f"  - {INSTRUCTIONS_DIR}/ ({files_copied} files)")
+    created_lines.append(
+        f"  - {INSTRUCTIONS_DIR}/ [dim]({files_copied} seeded instruction files)[/dim]"
+    )
     created_lines.append("")
     created_lines.append(
         "Created: .mcp.json [dim](MCP server config for Claude Code)[/dim]"
