@@ -149,7 +149,7 @@ jobs:
                   echo "  3. Restart your WSL terminal: wsl --shutdown (from PowerShell)"
                   exit 1
               fi
-              read -p $'Would you like to start Docker? \033[94m[Y/n]\033[0m ' -r < /dev/tty
+              read -p $'Would you like to start Docker? \033[94m[Y/n]:\033[0m ' -r < /dev/tty
               echo ""
               if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
                   echo "Starting Docker..."
@@ -237,6 +237,25 @@ jobs:
               echo "====================="
               echo ""
 
+              # Skip confirmation if --force flag is passed
+              FORCE=false
+              for arg in "$@"; do
+                if [[ "$arg" == "--force" || "$arg" == "-f" ]]; then
+                  FORCE=true
+                fi
+              done
+
+              if ! $FORCE; then
+                echo "This will remove the Pongogo CLI wrapper and MCP configuration."
+                echo ""
+                read -p $'Continue with uninstall? \033[94m[y/N]:\033[0m ' -r < /dev/tty
+                echo ""
+                if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                  echo "Uninstall cancelled."
+                  exit 0
+                fi
+              fi
+
               # Remove CLI wrapper
               if [ -f "$HOME/.local/bin/pongogo" ]; then
                 rm "$HOME/.local/bin/pongogo"
@@ -296,7 +315,7 @@ jobs:
               # Offer to remove .pongogo directory
               if [ -d ".pongogo" ]; then
                 echo ""
-                read -p $'Remove .pongogo/ directory (config and instructions)? \033[94m[y/N]\033[0m ' -r
+                read -p $'Remove .pongogo/ directory (config and instructions)? \033[94m[y/N]:\033[0m ' -r
                 echo ""
                 if [[ $REPLY =~ ^[Yy]$ ]]; then
                   rm -rf .pongogo
@@ -307,7 +326,7 @@ jobs:
               # Offer to remove slash commands
               if ls .claude/commands/pongogo-*.md &> /dev/null 2>&1; then
                 echo ""
-                read -p $'Remove Pongogo slash commands from .claude/commands/? \033[94m[y/N]\033[0m ' -r
+                read -p $'Remove Pongogo slash commands from .claude/commands/? \033[94m[y/N]:\033[0m ' -r
                 echo ""
                 if [[ $REPLY =~ ^[Yy]$ ]]; then
                   rm -f .claude/commands/pongogo-*.md
@@ -318,7 +337,7 @@ jobs:
               # Offer to remove Docker image
               if docker image inspect pongogo.azurecr.io/pongogo:stable &> /dev/null 2>&1; then
                 echo ""
-                read -p $'Remove Docker image? \033[94m[y/N]\033[0m ' -r
+                read -p $'Remove Docker image? \033[94m[y/N]:\033[0m ' -r
                 echo ""
                 if [[ $REPLY =~ ^[Yy]$ ]]; then
                   docker rmi pongogo.azurecr.io/pongogo:stable
@@ -367,7 +386,8 @@ jobs:
               echo "  pongogo init --minimal    # Minimal installation"
               echo "  pongogo init --force      # Overwrite existing installation"
               echo "  pongogo upgrade           # Update to latest version"
-              echo "  pongogo uninstall         # Remove Pongogo"
+              echo "  pongogo uninstall         # Remove Pongogo (interactive)"
+              echo "  pongogo uninstall --force # Remove Pongogo (no confirmation)"
               ;;
 
             *)
@@ -403,7 +423,7 @@ jobs:
                   info "Pongogo is already initialized in this repo."
                   echo "  To reinitialize: pongogo init --force"
               else
-                  read -p $'Would you like to initialize Pongogo here? \033[94m[Y/n]\033[0m ' -r < /dev/tty
+                  read -p $'Would you like to initialize Pongogo here? \033[94m[Y/n]:\033[0m ' -r < /dev/tty
                   echo ""
                   if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
                       info "Initializing Pongogo..."

@@ -15,7 +15,13 @@ Run comprehensive diagnostics to verify Pongogo installation and generate a supp
 
 ## Execution
 
-**Execute all checks silently and display only the formatted diagnostic report.**
+**IMPORTANT: Run all diagnostic checks QUIETLY and display ONLY the final formatted diagnostic report.**
+
+- Do NOT show intermediate output, progress messages, or thinking aloud
+- Do NOT display individual tool call results to the user
+- Suppress all user-facing messaging during data gathering
+- Execute each check silently, then aggregate results into the final report
+- The user should see ONLY the formatted "## Pongogo Diagnostic Report" output below
 
 Run all diagnostic checks and generate a formatted report. This report can be shared with support.
 
