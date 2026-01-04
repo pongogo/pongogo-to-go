@@ -45,20 +45,7 @@ Check `.mcp.json`:
 - [ ] Contains `pongogo-knowledge` server entry
 - [ ] Docker command path is valid
 
-#### 3. Container Health
-
-```bash
-# Check if pongogo container exists and status
-docker ps -a --filter "ancestor=pongogo.azurecr.io/pongogo" --format "{{.Status}}"
-
-# Check image exists locally
-docker images pongogo.azurecr.io/pongogo --format "{{.Tag}} {{.CreatedAt}}"
-
-# Test container can start (timeout after 5s)
-timeout 5 docker run --rm pongogo.azurecr.io/pongogo:stable --version 2>/dev/null
-```
-
-#### 4. MCP Server Connection
+#### 3. MCP Server Connection
 
 Use MCP tools to verify connection and get version info:
 
@@ -75,7 +62,7 @@ Use MCP tools to verify connection and get version info:
 - [ ] Verify returns > 0 results
 - [ ] Record response time
 
-#### 5. Routing Validation
+#### 4. Routing Validation
 
 Test routing with known queries that should return results:
 
@@ -85,10 +72,10 @@ Test routing with known queries that should return results:
 | "git safety" | safety_prevention | |
 | "work log entry" | project_management | |
 
-#### 6. Network Connectivity (if container issues)
+#### 5. Network Connectivity (if MCP connection fails)
 
 ```bash
-# Can reach container registry
+# Can reach container registry (run on HOST via Bash tool)
 curl -s -o /dev/null -w "%{http_code}" https://pongogo.azurecr.io/v2/ 2>/dev/null
 ```
 
@@ -113,9 +100,9 @@ Generate a copyable diagnostic report:
 - **Instructions**: [count] files in [count] categories
 - **MCP config**: ✅ Valid / ❌ Missing / ⚠️ Invalid
 
-### Docker Container
-- **Image**: [tag] ([age])
-- **Status**: ✅ Running / ❌ Not found / ⚠️ Error
+### MCP Server
+- **Status**: ✅ Connected / ❌ Not connected
+- **Version**: [from upgrade_pongogo response]
 
 ### Routing Tests
 | Query | Result | Time |

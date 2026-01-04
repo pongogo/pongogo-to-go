@@ -141,12 +141,12 @@ def create_knowledge_folders(
             )
             console.print("\nPossible fixes:")
             console.print(
-                "  1. Check directory permissions: [cyan]ls -la $(pwd)[/cyan]"
+                "  1. Check directory permissions: [#5a9ae8]ls -la $(pwd)[/#5a9ae8]"
             )
             console.print(
-                "  2. On SELinux systems (Fedora/RHEL), try: [cyan]sudo chcon -Rt svirt_sandbox_file_t $(pwd)[/cyan]"
+                "  2. On SELinux systems (Fedora/RHEL), try: [#5a9ae8]sudo chcon -Rt svirt_sandbox_file_t $(pwd)[/#5a9ae8]"
             )
-            console.print("  3. Run with sudo: [cyan]sudo pongogo init[/cyan]")
+            console.print("  3. Run with sudo: [#5a9ae8]sudo pongogo init[/#5a9ae8]")
             console.print(
                 "\nFor more help, see: https://github.com/pongogo/pongogo-to-go/issues"
             )
@@ -179,12 +179,12 @@ def create_knowledge_folders(
             )
             console.print("\nPossible fixes:")
             console.print(
-                "  1. Check directory permissions: [cyan]ls -la $(pwd)[/cyan]"
+                "  1. Check directory permissions: [#5a9ae8]ls -la $(pwd)[/#5a9ae8]"
             )
             console.print(
-                "  2. On SELinux systems (Fedora/RHEL), try: [cyan]sudo chcon -Rt svirt_sandbox_file_t $(pwd)[/cyan]"
+                "  2. On SELinux systems (Fedora/RHEL), try: [#5a9ae8]sudo chcon -Rt svirt_sandbox_file_t $(pwd)[/#5a9ae8]"
             )
-            console.print("  3. Run with sudo: [cyan]sudo pongogo init[/cyan]")
+            console.print("  3. Run with sudo: [#5a9ae8]sudo pongogo init[/#5a9ae8]")
             console.print(
                 "\nFor more help, see: https://github.com/pongogo/pongogo-to-go/issues"
             )
@@ -263,9 +263,9 @@ def init_command(
 
     # Build welcome message based on what exists
     welcome_lines = [
-        "[bold blue]Pongogo[/bold blue] - AI agent knowledge routing\n",
+        "[bold #faa93c]Pongogo[/bold #faa93c] - AI agent knowledge routing\n",
         "This will create:",
-        "  [cyan].pongogo/[/cyan]",
+        "  [#5a9ae8].pongogo/[/#5a9ae8]",
         "    - config.yaml [dim](auto-configured, no edits needed)[/dim]",
         "    - instructions/ [dim](seeded instruction files)[/dim]",
     ]
@@ -277,7 +277,7 @@ def init_command(
         )
         welcome_lines.append("Missing folders that will be created:")
         for folder in missing_folders:
-            welcome_lines.append(f"  [cyan]{folder}[/cyan]")
+            welcome_lines.append(f"  [#5a9ae8]{folder}[/#5a9ae8]")
 
     # Show welcome message
     console.print(
@@ -337,7 +337,13 @@ def init_command(
     # Copy manifest
     copy_manifest(source_dir, dest_instructions_dir)
 
-    console.print(f"  [green]Seeded[/green] {files_copied} instruction files")
+    # Core instructions (8) are bundled separately, always available
+    core_count = 8
+    total_count = files_copied + core_count
+    console.print(
+        f"  [green]Seeded[/green] {total_count} instruction files "
+        f"[dim]({files_copied} seeded + {core_count} core)[/dim]"
+    )
     console.print(
         "  [dim]Covers: engineering, project management, agentic workflows,[/dim]"
     )
@@ -355,7 +361,7 @@ def init_command(
     if commands_copied > 0:
         console.print(f"  [green]Installed[/green] {commands_copied} slash commands")
         console.print(
-            "  [dim]Use /pongogo-status, /pongogo-retro, /pongogo-log, and more.[/dim]"
+            "  Use [#5a9ae8]/pongogo-status[/#5a9ae8], [#5a9ae8]/pongogo-retro[/#5a9ae8], [#5a9ae8]/pongogo-log[/#5a9ae8], and more."
         )
     else:
         console.print("  [yellow]No slash commands found in package[/yellow]")
@@ -430,7 +436,7 @@ def init_command(
         f"  - {CONFIG_FILE} [dim](auto-configured, no edits needed)[/dim]"
     )
     created_lines.append(
-        f"  - {INSTRUCTIONS_DIR}/ [dim]({files_copied} seeded instruction files)[/dim]"
+        f"  - {INSTRUCTIONS_DIR}/ [dim]({total_count} instructions: {files_copied} seeded + {core_count} core)[/dim]"
     )
     created_lines.append("")
     created_lines.append(
@@ -447,21 +453,21 @@ def init_command(
         created_lines.append("")
         if created_wiki:
             created_lines.append(
-                "  - [cyan]wiki/[/cyan] - Knowledge repository for institutional learnings"
+                "  - [#5a9ae8]wiki/[/#5a9ae8] - Knowledge repository for institutional learnings"
             )
         if created_docs:
             created_lines.append(
-                "  - [cyan]docs/[/cyan] - Information to help developers and agents "
+                "  - [#5a9ae8]docs/[/#5a9ae8] - Information to help developers and agents "
                 "work effectively"
             )
 
     created_lines.append("")
     created_lines.append(
         "[dim]Next:[/dim] Restart Claude Code. When prompted, allow the "
-        "[cyan]pongogo-knowledge[/cyan] MCP server."
+        "[#5a9ae8]pongogo-knowledge[/#5a9ae8] MCP server."
     )
     created_lines.append(
-        "[dim]      Run [cyan]/pongogo-getting-started[/cyan] for an interactive guide.[/dim]"
+        "[dim]      Run [#5a9ae8]/pongogo-getting-started[/#5a9ae8] for an interactive guide.[/dim]"
     )
     created_lines.append("")
     created_lines.append("[dim]Learn more:[/dim] https://pongogo.com")

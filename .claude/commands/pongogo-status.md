@@ -26,7 +26,7 @@ If the MCP tool call succeeds, output EXACTLY:
 ## Pongogo Status ✅
 
 **Routing Engine**: [engine value from response]
-**Instructions Loaded**: [instruction_count value from response]
+**Instructions Loaded**: [instruction_count value from response] (includes core + seeded)
 
 All systems operational.
 ```
