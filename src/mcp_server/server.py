@@ -42,6 +42,9 @@ from mcp_server.config import (
 
 # Discovery system for observation-triggered promotion
 from mcp_server.discovery_system import DiscoverySystem
+
+# Event capture for routing history (AD-017: Local-First State Architecture)
+from mcp_server.event_capture import store_routing_event
 from mcp_server.instruction_handler import InstructionHandler
 from mcp_server.routing_engine import (
     RoutingEngine,
@@ -447,6 +450,19 @@ async def route_instructions(
         # Add routing engine version to response
         # Use router.version from RoutingEngine interface instead of hardcoded constant
         results["routing_engine_version"] = router.version
+
+        # Capture routing event for lookback features and diagnostics
+        # Non-blocking: failures logged but don't interrupt response
+        routed_instruction_ids = [
+            inst.get("id", inst.get("path", "unknown"))
+            for inst in results.get("instructions", [])
+        ]
+        store_routing_event(
+            user_message=message,
+            routed_instructions=routed_instruction_ids,
+            engine_version=router.version,
+            context=context,
+        )
 
         # Observation-triggered discovery promotion
         # Check discoveries for matches and auto-promote on first observation

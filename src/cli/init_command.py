@@ -314,6 +314,20 @@ def init_command(
     write_config(config_path, config)
     console.print(f"  [green]Created[/green] {PONGOGO_DIR}/{CONFIG_FILE}")
 
+    # Create sync directory for routing event history (AD-017: Local-First State)
+    sync_dir = pongogo_dir / "sync"
+    sync_dir.mkdir(exist_ok=True)
+    console.print(f"  [green]Created[/green] {PONGOGO_DIR}/sync/")
+
+    # Create .gitignore to exclude sync data (contains local-only routing history)
+    gitignore_path = pongogo_dir / ".gitignore"
+    gitignore_content = """# Pongogo local state (not version controlled)
+# Routing event history for lookback features and diagnostics
+sync/
+"""
+    gitignore_path.write_text(gitignore_content)
+    console.print(f"  [green]Created[/green] {PONGOGO_DIR}/.gitignore")
+
     # Copy instruction files
     console.print("\n[bold]Copying instruction files...[/bold]")
 
@@ -438,6 +452,7 @@ def init_command(
     created_lines.append(
         f"  - {INSTRUCTIONS_DIR}/ [dim]({total_count} instructions: {files_copied} seeded + {core_count} core)[/dim]"
     )
+    created_lines.append("  - sync/ [dim](routing history for diagnostics)[/dim]")
     created_lines.append("")
     created_lines.append(
         "Created: .mcp.json [dim](MCP server config for Claude Code)[/dim]"
