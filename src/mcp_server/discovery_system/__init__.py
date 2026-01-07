@@ -4,7 +4,8 @@ This module provides database-backed discovery of existing repository knowledge
 (CLAUDE.md, wiki/, docs/) and observation-driven promotion to instruction files.
 
 Architecture:
-- SQLite database for discovery catalog (.pongogo/discovery.db)
+- Unified database at .pongogo/pongogo.db (schema v3.0.0)
+- Tables: artifact_discovered, artifact_implemented
 - Script-based scanning during pongogo init
 - Observation-triggered promotion during routing
 - CLI commands for discovery management
@@ -15,8 +16,8 @@ Usage:
     ds = DiscoverySystem(project_root="/path/to/repo")
 
     # During init - scan and catalog
-    summary = ds.scan_repository()
-    print(f"Found {summary['total']} knowledge patterns")
+    result = ds.scan_repository()
+    print(f"Found {result.total_discoveries} knowledge patterns")
 
     # During routing - check for matches
     matches = ds.find_matches(keywords=["authentication", "api"])
@@ -29,14 +30,15 @@ Usage:
     ds.archive_discovery(discovery_id=5)
 """
 
-from .database import DiscoveryDatabase
-from .operations import DiscoverySystem
-from .scanner import DiscoveryScanner
+from .operations import Discovery, DiscoverySystem, ScanResult
+from .scanner import DiscoveredSection, DiscoveryScanner
 
 __all__ = [
-    "DiscoveryDatabase",
+    "Discovery",
+    "DiscoveredSection",
     "DiscoveryScanner",
     "DiscoverySystem",
+    "ScanResult",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

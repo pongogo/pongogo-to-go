@@ -23,14 +23,10 @@ class TestConcurrentWrites:
 
     def test_multiple_threads_can_write(self, tmp_path, monkeypatch):
         """Multiple threads should successfully write events."""
-        db_path = tmp_path / "events.db"
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         num_threads = 10
@@ -66,14 +62,10 @@ class TestConcurrentWrites:
 
     def test_high_contention_writes(self, tmp_path, monkeypatch):
         """Database should handle high contention without data loss."""
-        db_path = tmp_path / "events.db"
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         # Higher contention: more threads, fewer events each
@@ -113,14 +105,10 @@ class TestLargeDataset:
 
     def test_insert_many_events(self, tmp_path, monkeypatch):
         """Database should handle inserting many events efficiently."""
-        db_path = tmp_path / "events.db"
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         num_events = 500
@@ -147,14 +135,10 @@ class TestLargeDataset:
 
     def test_stats_performance_with_large_dataset(self, tmp_path, monkeypatch):
         """Stats queries should remain fast with large dataset."""
-        db_path = tmp_path / "events.db"
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         # Insert events
@@ -180,14 +164,10 @@ class TestRapidSequentialWrites:
 
     def test_rapid_fire_writes(self, tmp_path, monkeypatch):
         """Rapid sequential writes should all succeed."""
-        db_path = tmp_path / "events.db"
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         num_events = 100
@@ -207,14 +187,10 @@ class TestRapidSequentialWrites:
 
     def test_write_with_large_context(self, tmp_path, monkeypatch):
         """Should handle events with large context objects."""
-        db_path = tmp_path / "events.db"
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         # Create large context (simulating many files in context)
@@ -244,14 +220,10 @@ class TestDatabaseResilience:
 
     def test_handles_readonly_database(self, tmp_path, monkeypatch):
         """Should handle read-only database gracefully."""
-        db_path = tmp_path / "events.db"
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         # Create database first
@@ -278,14 +250,11 @@ class TestDatabaseResilience:
 
     def test_handles_corrupted_schema(self, tmp_path, monkeypatch):
         """Should handle database with unexpected schema gracefully."""
-        db_path = tmp_path / "events.db"
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         # Create a database with wrong schema
@@ -306,14 +275,10 @@ class TestDatabaseResilience:
 
     def test_concurrent_readers_and_writers(self, tmp_path, monkeypatch):
         """Concurrent reads and writes should not block each other."""
-        db_path = tmp_path / "events.db"
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         # Seed some initial data
@@ -375,14 +340,10 @@ class TestSchemaCreation:
 
     def test_multiple_processes_create_schema(self, tmp_path, monkeypatch):
         """Schema creation should be idempotent across concurrent processes."""
-        db_path = tmp_path / "events.db"
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         num_threads = 10

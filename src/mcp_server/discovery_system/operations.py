@@ -2,6 +2,8 @@
 Discovery System Operations - Main System Interface
 
 Provides high-level operations for discovery scanning, matching, and promotion.
+
+Refactored to use unified database (schema v3.0.0) at .pongogo/pongogo.db
 """
 
 import json
@@ -9,13 +11,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from .database import DiscoveryDatabase
+from ..database.database import PongogoDatabase, get_default_db_path
 from .scanner import DiscoveryScanner
 
 
 @dataclass
 class Discovery:
-    """A discovery record from the database."""
+    """A discovery record from the database (artifact_discovered table)."""
 
     id: int
     source_file: str
@@ -25,7 +27,7 @@ class Discovery:
     content_hash: str
     keywords: list[str]
     status: str
-    instruction_file: str | None
+    promoted_to: int | None  # FK to artifact_implemented.id
     discovered_at: str
     promoted_at: str | None
     archived_at: str | None
@@ -43,7 +45,7 @@ class Discovery:
             content_hash=row["content_hash"],
             keywords=json.loads(row["keywords"]) if row["keywords"] else [],
             status=row["status"],
-            instruction_file=row["instruction_file"],
+            promoted_to=row["promoted_to"],
             discovered_at=row["discovered_at"],
             promoted_at=row["promoted_at"],
             archived_at=row["archived_at"],
@@ -66,6 +68,7 @@ class DiscoverySystem:
     Main interface for the Discovery System.
 
     Coordinates scanning, storage, matching, and promotion of discoveries.
+    Uses unified database at .pongogo/pongogo.db (schema v3.0.0).
     """
 
     def __init__(self, project_root: Path):
@@ -76,7 +79,7 @@ class DiscoverySystem:
             project_root: Path to project root directory
         """
         self.project_root = Path(project_root)
-        self.db = DiscoveryDatabase(project_root)
+        self.db = PongogoDatabase(project_root=project_root)
         self.scanner = DiscoveryScanner(project_root)
 
     def scan_repository(self) -> ScanResult:
@@ -95,7 +98,10 @@ class DiscoverySystem:
 
         for d in discoveries:
             # Check if we already have this content (by hash)
-            existing = self.db.get_discovery_by_hash(d.content_hash)
+            existing = self.db.execute_one(
+                "SELECT id FROM artifact_discovered WHERE content_hash = ?",
+                (d.content_hash,),
+            )
 
             if existing:
                 # Content unchanged, nothing to do
@@ -104,7 +110,7 @@ class DiscoverySystem:
                 # Check if same source_file + section_title exists (updated content)
                 existing_by_location = self.db.execute_one(
                     """
-                    SELECT id FROM discoveries
+                    SELECT id FROM artifact_discovered
                     WHERE source_file = ? AND section_title = ?
                     """,
                     (d.source_file, d.section_title),
@@ -114,7 +120,7 @@ class DiscoverySystem:
                     # Update existing discovery with new content
                     self.db.execute_update(
                         """
-                        UPDATE discoveries
+                        UPDATE artifact_discovered
                         SET section_content = ?, content_hash = ?, keywords = ?,
                             discovered_at = ?
                         WHERE id = ?
@@ -132,7 +138,7 @@ class DiscoverySystem:
                     # Insert new discovery
                     self.db.execute_insert(
                         """
-                        INSERT INTO discoveries
+                        INSERT INTO artifact_discovered
                         (source_file, source_type, section_title, section_content,
                          content_hash, keywords, status, discovered_at)
                         VALUES (?, ?, ?, ?, ?, ?, 'DISCOVERED', ?)
@@ -154,12 +160,13 @@ class DiscoverySystem:
             self.db.execute_insert(
                 """
                 INSERT INTO scan_history
-                (scan_date, source_type, files_scanned, sections_found,
+                (scan_date, scan_type, source_type, files_scanned, sections_found,
                  new_discoveries, updated_discoveries)
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     now,
+                    "repository_scan",
                     source_type,
                     data.get("files", 0),
                     data.get("sections", 0),
@@ -195,7 +202,7 @@ class DiscoverySystem:
         # Simple approach: count how many keywords match
         discoveries = self.db.execute(
             """
-            SELECT * FROM discoveries
+            SELECT * FROM artifact_discovered
             WHERE status = 'DISCOVERED'
             ORDER BY discovered_at DESC
             """
@@ -232,7 +239,7 @@ class DiscoverySystem:
         """
         # Get discovery
         row = self.db.execute_one(
-            "SELECT * FROM discoveries WHERE id = ?",
+            "SELECT * FROM artifact_discovered WHERE id = ?",
             (discovery_id,),
         )
         if not row:
@@ -260,19 +267,51 @@ class DiscoverySystem:
         content = self._generate_instruction_content(discovery)
         instruction_path.write_text(content, encoding="utf-8")
 
-        # Update discovery status
+        # Create artifact_implemented record
         now = datetime.utcnow().isoformat()
         relative_path = str(instruction_path.relative_to(self.project_root))
+        word_count = len(discovery.section_content.split())
+
+        impl_id = self.db.execute_insert(
+            """
+            INSERT INTO artifact_implemented
+            (discovered_id, instruction_file, instruction_id, instruction_category,
+             content_hash, word_count, title, description, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)
+            """,
+            (
+                discovery_id,
+                relative_path,
+                f"discovered:{slug}",
+                self._get_category_from_source(discovery.source_type),
+                discovery.content_hash,
+                word_count,
+                discovery.section_title or "Discovered Knowledge",
+                f"Auto-discovered from {discovery.source_file}",
+                now,
+            ),
+        )
+
+        # Update discovery status with link to implemented record
         self.db.execute_update(
             """
-            UPDATE discoveries
-            SET status = 'PROMOTED', instruction_file = ?, promoted_at = ?
+            UPDATE artifact_discovered
+            SET status = 'PROMOTED', promoted_to = ?, promoted_at = ?
             WHERE id = ?
             """,
-            (relative_path, now, discovery_id),
+            (impl_id, now, discovery_id),
         )
 
         return relative_path
+
+    def _get_category_from_source(self, source_type: str) -> str:
+        """Map source type to instruction category."""
+        category_map = {
+            "CLAUDE_MD": "project_guidance",
+            "WIKI": "architecture",
+            "DOCS": "documentation",
+        }
+        return category_map.get(source_type, "discovered")
 
     def _generate_instruction_content(self, discovery: Discovery) -> str:
         """Generate instruction file content from a discovery."""
@@ -336,7 +375,7 @@ auto_generated: true
             List of Discovery objects
         """
         conditions = []
-        params = []
+        params: list = []
 
         if status:
             conditions.append("status = ?")
@@ -350,7 +389,7 @@ auto_generated: true
 
         rows = self.db.execute(
             f"""
-            SELECT * FROM discoveries
+            SELECT * FROM artifact_discovered
             WHERE {where_clause}
             ORDER BY discovered_at DESC
             LIMIT ?
@@ -363,7 +402,7 @@ auto_generated: true
     def get_discovery(self, discovery_id: int) -> Discovery | None:
         """Get a single discovery by ID."""
         row = self.db.execute_one(
-            "SELECT * FROM discoveries WHERE id = ?",
+            "SELECT * FROM artifact_discovered WHERE id = ?",
             (discovery_id,),
         )
         return Discovery.from_row(row) if row else None
@@ -384,7 +423,7 @@ auto_generated: true
         now = datetime.utcnow().isoformat()
         affected = self.db.execute_update(
             """
-            UPDATE discoveries
+            UPDATE artifact_discovered
             SET status = 'ARCHIVED', archived_at = ?, archive_reason = ?
             WHERE id = ?
             """,
@@ -399,12 +438,31 @@ auto_generated: true
         Returns:
             Dictionary with counts and status breakdown
         """
-        total = self.db.count_discoveries()
+        # Count total
+        total_row = self.db.execute_one(
+            "SELECT COUNT(*) as cnt FROM artifact_discovered"
+        )
+        total = total_row["cnt"] if total_row else 0
+
+        # Count by status
         by_status = {}
         for status in ["DISCOVERED", "PROMOTED", "ARCHIVED"]:
-            by_status[status] = self.db.count_discoveries(status=status)
+            row = self.db.execute_one(
+                "SELECT COUNT(*) as cnt FROM artifact_discovered WHERE status = ?",
+                (status,),
+            )
+            by_status[status] = row["cnt"] if row else 0
 
-        by_source = self.db.count_by_source_type()
+        # Count by source type (non-archived)
+        source_rows = self.db.execute(
+            """
+            SELECT source_type, COUNT(*) as cnt
+            FROM artifact_discovered
+            WHERE status != 'ARCHIVED'
+            GROUP BY source_type
+            """
+        )
+        by_source = {row["source_type"]: row["cnt"] for row in source_rows}
 
         return {
             "total": total,
