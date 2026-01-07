@@ -68,7 +68,22 @@ Use MCP tools to verify connection and get version info:
 - [ ] Verify returns > 0 results
 - [ ] Record response time
 
-#### 4. Routing Validation
+#### 4. Event History
+
+Check routing event capture health using `get_routing_event_stats()` MCP tool:
+
+- [ ] Call `get_routing_event_stats()` via MCP
+- [ ] Check `status` field: "active", "empty", or "missing"
+- [ ] Note `total_count` for total events captured
+- [ ] Note `last_event` timestamp and calculate relative time
+- [ ] Note `last_24h_count` for recent activity
+
+**Status Interpretation**:
+- **active**: Database exists with events - healthy state
+- **empty**: Database exists but no events yet - recently initialized
+- **missing**: No database file - `pongogo init` may not have been run
+
+#### 5. Routing Validation
 
 Test routing with known queries that should return results:
 
@@ -78,7 +93,7 @@ Test routing with known queries that should return results:
 | "git safety" | safety_prevention | |
 | "work log entry" | project_management | |
 
-#### 5. Network Connectivity (if MCP connection fails)
+#### 6. Network Connectivity (if MCP connection fails)
 
 ```bash
 # Can reach container registry (run on HOST via Bash tool)
@@ -109,6 +124,12 @@ Generate a copyable diagnostic report:
 ### MCP Server
 - **Status**: ✅ Connected / ❌ Not connected
 - **Version**: [from upgrade_pongogo response]
+
+### Event History
+- **Status**: ✅ Active / ⚠️ Empty / ❌ Missing
+- **Total Events**: [count]
+- **Last Event**: [timestamp] ([relative time, e.g., "2 hours ago"])
+- **24h Activity**: [count] events
 
 ### Routing Tests
 | Query | Result | Time |
@@ -150,6 +171,8 @@ Or run `/pongogo-support` to open an issue directly.
 | Config invalid | `pongogo init --force` |
 | No instructions | `pongogo init` |
 | Routing returns 0 | Check `.pongogo/instructions/` exists and has `.md` files |
+| Event history missing | `pongogo init` to create `.pongogo/sync/` directory |
+| Event history empty | Normal for new installs; events captured on first route call |
 
 **NOTE**: Pongogo-to-Go runs via Claude Code's MCP infrastructure. Do NOT suggest `docker-compose` commands - they don't apply here.
 

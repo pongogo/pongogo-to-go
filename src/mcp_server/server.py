@@ -44,7 +44,7 @@ from mcp_server.config import (
 from mcp_server.discovery_system import DiscoverySystem
 
 # Event capture for routing history (AD-017: Local-First State Architecture)
-from mcp_server.event_capture import store_routing_event
+from mcp_server.event_capture import get_event_stats, store_routing_event
 from mcp_server.instruction_handler import InstructionHandler
 from mcp_server.routing_engine import (
     RoutingEngine,
@@ -813,6 +813,61 @@ async def convert_time(
             "error": str(e),
             "source_timezone": source_timezone,
             "target_timezone": target_timezone,
+        }
+
+
+@mcp.tool()
+async def get_routing_event_stats() -> dict:
+    """
+    Get routing event capture statistics for diagnostics.
+
+    Returns statistics about captured routing events from the local SQLite database.
+    Used by /pongogo-diagnose to show Event History health.
+
+    Returns:
+        Dictionary with:
+        - total_count: Total number of captured events
+        - first_event: Timestamp of first event (ISO format)
+        - last_event: Timestamp of most recent event (ISO format)
+        - last_24h_count: Events captured in the last 24 hours
+        - database_path: Path to the events database
+        - database_exists: Whether the database file exists
+        - status: "active" if events exist, "empty" if db exists but no events,
+                 "missing" if no database
+
+    Example response:
+        {
+            "total_count": 142,
+            "first_event": "2026-01-02T14:30:00",
+            "last_event": "2026-01-06T10:15:32",
+            "last_24h_count": 28,
+            "database_path": "/home/user/.pongogo/sync/events.db",
+            "database_exists": True,
+            "status": "active"
+        }
+    """
+    try:
+        stats = get_event_stats()
+
+        # Determine status based on stats
+        if not stats.get("database_exists", False):
+            status = "missing"
+        elif stats.get("total_count", 0) == 0:
+            status = "empty"
+        else:
+            status = "active"
+
+        return {
+            **stats,
+            "status": status,
+        }
+    except Exception as e:
+        logger.error(f"Error getting event stats: {e}")
+        return {
+            "error": str(e),
+            "status": "error",
+            "database_exists": False,
+            "total_count": 0,
         }
 
 
