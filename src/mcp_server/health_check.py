@@ -9,7 +9,6 @@ Parent Epic: #463 (enable_routing_event_capture)
 
 import logging
 import sqlite3
-import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any

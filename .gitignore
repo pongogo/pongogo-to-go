@@ -37,8 +37,18 @@ env/
 .DS_Store
 Thumbs.db
 
-# Pongogo runtime (created by MCP server, not init)
-.pongogo/*.db
+# Pongogo runtime (AD-017: Local-First State Architecture)
+# .pongogo/config.yaml is COMMITTED (portable settings)
+# Everything else is LOCAL-ONLY:
+.pongogo/pongogo.db       # Unified database (schema v3.0.0)
+.pongogo/cache/           # Derived data (index, embeddings)
+.pongogo/sync/            # Legacy sync directory (pre-v3.0.0)
+
+# Legacy paths (if upgrading from older versions)
 .observability_db/
+
+# Test/dev artifacts
 logs/
 .coverage
+htmlcov/
+.pytest_cache/

@@ -1,9 +1,6 @@
 """Tests for health_check module."""
 
 import sqlite3
-from pathlib import Path
-
-import pytest
 
 from mcp_server.health_check import (
     check_config_validity,
@@ -106,7 +103,9 @@ class TestCheckEventCapture:
         """Should report empty when database has no events."""
         db_path = tmp_path / "events.db"
         conn = sqlite3.connect(db_path)
-        conn.execute("CREATE TABLE routing_events (id INTEGER PRIMARY KEY, timestamp TEXT)")
+        conn.execute(
+            "CREATE TABLE routing_events (id INTEGER PRIMARY KEY, timestamp TEXT)"
+        )
         conn.close()
 
         monkeypatch.setattr(

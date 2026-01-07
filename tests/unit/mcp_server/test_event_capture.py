@@ -1,16 +1,11 @@
-"""Tests for event_capture module."""
+"""Tests for event_capture module (backward-compatibility wrapper)."""
 
-import sqlite3
 from pathlib import Path
 
-import pytest
-
 from mcp_server.event_capture import (
-    DEFAULT_SYNC_DIR,
-    SCHEMA,
-    ensure_schema,
     get_event_stats,
     get_events_db_path,
+    get_recent_events,
     store_routing_event,
 )
 
@@ -23,40 +18,10 @@ class TestGetEventsDbPath:
         path = get_events_db_path()
         assert isinstance(path, Path)
 
-    def test_path_in_sync_dir(self):
-        """Path should be in sync directory."""
+    def test_filename_is_pongogo_db(self):
+        """Filename should be pongogo.db (unified database)."""
         path = get_events_db_path()
-        assert path.parent == DEFAULT_SYNC_DIR
-
-    def test_filename_is_events_db(self):
-        """Filename should be events.db."""
-        path = get_events_db_path()
-        assert path.name == "events.db"
-
-
-class TestEnsureSchema:
-    """Tests for ensure_schema function."""
-
-    def test_creates_table(self, tmp_path):
-        """Should create routing_events table."""
-        db_path = tmp_path / "test.db"
-        conn = sqlite3.connect(db_path)
-        ensure_schema(conn)
-
-        # Check table exists
-        cursor = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='routing_events'"
-        )
-        assert cursor.fetchone() is not None
-        conn.close()
-
-    def test_idempotent(self, tmp_path):
-        """Should be safe to call multiple times."""
-        db_path = tmp_path / "test.db"
-        conn = sqlite3.connect(db_path)
-        ensure_schema(conn)
-        ensure_schema(conn)  # Should not raise
-        conn.close()
+        assert path.name == "pongogo.db"
 
 
 class TestStoreRoutingEvent:
@@ -64,14 +29,11 @@ class TestStoreRoutingEvent:
 
     def test_returns_true_on_success(self, tmp_path, monkeypatch):
         """Should return True when event is stored."""
-        # Use temp database
+        # Use temp database - patch at events module level where it's imported
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            tmp_path / "events.db",
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         result = store_routing_event(
@@ -83,14 +45,12 @@ class TestStoreRoutingEvent:
 
     def test_stores_event_data(self, tmp_path, monkeypatch):
         """Should store event data in database."""
-        db_path = tmp_path / "events.db"
+        import sqlite3
+
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         store_routing_event(
@@ -102,27 +62,22 @@ class TestStoreRoutingEvent:
         )
 
         conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
         cursor = conn.execute("SELECT * FROM routing_events")
         row = cursor.fetchone()
         conn.close()
 
         assert row is not None
-        # Check user_message (index 2)
-        assert row[2] == "how do I create an epic?"
-        # Check engine_version (index 4)
-        assert row[4] == "durian-0.6.1"
-        # Check instruction_count (index 7)
-        assert row[7] == 2
+        assert row["user_message"] == "how do I create an epic?"
+        assert row["engine_version"] == "durian-0.6.1"
+        assert row["instruction_count"] == 2
 
     def test_handles_empty_instructions(self, tmp_path, monkeypatch):
         """Should handle empty instruction list."""
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            tmp_path / "events.db",
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         result = store_routing_event(
@@ -138,43 +93,35 @@ class TestGetEventStats:
 
     def test_returns_dict(self, tmp_path, monkeypatch):
         """Should return dictionary."""
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            tmp_path / "events.db",
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         stats = get_event_stats()
         assert isinstance(stats, dict)
 
-    def test_reports_zero_when_no_events(self, tmp_path, monkeypatch):
-        """Should report zero events when database is empty."""
+    def test_reports_missing_when_no_db(self, tmp_path, monkeypatch):
+        """Should report status=missing when database doesn't exist."""
+        # Point to non-existent path that won't be auto-created
+        db_path = tmp_path / "nonexistent" / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            tmp_path / "events.db",
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         stats = get_event_stats()
+        assert stats["status"] == "missing"
         assert stats["total_count"] == 0
         assert stats["database_exists"] is False
 
     def test_counts_events(self, tmp_path, monkeypatch):
         """Should count stored events."""
-        db_path = tmp_path / "events.db"
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
-        )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
 
         # Store some events
@@ -185,18 +132,61 @@ class TestGetEventStats:
         stats = get_event_stats()
         assert stats["total_count"] == 3
         assert stats["database_exists"] is True
+        assert stats["status"] == "active"
 
     def test_includes_database_path(self, tmp_path, monkeypatch):
         """Should include database path in stats."""
-        db_path = tmp_path / "events.db"
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
         monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_DB_PATH",
-            db_path,
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
         )
-        monkeypatch.setattr(
-            "mcp_server.event_capture.DEFAULT_SYNC_DIR",
-            tmp_path,
-        )
+
+        # Need to store at least one event to create the DB
+        store_routing_event("test", ["inst"], "test-0.1")
 
         stats = get_event_stats()
         assert stats["database_path"] == str(db_path)
+
+
+class TestGetRecentEvents:
+    """Tests for get_recent_events function."""
+
+    def test_returns_list(self, tmp_path, monkeypatch):
+        """Should return a list."""
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
+        monkeypatch.setattr(
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
+        )
+
+        events = get_recent_events()
+        assert isinstance(events, list)
+
+    def test_returns_stored_events(self, tmp_path, monkeypatch):
+        """Should return stored events."""
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
+        monkeypatch.setattr(
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
+        )
+
+        store_routing_event("query 1", ["inst1"], "test-0.1")
+        store_routing_event("query 2", ["inst2"], "test-0.1")
+
+        events = get_recent_events(limit=10)
+        assert len(events) == 2
+
+    def test_respects_limit(self, tmp_path, monkeypatch):
+        """Should respect limit parameter."""
+        db_path = tmp_path / ".pongogo" / "pongogo.db"
+        monkeypatch.setattr(
+            "mcp_server.database.events.get_default_db_path",
+            lambda _project_root=None: db_path,
+        )
+
+        for i in range(10):
+            store_routing_event(f"query {i}", [f"inst{i}"], "test-0.1")
+
+        events = get_recent_events(limit=5)
+        assert len(events) == 5
