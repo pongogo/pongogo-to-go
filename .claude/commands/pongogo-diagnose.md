@@ -51,9 +51,18 @@ Check `.mcp.json`:
 - [ ] Contains `pongogo-knowledge` server entry
 - [ ] Docker command path is valid
 
-#### 3. MCP Server Connection
+#### 3. MCP Server Connection & Health
 
-Use MCP tools to verify connection and get version info:
+Use MCP tools to verify connection and get comprehensive health status:
+
+**Get comprehensive health status** (recommended):
+- Call `get_health_status()` via MCP
+- This returns all component statuses in one call:
+  - `overall`: "healthy" | "degraded" | "unhealthy"
+  - `container`: Container status
+  - `database`: Events database health
+  - `events`: Event capture activity
+  - `config`: Configuration validity
 
 **Get routing engine version**:
 - Call `get_routing_info()` via MCP

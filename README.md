@@ -145,6 +145,35 @@ These are NOT stored in `.pongogo/`:
 - Cache files (regenerated on demand)
 - User credentials (use environment variables)
 
+## Local Storage
+
+Pongogo stores data locally in the `.pongogo/` directory:
+
+| Directory | Purpose | Cloud Sync |
+|-----------|---------|------------|
+| `instructions/` | Your custom instructions | Git-tracked |
+| `state/` | Session state | No |
+| `sync/` | Routing history | Paid tiers only |
+
+### Routing History
+
+Routing events are stored in `.pongogo/sync/events.db`. This enables:
+- **Lookback features**: Learning from past routing decisions
+- **Diagnostic information**: Used by `/pongogo-diagnose` to show event health
+- **Future cloud sync**: Available in paid tiers
+
+**Multi-Computer Note**: Each machine maintains separate routing history. Cloud sync for routing history is available in paid tiers.
+
+### FAQ
+
+**Why is my routing history empty on a new machine?**
+
+Routing history is stored locally in `.pongogo/sync/events.db`. If you work on multiple computers, each machine has its own history. Cloud sync is available in paid tiers.
+
+**What happens if I delete `.pongogo/sync/`?**
+
+The sync directory will be recreated on next routing call. You'll lose routing history but Pongogo will continue to work normally.
+
 ---
 
 ## Configuration

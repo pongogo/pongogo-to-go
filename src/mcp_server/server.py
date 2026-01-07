@@ -45,6 +45,9 @@ from mcp_server.discovery_system import DiscoverySystem
 
 # Event capture for routing history (AD-017: Local-First State Architecture)
 from mcp_server.event_capture import get_event_stats, store_routing_event
+
+# Health check for diagnostics (Task #470)
+from mcp_server.health_check import get_health_status as _get_health_status
 from mcp_server.instruction_handler import InstructionHandler
 from mcp_server.routing_engine import (
     RoutingEngine,
@@ -868,6 +871,47 @@ async def get_routing_event_stats() -> dict:
             "status": "error",
             "database_exists": False,
             "total_count": 0,
+        }
+
+
+@mcp.tool()
+async def get_health_status() -> dict:
+    """
+    Get comprehensive health status of Pongogo installation.
+
+    Performs health checks on all major components for diagnostics.
+    Used by /pongogo-diagnose to provide system health overview.
+
+    Returns:
+        Dictionary with:
+        - overall: "healthy" | "degraded" | "unhealthy"
+        - container: Container status (running inside container or on host)
+        - database: Events database health (healthy, missing, locked)
+        - events: Event capture activity (active, empty, stale)
+        - config: Configuration validity (valid, invalid, missing)
+        - timestamp: Check timestamp (ISO format)
+
+    Example response:
+        {
+            "overall": "healthy",
+            "container": {"status": "healthy", "containerized": true},
+            "database": {"status": "healthy", "writable": true},
+            "events": {"status": "active", "total_count": 142, "last_event_ago": "5m ago"},
+            "config": {"status": "valid", "categories_count": 5},
+            "timestamp": "2026-01-06T15:30:00+00:00"
+        }
+    """
+    try:
+        return _get_health_status()
+    except Exception as e:
+        logger.error(f"Error getting health status: {e}")
+        return {
+            "overall": "error",
+            "error": str(e),
+            "container": {"status": "unknown"},
+            "database": {"status": "unknown"},
+            "events": {"status": "unknown"},
+            "config": {"status": "unknown"},
         }
 
 
