@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 # Single source of truth for this engine's version
 # Used by @register_engine decorator and version property
-DURIAN_VERSION = "durian-0.6.1"
+DURIAN_VERSION = "durian-0.6.2"
 
 # Simple approval patterns that should suppress routing
 # These messages are typically conversational continuations, not queries
@@ -560,6 +560,89 @@ COMPILED_MISTAKE_PATTERNS = {
 # Outcome boost configuration
 OUTCOME_BOOST_AMOUNT = 5  # Tuned: 5 optimal (3-20 tested, low values best)
 
+# IMP-013: User guidance detection triggers (Task #390)
+# Detect when users express behavioral rules, preferences, or feedback
+# GT v4 guidance dimension types:
+# - explicit -> EXPLICIT_GUIDANCE_TRIGGERS (direct rules)
+# - implicit_rule, implicit_wish, implicit_preference -> IMPLICIT_GUIDANCE_TRIGGERS
+# - correction_signal, style_signal -> IMPLICIT_GUIDANCE_TRIGGERS (feedback patterns)
+
+EXPLICIT_GUIDANCE_TRIGGERS = {
+    # Direct rule declarations
+    r"always\s+(?:use|include|add|do|run|check)",
+    r"never\s+(?:use|include|add|do|run|commit|push)",
+    r"don'?t\s+(?:ever|use|include|add|do|run|commit)",
+    r"from\s+now\s+on\s+(?:always|never|please|I\s+want)",
+    r"going\s+forward\s+(?:always|never|please)",
+    r"(?:as\s+a\s+)?rule,?\s+(?:always|never|I\s+want|we\s+should)",
+    r"make\s+sure\s+(?:to\s+)?always",
+    r"remember\s+to\s+always",
+}
+
+IMPLICIT_GUIDANCE_TRIGGERS = {
+    # Preference expressions
+    r"I\s+(?:prefer|like|want|need)\s+(?:to\s+)?(?:use|have|see)",
+    r"I'?d\s+(?:prefer|like|rather)\s+(?:if\s+)?(?:you|we|it)",
+    r"(?:can|could)\s+you\s+(?:always|please\s+always)",
+    # Style/format preferences
+    r"(?:use|format|write|style)\s+(?:it\s+)?(?:like|as|this\s+way)",
+    r"(?:the|my)\s+preferred\s+(?:way|style|format|approach)",
+    r"(?:I|we)\s+usually\s+(?:do|use|write|format)",
+    # Correction signals
+    r"(?:no|not)\s+like\s+that",
+    r"that'?s\s+not\s+(?:what|how)\s+I\s+(?:meant|wanted)",
+    r"(?:actually|instead),?\s+(?:I\s+)?(?:prefer|want|need)",
+    r"(?:please\s+)?(?:don'?t|do\s+not)\s+do\s+(?:it\s+)?that\s+(?:way|again)",
+}
+
+# Compile guidance patterns for efficient matching
+import re as _re
+
+COMPILED_EXPLICIT_GUIDANCE = _re.compile(
+    "|".join(f"({p})" for p in EXPLICIT_GUIDANCE_TRIGGERS), _re.IGNORECASE
+)
+COMPILED_IMPLICIT_GUIDANCE = _re.compile(
+    "|".join(f"({p})" for p in IMPLICIT_GUIDANCE_TRIGGERS), _re.IGNORECASE
+)
+
+
+def _load_custom_guidance_triggers(config_path: Path | None = None) -> dict:
+    """Load custom guidance triggers from .pongogo/guidance_triggers.json."""
+    import json
+
+    custom = {"explicit": set(), "implicit": set(), "promotion_threshold": 3}
+
+    search_paths = [
+        Path.cwd() / ".pongogo" / "guidance_triggers.json",
+        Path.cwd().parent / ".pongogo" / "guidance_triggers.json",
+    ]
+    if config_path:
+        search_paths.insert(0, config_path)
+
+    for path in search_paths:
+        if path.exists():
+            try:
+                with open(path) as f:
+                    data = json.load(f)
+                custom["explicit"] = set(data.get("explicit_triggers", []))
+                custom["implicit"] = set(data.get("implicit_triggers", []))
+                custom["promotion_threshold"] = data.get("promotion_threshold", 3)
+                logger.info(f"IMP-013: Loaded custom triggers from {path}")
+                break
+            except (json.JSONDecodeError, OSError) as e:
+                logger.warning(f"Failed to load custom triggers from {path}: {e}")
+
+    return custom
+
+
+def _compile_guidance_patterns(seeded: set, custom: set) -> _re.Pattern:
+    """Compile merged seeded + custom trigger patterns into regex."""
+    merged = seeded | custom
+    if not merged:
+        return _re.compile(r"(?!.*)")  # Match nothing
+    return _re.compile("|".join(f"({p})" for p in merged), _re.IGNORECASE)
+
+
 # Default feature configuration (all improvements enabled)
 DEFAULT_FEATURES = {
     "violation_detection": True,  # Boost compliance routing on violations
@@ -573,6 +656,8 @@ DEFAULT_FEATURES = {
     "friction_boost": True,  # Boost categories when friction detected
     "outcome_aware": True,  # Detect mistake types using iteration patterns
     "outcome_boost": True,  # Boost specific instructions when mistake type detected
+    "guidance_detection": True,  # IMP-013: Detect user guidance (rules, preferences)
+    "guidance_action": True,  # IMP-013: Generate guidance action directive
 }
 
 
@@ -622,6 +707,9 @@ class RuleBasedRouter(RoutingEngine):
 
         # Merge provided features with defaults ()
         self.features = {**DEFAULT_FEATURES, **(features or {})}
+
+        # IMP-013 Phase 4: Load custom guidance triggers
+        self._load_custom_triggers()
 
         # Log feature configuration
         feature_str = ", ".join(f"{k}={v}" for k, v in self.features.items())
@@ -717,7 +805,120 @@ class RuleBasedRouter(RoutingEngine):
                 default=True,
                 category="scoring",
             ),
+            FeatureSpec(
+                name="guidance_detection",
+                description="IMP-013: Detect user guidance (rules, preferences) in messages",
+                default=True,
+                category="detection",
+            ),
+            FeatureSpec(
+                name="guidance_action",
+                description="IMP-013: Generate guidance action directive for auto-invocation",
+                default=True,
+                category="detection",
+            ),
         ]
+
+    def _load_custom_triggers(self):
+        """Load custom guidance triggers and compile patterns."""
+        custom = _load_custom_guidance_triggers()
+        self._custom_explicit_triggers = custom["explicit"]
+        self._custom_implicit_triggers = custom["implicit"]
+        self._promotion_threshold = custom["promotion_threshold"]
+
+        # Compile patterns merging seeded + custom triggers
+        self._compiled_explicit_guidance = _compile_guidance_patterns(
+            EXPLICIT_GUIDANCE_TRIGGERS, custom["explicit"]
+        )
+        self._compiled_implicit_guidance = _compile_guidance_patterns(
+            IMPLICIT_GUIDANCE_TRIGGERS, custom["implicit"]
+        )
+
+        if custom["explicit"] or custom["implicit"]:
+            total_explicit = len(EXPLICIT_GUIDANCE_TRIGGERS) + len(custom["explicit"])
+            total_implicit = len(IMPLICIT_GUIDANCE_TRIGGERS) + len(custom["implicit"])
+            logger.info(
+                f"IMP-013: Custom triggers loaded - explicit: {total_explicit}, "
+                f"implicit: {total_implicit}, threshold: {custom['promotion_threshold']}"
+            )
+
+    def reload_custom_triggers(self):
+        """Reload custom triggers at runtime (for hot-reload support)."""
+        self._load_custom_triggers()
+
+    @property
+    def promotion_threshold(self) -> int:
+        """Return configured promotion threshold for guidance."""
+        return getattr(self, "_promotion_threshold", 3)
+
+    def _detect_user_guidance(self, message: str) -> dict[str, Any]:
+        """
+        Detect user guidance (rules, preferences, feedback) in message.
+
+        IMP-013: User guidance detection for automatic knowledge capture (Task #390).
+        This enables Pongogo to detect when users express behavioral rules or preferences
+        and capture them for future routing.
+
+        GT v4 Guidance dimension types:
+        - explicit: Direct rules/directives -> EXPLICIT_GUIDANCE_TRIGGERS
+        - implicit_rule: Inferred rules -> IMPLICIT_GUIDANCE_TRIGGERS
+        - implicit_wish: User wishes -> IMPLICIT_GUIDANCE_TRIGGERS
+        - implicit_preference: Style preferences -> IMPLICIT_GUIDANCE_TRIGGERS
+        - correction_signal: Feedback from mistakes -> IMPLICIT_GUIDANCE_TRIGGERS
+        - style_signal: Output format preferences -> IMPLICIT_GUIDANCE_TRIGGERS
+        - none: No guidance detected
+
+        Args:
+            message: User message to analyze
+
+        Returns:
+            Dictionary with:
+            - detected: True if any guidance detected
+            - guidance_type: 'explicit' | 'implicit' | None
+            - signals: List of matched patterns (for debugging)
+            - content: The portion of message that triggered detection
+        """
+        signals = []
+        guidance_type = None
+        matched_content = None
+
+        # Use instance-level patterns (includes custom triggers from Phase 4)
+        explicit_pattern = getattr(
+            self, "_compiled_explicit_guidance", COMPILED_EXPLICIT_GUIDANCE
+        )
+        implicit_pattern = getattr(
+            self, "_compiled_implicit_guidance", COMPILED_IMPLICIT_GUIDANCE
+        )
+
+        # Check explicit guidance first (higher priority)
+        explicit_match = explicit_pattern.search(message)
+        if explicit_match:
+            matched_content = explicit_match.group()
+            signals.append(f"explicit:{matched_content[:30]}")
+            guidance_type = "explicit"
+            logger.debug(f"IMP-013: Explicit guidance detected: {matched_content[:50]}")
+
+        # Check implicit guidance (only if no explicit found, or add as secondary signal)
+        implicit_match = implicit_pattern.search(message)
+        if implicit_match:
+            implicit_content = implicit_match.group()
+            signals.append(f"implicit:{implicit_content[:30]}")
+            if guidance_type is None:
+                guidance_type = "implicit"
+                matched_content = implicit_content
+            logger.debug(f"IMP-013: Implicit guidance detected: {implicit_content[:50]}")
+
+        if signals:
+            logger.info(
+                f"IMP-013: User guidance detected: type={guidance_type}, signals={len(signals)}"
+            )
+
+        return {
+            "detected": len(signals) > 0,
+            "guidance_type": guidance_type,
+            "signals": signals,
+            "content": matched_content,
+        }
 
     def route(self, message: str, context: dict | None = None, limit: int = 5) -> dict:
         """
@@ -817,6 +1018,17 @@ class RuleBasedRouter(RoutingEngine):
                     "instruction_boosts": [],
                 }
 
+            # IMP-013: Detect user guidance (rules, preferences, feedback) (if enabled)
+            if self.features.get("guidance_detection", True):
+                guidance_info = self._detect_user_guidance(message)
+            else:
+                guidance_info = {
+                    "detected": False,
+                    "guidance_type": None,
+                    "signals": [],
+                    "content": None,
+                }
+
             context = context or {}
             files = context.get("files", [])
             directories = context.get("directories", [])
@@ -865,6 +1077,9 @@ class RuleBasedRouter(RoutingEngine):
                 "mistake_detection": mistake_info
                 if mistake_info["detected"]
                 else None,  #
+                "guidance_detection": guidance_info
+                if guidance_info["detected"]
+                else None,  # IMP-013
                 "commencement_override": commencement_override,  #  refinement tracking
                 "commencement_lookback": lookback_info,  #  look-back tracking
                 "scoring_breakdown": [],
@@ -1048,11 +1263,35 @@ class RuleBasedRouter(RoutingEngine):
                         f"Procedural warning generated for {len(procedural_instructions)} instruction(s)"
                     )
 
+            # IMP-013 Phase 4: Generate guidance action directive when guidance detected
+            guidance_action = None
+            if guidance_info["detected"] and self.features.get("guidance_action", True):
+                guidance_action = {
+                    "action": "log_user_guidance",
+                    "directive": "USER GUIDANCE DETECTED - Call `log_user_guidance()` MCP tool",
+                    "parameters": {
+                        "content": message,
+                        "guidance_type": guidance_info["guidance_type"],
+                        "context": guidance_info.get("content", "")[:200]
+                        if guidance_info.get("content")
+                        else None,
+                    },
+                    "signals": guidance_info["signals"],
+                    "promotion_threshold": getattr(self, "_promotion_threshold", 3),
+                    "rationale": "User expressed behavioral rule/preference - capture for future routing",
+                }
+                analysis["guidance_action"] = guidance_action
+                logger.info(
+                    f"IMP-013: Guidance action generated: type={guidance_info['guidance_type']}, "
+                    f"signals={guidance_info['signals']}"
+                )
+
             return {
                 "instructions": combined,
                 "count": len(combined),
                 "routing_analysis": analysis,
                 "procedural_warning": procedural_warning,
+                "guidance_action": guidance_action,
             }
 
         except Exception as e:
