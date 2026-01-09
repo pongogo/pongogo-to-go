@@ -263,6 +263,34 @@ Pongogo uses a two-layer architecture:
 
 This separation ensures external users get a clean, focused product while internal development infrastructure remains separate.
 
+### Routing Engine Architecture
+
+The MCP server's routing system uses a pluggable engine pattern:
+
+| File | Purpose | Description |
+|------|---------|-------------|
+| `routing_engine.py` | **Abstract Interface** | Defines `RoutingEngine` base class, engine registry, factory function. Engines are registered with `@register_engine("durian-X.Y")` decorator. |
+| `router.py` | **Concrete Implementation** | Contains `RuleBasedRouter` (the durian engine) that extends `RoutingEngine`. Implements rule-based routing with pattern matching, violation detection, friction awareness, and guidance capture. |
+
+**Why this split?**
+- **Swappable engines**: Different routing algorithms (durian-0.5, durian-0.6, etc.) can be registered and selected at runtime
+- **Clean abstraction**: The interface defines the contract; implementations handle the complexity
+- **Feature flags**: Each engine declares available features; the factory validates configuration
+
+**Key classes:**
+```python
+# routing_engine.py - Interface
+class RoutingEngine(ABC):
+    @abstractmethod
+    def route(self, message, context, limit) -> dict: ...
+
+# router.py - Implementation
+@register_engine("durian-0.6")
+class RuleBasedRouter(RoutingEngine):
+    def route(self, message, context, limit) -> dict:
+        # ~2500 lines of rule-based routing logic
+```
+
 ## Status
 
 🚧 **Under Development** - P05 "Pongogo to Go" milestone
