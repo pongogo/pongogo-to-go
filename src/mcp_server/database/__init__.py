@@ -13,7 +13,7 @@ Shared schema between Super Pongogo and pongogo-to-go.
 Reference: docs/observability/unified_schema_v3.sql (Super Pongogo)
 """
 
-from .database import PongogoDatabase, get_default_db_path
+from .database import PongogoDatabase, get_default_db_path, SCHEMA_VERSION
 from .events import store_routing_event, get_event_stats, get_recent_events
 from .triggers import (
     get_triggers_by_type,
@@ -47,6 +47,7 @@ __all__ = [
     # Database
     "PongogoDatabase",
     "get_default_db_path",
+    "SCHEMA_VERSION",
     # Events
     "store_routing_event",
     "get_event_stats",
