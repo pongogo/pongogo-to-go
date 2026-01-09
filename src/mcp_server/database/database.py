@@ -20,7 +20,7 @@ from typing import Iterator
 logger = logging.getLogger(__name__)
 
 # Schema version for migrations
-SCHEMA_VERSION = "3.0.0"
+SCHEMA_VERSION = "3.1.0"  # Phase 9: Added guidance_fulfillment table
 
 
 def get_default_db_path(project_root: Path | None = None) -> Path:
@@ -206,6 +206,43 @@ CREATE TABLE IF NOT EXISTS scan_history (
 );
 
 CREATE INDEX IF NOT EXISTS idx_scan_history_date ON scan_history(scan_date);
+
+-- Guidance fulfillment tracking (Phase 9, Issue #390)
+-- Tracks whether guidance given in message N is operationalized in subsequent messages
+CREATE TABLE IF NOT EXISTS guidance_fulfillment (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    -- The guidance event
+    guidance_event_id INTEGER,
+    guidance_type TEXT NOT NULL,
+    guidance_content TEXT NOT NULL,
+    action_type TEXT NOT NULL,
+
+    -- Fulfillment tracking
+    fulfillment_status TEXT NOT NULL DEFAULT 'pending'
+        CHECK(fulfillment_status IN ('pending', 'in_progress', 'fulfilled', 'abandoned', 'superseded')),
+
+    -- Evidence
+    fulfillment_event_id INTEGER,
+    fulfillment_evidence TEXT,
+    distance_to_fulfillment INTEGER,
+    confidence REAL DEFAULT 0.0,
+
+    -- Session context
+    session_id TEXT,
+    conversation_id TEXT,
+
+    -- Timing
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fulfilled_at TEXT,
+
+    FOREIGN KEY (guidance_event_id) REFERENCES routing_events(id),
+    FOREIGN KEY (fulfillment_event_id) REFERENCES routing_events(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_guidance_fulfillment_status ON guidance_fulfillment(fulfillment_status);
+CREATE INDEX IF NOT EXISTS idx_guidance_fulfillment_session ON guidance_fulfillment(session_id);
+CREATE INDEX IF NOT EXISTS idx_guidance_fulfillment_action ON guidance_fulfillment(action_type);
 """
 
 

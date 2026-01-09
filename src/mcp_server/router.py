@@ -30,6 +30,7 @@ import logging
 import os
 import re
 import sqlite3
+from datetime import datetime as _datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
@@ -759,6 +760,353 @@ ADHERENCE_WEIGHTS = {
     'non_compliance': {'complied': 0.0, 'partial': 0.3, 'ignored': 0.5, 'defied': 0.2},
     'contradiction': {'complied': 0.0, 'partial': 0.0, 'ignored': 0.2, 'defied': 0.8},
 }
+
+
+# =============================================================================
+# Phase 9: Action Request Patterns (Issue #390)
+# =============================================================================
+
+# Patterns to extract specific action requests from guidance messages
+# Maps pattern -> action_type for fulfillment tracking
+ACTION_REQUEST_PATTERNS = {
+    # Test/build requests
+    r"(?:please\s+)?run\s+(?:the\s+)?tests?": 'run_tests',
+    r"(?:please\s+)?(?:build|compile)\s+(?:the\s+)?project": 'build_project',
+    r"make\s+sure\s+(?:the\s+)?tests?\s+pass": 'run_tests',
+    r"verify\s+(?:the\s+)?build": 'build_project',
+
+    # Process/workflow requests
+    r"(?:take|run)\s+(?:this|it)\s+through\s+(?:the\s+)?(?:closure|commencement)": 'process_checklist',
+    r"conduct\s+(?:a\s+)?retro(?:spective)?": 'conduct_retro',
+    r"create\s+(?:a\s+)?(?:work\s+)?log\s+entry": 'create_work_log',
+    r"add\s+(?:a\s+)?work\s+log": 'create_work_log',
+    r"run\s+(?:the\s+)?(?:issue\s+)?(?:closure|commencement)\s+(?:checklist|process)": 'process_checklist',
+
+    # Pace/control requests
+    r"one\s+(?:at\s+a\s+)?time": 'pace_one_at_time',
+    r"(?:let['\u2019]?s\s+)?pause": 'pause_work',
+    r"don['\u2019]?t\s+(?:begin|start)\s+(?:work\s+)?(?:yet|until)": 'defer_work',
+    r"wait\s+(?:for|until)\s+(?:my\s+)?(?:approval|confirmation)": 'await_approval',
+    r"stop\s+(?:and\s+)?(?:wait|check)": 'pause_work',
+
+    # Review/investigation requests
+    r"(?:please\s+)?(?:review|check|investigate)\s+(?:this|the|that)": 'investigate',
+    r"look\s+(?:at|into)\s+(?:this|the|that)": 'investigate',
+    r"read\s+(?:the\s+)?(?:file|document|issue)": 'read_resource',
+    r"check\s+(?:the\s+)?(?:status|state)\s+(?:of|first)": 'check_status',
+
+    # Commit/git requests
+    r"(?:please\s+)?commit\s+(?:the\s+)?changes?": 'commit_changes',
+    r"create\s+(?:a\s+)?(?:pull\s+)?(?:request|pr)": 'create_pr',
+    r"push\s+(?:the\s+)?changes?": 'push_changes',
+
+    # Documentation requests
+    r"(?:please\s+)?(?:update|add)\s+(?:the\s+)?(?:docs?|documentation)": 'update_docs',
+    r"add\s+(?:a\s+)?comment": 'add_comment',
+}
+
+# Compile action patterns for performance
+COMPILED_ACTION_PATTERNS = {
+    pattern: action_type
+    for pattern, action_type in ACTION_REQUEST_PATTERNS.items()
+}
+COMPILED_ACTION_REGEX = _re.compile(
+    '|'.join(f'(?P<p{i}>{p})' for i, p in enumerate(ACTION_REQUEST_PATTERNS.keys())),
+    _re.IGNORECASE
+)
+
+# Signals that indicate fulfillment of specific action types
+FULFILLMENT_SIGNALS = {
+    'run_tests': [
+        r"tests?\s+(?:passed|failed|running|complete|succeeded|finished)",
+        r"pytest|npm\s+test|cargo\s+test|go\s+test|make\s+test",
+        r"\d+\s+tests?\s+(?:passed|failed|succeeded)",
+        r"all\s+tests?\s+(?:pass|passed|green)",
+        r"test\s+suite\s+(?:complete|finished|passed)",
+    ],
+    'build_project': [
+        r"build\s+(?:succeeded|completed|passed|finished)",
+        r"compilation\s+(?:succeeded|successful|complete)",
+        r"npm\s+run\s+build|cargo\s+build|make\s+build",
+        r"successfully\s+(?:built|compiled)",
+    ],
+    'conduct_retro': [
+        r"retrospective",
+        r"what\s+went\s+well",
+        r"lessons?\s+learned",
+        r"##\s+Retrospective",
+        r"retro\s+complete",
+    ],
+    'create_work_log': [
+        r"work\s+log\s+(?:entry\s+)?(?:added|created|written)",
+        r"added\s+(?:to\s+)?work\s+log",
+        r"##\s+Work\s+Log",
+        r"logged\s+(?:the\s+)?work",
+    ],
+    'process_checklist': [
+        r"checklist\s+(?:complete|completed|passed|verified)",
+        r"all\s+(?:items?\s+)?(?:checked|verified|complete)",
+        r"closure\s+(?:complete|verified)",
+        r"commencement\s+(?:complete|verified)",
+    ],
+    'pace_one_at_time': [
+        r"focusing\s+on\s+(?:the\s+)?(?:first|one)",
+        r"let\s+me\s+start\s+with",
+        r"starting\s+with\s+(?:the\s+)?(?:first|one)",
+        r"one\s+(?:at\s+a\s+)?time",
+        r"taking\s+this\s+step\s+by\s+step",
+    ],
+    'pause_work': [
+        r"pausing",
+        r"waiting\s+(?:for|on)",
+        r"stopping\s+(?:here|now)",
+        r"holding\s+(?:off|on)",
+    ],
+    'defer_work': [
+        r"waiting\s+(?:for|until)",
+        r"will\s+(?:start|begin)\s+(?:when|after)",
+        r"deferring\s+(?:until|to)",
+    ],
+    'await_approval': [
+        r"waiting\s+for\s+(?:your\s+)?(?:approval|confirmation|go-ahead)",
+        r"awaiting\s+(?:your\s+)?(?:approval|confirmation)",
+        r"let\s+me\s+know\s+(?:when|if)\s+(?:to\s+)?proceed",
+    ],
+    'investigate': [
+        r"(?:investigating|reviewing|checking|looking\s+into)",
+        r"found\s+(?:that|the)",
+        r"analysis\s+(?:shows|reveals|indicates)",
+        r"after\s+(?:reviewing|investigating|checking)",
+    ],
+    'read_resource': [
+        r"reading\s+(?:the\s+)?(?:file|document)",
+        r"read\s+(?:the\s+)?(?:contents?|file)",
+        r"here['\u2019]?s\s+(?:the\s+)?(?:content|file)",
+    ],
+    'check_status': [
+        r"status\s+(?:is|shows|indicates)",
+        r"current(?:ly)?\s+(?:in\s+)?(?:state|status)",
+        r"checking\s+(?:the\s+)?status",
+    ],
+    'commit_changes': [
+        r"commit(?:ted|ting)?\s+(?:the\s+)?changes?",
+        r"created\s+commit",
+        r"\[[\w-]+\s+[\da-f]+\]",  # Git commit output pattern
+    ],
+    'create_pr': [
+        r"(?:created|opened)\s+(?:a\s+)?(?:pull\s+)?(?:request|pr)",
+        r"pr\s+(?:created|opened|submitted)",
+        r"pull\s+request\s+#?\d+",
+    ],
+    'push_changes': [
+        r"push(?:ed|ing)?\s+(?:to|the\s+)?(?:changes?|commits?)?",
+        r"pushed\s+to\s+(?:remote|origin)",
+    ],
+    'update_docs': [
+        r"(?:updated|added)\s+(?:the\s+)?(?:docs?|documentation)",
+        r"documentation\s+(?:updated|added)",
+    ],
+    'add_comment': [
+        r"added\s+(?:a\s+)?comment",
+        r"comment(?:ed|ing)?",
+    ],
+}
+
+# Compile fulfillment patterns for performance
+COMPILED_FULFILLMENT_PATTERNS = {
+    action_type: _re.compile('|'.join(f'({p})' for p in patterns), _re.IGNORECASE)
+    for action_type, patterns in FULFILLMENT_SIGNALS.items()
+}
+
+
+class GuidanceFulfillmentTracker:
+    """
+    Track guidance fulfillment across a conversation/session.
+
+    Phase 9 (Issue #390): Multi-message guidance fulfillment tracking.
+
+    This class tracks whether guidance given in message N is actually
+    operationalized in subsequent messages.
+
+    Usage:
+        tracker = GuidanceFulfillmentTracker(session_id="abc123")
+        tracker.register_guidance(event_id=1, message="please run tests")
+        tracker.check_fulfillment(event_id=2, agent_response="Tests passed...")
+        rate = tracker.get_fulfillment_rate()
+    """
+
+    def __init__(self, session_id: str, conversation_id: Optional[str] = None):
+        """
+        Initialize fulfillment tracker for a session.
+
+        Args:
+            session_id: Session identifier for grouping events
+            conversation_id: Optional conversation identifier for finer grouping
+        """
+        self.session_id = session_id
+        self.conversation_id = conversation_id
+        self.pending_guidance: List[Dict[str, Any]] = []
+        self.fulfilled_guidance: List[Dict[str, Any]] = []
+
+    def extract_action_requests(self, message: str) -> List[Dict[str, Any]]:
+        """
+        Extract specific action requests from a guidance message.
+
+        Args:
+            message: User message containing guidance
+
+        Returns:
+            List of action requests with:
+            - action_type: Type of action requested
+            - matched_text: The text that matched the pattern
+        """
+        actions = []
+        message_lower = message.lower()
+
+        for pattern, action_type in ACTION_REQUEST_PATTERNS.items():
+            match = _re.search(pattern, message_lower, _re.IGNORECASE)
+            if match:
+                actions.append({
+                    'action_type': action_type,
+                    'matched_text': match.group(),
+                })
+
+        return actions
+
+    def register_guidance(self, event_id: int, message: str) -> int:
+        """
+        Register new guidance for tracking.
+
+        Args:
+            event_id: ID of the routing event with the guidance
+            message: User message containing guidance
+
+        Returns:
+            Number of action requests registered
+        """
+        actions = self.extract_action_requests(message)
+
+        for action in actions:
+            self.pending_guidance.append({
+                'event_id': event_id,
+                'action_type': action['action_type'],
+                'matched_text': action['matched_text'],
+                'guidance_content': message[:200],
+                'status': 'pending',
+                'registered_at': _datetime.now().isoformat(),
+            })
+            logger.debug(
+                f"Phase 9: Registered guidance for tracking: "
+                f"action_type={action['action_type']}, event_id={event_id}"
+            )
+
+        return len(actions)
+
+    def check_fulfillment(self, event_id: int, agent_response: str) -> List[Dict[str, Any]]:
+        """
+        Check if any pending guidance was fulfilled by this response.
+
+        Args:
+            event_id: ID of the current routing event
+            agent_response: The agent's response text
+
+        Returns:
+            List of guidance items that were fulfilled
+        """
+        newly_fulfilled = []
+
+        for guidance in self.pending_guidance:
+            if guidance['status'] == 'pending':
+                action_type = guidance['action_type']
+                pattern = COMPILED_FULFILLMENT_PATTERNS.get(action_type)
+
+                if pattern:
+                    match = pattern.search(agent_response)
+                    if match:
+                        guidance['status'] = 'fulfilled'
+                        guidance['fulfillment_event_id'] = event_id
+                        guidance['fulfillment_evidence'] = match.group()[:100]
+                        guidance['distance'] = event_id - guidance['event_id']
+                        guidance['fulfilled_at'] = _datetime.now().isoformat()
+
+                        self.fulfilled_guidance.append(guidance)
+                        newly_fulfilled.append(guidance)
+
+                        logger.info(
+                            f"Phase 9: Guidance fulfilled: action_type={action_type}, "
+                            f"distance={guidance['distance']}, evidence={guidance['fulfillment_evidence'][:30]}..."
+                        )
+
+        # Remove fulfilled items from pending
+        self.pending_guidance = [g for g in self.pending_guidance if g['status'] == 'pending']
+
+        return newly_fulfilled
+
+    def get_unfulfilled(self) -> List[Dict[str, Any]]:
+        """
+        Get guidance that hasn't been fulfilled yet.
+
+        Returns:
+            List of pending guidance items
+        """
+        return self.pending_guidance.copy()
+
+    def get_fulfillment_rate(self) -> float:
+        """
+        Calculate fulfillment rate for this session.
+
+        Returns:
+            Float between 0.0 and 1.0 representing fulfillment rate
+        """
+        total = len(self.pending_guidance) + len(self.fulfilled_guidance)
+        if total == 0:
+            return 1.0  # No guidance = 100% fulfilled (vacuously true)
+
+        return len(self.fulfilled_guidance) / total
+
+    def get_summary(self) -> Dict[str, Any]:
+        """
+        Get fulfillment tracking summary.
+
+        Returns:
+            Dictionary with:
+            - fulfillment_rate: Overall rate
+            - pending_count: Number of pending items
+            - fulfilled_count: Number of fulfilled items
+            - pending_actions: List of unfulfilled action types
+            - avg_distance: Average messages between guidance and fulfillment
+        """
+        avg_distance = 0.0
+        if self.fulfilled_guidance:
+            avg_distance = sum(g['distance'] for g in self.fulfilled_guidance) / len(self.fulfilled_guidance)
+
+        return {
+            'fulfillment_rate': self.get_fulfillment_rate(),
+            'pending_count': len(self.pending_guidance),
+            'fulfilled_count': len(self.fulfilled_guidance),
+            'pending_actions': [g['action_type'] for g in self.pending_guidance],
+            'avg_distance': avg_distance,
+            'session_id': self.session_id,
+        }
+
+    def mark_abandoned(self, reason: str = "session_ended") -> None:
+        """
+        Mark all pending guidance as abandoned.
+
+        Called when session ends without fulfilling remaining guidance.
+
+        Args:
+            reason: Reason for abandonment
+        """
+        for guidance in self.pending_guidance:
+            guidance['status'] = 'abandoned'
+            guidance['abandon_reason'] = reason
+            guidance['abandoned_at'] = _datetime.now().isoformat()
+
+        logger.info(
+            f"Phase 9: Marked {len(self.pending_guidance)} guidance items as abandoned: {reason}"
+        )
+        self.pending_guidance = []
 
 
 # =============================================================================
