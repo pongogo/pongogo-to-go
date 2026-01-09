@@ -70,6 +70,7 @@ class TestPongogoDatabase:
             "observation_implemented",
             "scan_history",
             "schema_info",
+            "guidance_fulfillment",  # Added in schema v3.1.0 (Issue #390 Phase 9)
         ]
 
         conn = sqlite3.connect(db_path)
@@ -83,12 +84,12 @@ class TestPongogoDatabase:
             assert table in tables, f"Missing table: {table}"
 
     def test_schema_version(self, tmp_path):
-        """Should set schema version to 3.0.0."""
+        """Should set schema version to 3.1.0."""
         db_path = tmp_path / ".pongogo" / "pongogo.db"
         db = PongogoDatabase(db_path=db_path)
 
         version = db.get_schema_version()
-        assert version == "3.0.0"
+        assert version == "3.1.0"  # Updated for Issue #390 Phase 9
 
     def test_get_stats(self, tmp_path):
         """Should return database statistics."""
