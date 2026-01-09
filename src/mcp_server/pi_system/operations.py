@@ -14,6 +14,7 @@ from .models import (
     PIImplementation,
     PIRelationship,
     PIStatus,
+    PIType,
     PotentialImprovement,
     RelationshipType,
 )
@@ -49,6 +50,8 @@ class PISystem:
         status: PIStatus = PIStatus.CANDIDATE,
         confidence: PIConfidence = PIConfidence.LOW,
         classification: PIClassification | None = None,
+        pi_type: PIType = PIType.IMPROVEMENT,
+        context: str | None = None,
         cluster: str | None = None,
         source_task: str | None = None,
         file_path: str | None = None,
@@ -64,6 +67,8 @@ class PISystem:
             status: Initial status (default: CANDIDATE)
             confidence: Confidence level (default: LOW)
             classification: CORRECTIVE or EXPLORATORY
+            pi_type: Type of PI (default: IMPROVEMENT)
+            context: Additional context (e.g., guidance_type for USER_GUIDANCE)
             cluster: Domain cluster name
             source_task: Task that identified this PI
             file_path: Path to detailed markdown file
@@ -80,6 +85,8 @@ class PISystem:
             status=status,
             confidence=confidence,
             classification=classification,
+            pi_type=pi_type,
+            context=context,
             cluster=cluster,
             identified_date=identified_date or now,
             last_updated=now,
@@ -454,3 +461,224 @@ class PISystem:
     def get_evidence(self, pi_id: str) -> list[PIEvidence]:
         """Get evidence for a PI."""
         return self.queries.get_evidence(pi_id)
+
+    # =========================================================================
+    # User Guidance Methods
+    # =========================================================================
+
+    def get_by_type(
+        self, pi_type: PIType, include_archived: bool = False
+    ) -> list[PotentialImprovement]:
+        """Get all PIs of a specific type."""
+        where = "pi_type = ?"
+        params = [pi_type.value if isinstance(pi_type, PIType) else pi_type]
+        if not include_archived:
+            where += " AND archived = 0"
+        rows = self.db.execute(
+            f"SELECT * FROM potential_improvements WHERE {where} ORDER BY occurrence_count DESC",
+            tuple(params),
+        )
+        return [PotentialImprovement.from_row(row) for row in rows]
+
+    def get_user_guidance(
+        self, include_archived: bool = False
+    ) -> list[PotentialImprovement]:
+        """Get all user guidance entries."""
+        return self.get_by_type(PIType.USER_GUIDANCE, include_archived)
+
+    def create_user_guidance(
+        self,
+        content: str,
+        guidance_type: str,  # "explicit" | "implicit"
+        context: str | None = None,
+        source_task: str | None = None,
+    ) -> PotentialImprovement:
+        """
+        Create a user guidance entry for automatic knowledge capture.
+
+        Implements user guidance capture via PI system.
+        Called automatically when user provides behavioral guidance.
+
+        Args:
+            content: The guidance/rule/feedback from user
+            guidance_type: "explicit" for direct rules, "implicit" for soft feedback
+            context: Optional context about when/why this was given
+            source_task: Task where guidance was encountered
+
+        Returns:
+            Created user guidance PI
+        """
+        # Check for existing similar guidance to increment
+        existing = self._find_similar_guidance(content)
+        if existing:
+            # Increment occurrence count
+            self.add_evidence(
+                existing.id,
+                source=source_task or "user_session",
+                description=f"Repeated guidance: {content[:100]}...",
+            )
+            return self.queries.get_by_id(existing.id)
+
+        # Create new guidance entry
+        pi_id = self.get_next_pi_id()
+        return self.create_pi(
+            pi_id=pi_id,
+            title=f"[{guidance_type.upper()}] {content[:80]}{'...' if len(content) > 80 else ''}",
+            summary=content,
+            pi_type=PIType.USER_GUIDANCE,
+            context=context or guidance_type,
+            source_task=source_task,
+            classification=PIClassification.CORRECTIVE
+            if guidance_type == "explicit"
+            else PIClassification.EXPLORATORY,
+        )
+
+    def _find_similar_guidance(
+        self, content: str, threshold: float = 0.8
+    ) -> PotentialImprovement | None:
+        """
+        Find existing guidance that is similar to the given content.
+
+        Uses simple word overlap for now; can be enhanced with embeddings later.
+
+        Args:
+            content: New guidance content
+            threshold: Similarity threshold (0-1)
+
+        Returns:
+            Existing PI if similar, None otherwise
+        """
+        content_words = set(content.lower().split())
+        for pi in self.get_user_guidance():
+            if pi.summary:
+                existing_words = set(pi.summary.lower().split())
+                overlap = len(content_words & existing_words) / max(
+                    len(content_words | existing_words), 1
+                )
+                if overlap >= threshold:
+                    return pi
+        return None
+
+    def promote_guidance_to_instruction(
+        self,
+        pi_id: str,
+        instruction_filename: str,
+        category: str = "custom",
+    ) -> dict:
+        """
+        Promote validated user guidance to an instruction file.
+
+        Called when:
+        - occurrence_count >= 3 (automatic threshold)
+        - User explicitly confirms promotion
+
+        Creates file in .pongogo/instructions/custom/ or knowledge/instructions/
+
+        Args:
+            pi_id: PI to promote
+            instruction_filename: Name for the instruction file (without .md)
+            category: Category subdirectory (default: "custom")
+
+        Returns:
+            Dictionary with created file path and PI status
+        """
+        pi = self.queries.get_by_id(pi_id)
+        if not pi:
+            return {"success": False, "error": f"PI {pi_id} not found"}
+
+        if pi.pi_type != PIType.USER_GUIDANCE:
+            return {"success": False, "error": f"PI {pi_id} is not user guidance"}
+
+        # Determine instruction path
+        # Use .pongogo/instructions for user-specific, knowledge/instructions for project-wide
+        base_path = Path(".pongogo/instructions") / category
+        base_path.mkdir(parents=True, exist_ok=True)
+
+        filename = f"{instruction_filename}.instructions.md"
+        file_path = base_path / filename
+
+        # Generate instruction content
+        content = self._generate_instruction_content(pi)
+        file_path.write_text(content)
+
+        # Mark as implemented
+        self.mark_implemented(
+            pi_id,
+            implementation_type=ImplementationType.INSTRUCTION_FILE,
+            location=str(file_path),
+            notes="Promoted from user guidance",
+        )
+
+        return {"success": True, "file_path": str(file_path), "pi_id": pi_id, "status": "IMPLEMENTED"}
+
+    def _generate_instruction_content(self, pi: PotentialImprovement) -> str:
+        """Generate instruction file content from PI."""
+        now = datetime.now().strftime("%Y-%m-%d")
+        guidance_type = pi.context or "explicit"
+
+        return f'''---
+title: "{pi.title}"
+description: "User guidance captured and promoted to instruction"
+applies_to:
+  - "**/*"
+domains:
+  - "user_guidance"
+priority: "P2"
+pongogo_version: "{now}"
+source: "{pi.source_task or 'User guidance'}"
+routing:
+  priority: 2
+  triggers:
+    keywords: []
+    nlp: "{pi.summary[:100] if pi.summary else ''}"
+---
+
+# {pi.title}
+
+**Purpose**: {pi.summary or 'User-defined rule'}
+
+**Origin**: Captured from user guidance ({guidance_type})
+**Occurrences**: {pi.occurrence_count}
+**Promoted**: {now}
+**PI Reference**: {pi.id}
+
+---
+
+## Rule
+
+{pi.summary}
+
+---
+
+## When to Apply
+
+Apply this rule when the context matches the original guidance scenario.
+
+---
+
+**Note**: This instruction was automatically generated from user guidance.
+'''
+
+    def find_at_threshold(
+        self, pi_type: PIType | None = None, threshold: int = 3
+    ) -> list[PotentialImprovement]:
+        """
+        Find PIs at or above occurrence threshold.
+
+        Args:
+            pi_type: Optional type to filter by
+            threshold: Minimum occurrence count (default: 3)
+
+        Returns:
+            List of PIs at threshold, ready for action
+        """
+        where = "occurrence_count >= ? AND archived = 0 AND status != 'IMPLEMENTED'"
+        params: list = [threshold]
+        if pi_type:
+            where += " AND pi_type = ?"
+            params.append(pi_type.value if isinstance(pi_type, PIType) else pi_type)
+        rows = self.db.execute(
+            f"SELECT * FROM potential_improvements WHERE {where} ORDER BY occurrence_count DESC",
+            tuple(params),
+        )
+        return [PotentialImprovement.from_row(row) for row in rows]

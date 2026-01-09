@@ -48,6 +48,10 @@ from mcp_server.event_capture import get_event_stats, store_routing_event
 
 # Health check for diagnostics (Task #470)
 from mcp_server.health_check import get_health_status as _get_health_status
+
+# PI System for user guidance capture
+from mcp_server.pi_system import PISystem
+from mcp_server.pi_system.models import PIType
 from mcp_server.instruction_handler import InstructionHandler
 from mcp_server.routing_engine import (
     RoutingEngine,
@@ -109,6 +113,17 @@ MIN_MANUAL_REINDEX_INTERVAL = 10.0  # Minimum 10 seconds between manual reindexe
 # Shutdown management (graceful shutdown on SIGTERM/SIGINT)
 _shutdown_event = threading.Event()
 _observer: Observer | None = None
+
+# PI System singleton for user guidance capture
+_pi_system: PISystem | None = None
+
+
+def _get_pi_system() -> PISystem:
+    """Get or initialize PI System singleton."""
+    global _pi_system
+    if _pi_system is None:
+        _pi_system = PISystem()
+    return _pi_system
 
 
 class InstructionFileEventHandler(FileSystemEventHandler):
@@ -913,6 +928,185 @@ async def get_health_status() -> dict:
             "events": {"status": "unknown"},
             "config": {"status": "unknown"},
         }
+
+
+# =============================================================================
+# User Guidance MCP Tools
+# =============================================================================
+
+
+@mcp.tool()
+async def log_user_guidance(
+    content: str, guidance_type: str, context: str | None = None
+) -> dict:
+    """
+    Log user guidance for automatic knowledge capture.
+
+    Called by agent when user provides behavioral guidance.
+    User should not be aware this tool exists - it's invisible infrastructure.
+
+    Args:
+        content: The guidance/rule/feedback from user
+        guidance_type: "explicit" for direct rules, "implicit" for soft feedback
+        context: Optional context about when/why this was given
+
+    Returns:
+        Dictionary with:
+        - logged: True if guidance was recorded
+        - pi_id: PI identifier for the guidance
+        - occurrence_count: How many times this guidance has been seen
+        - ready_for_promotion: True if occurrence_count >= 3
+
+    Examples:
+        # Log explicit rule
+        log_user_guidance(
+            content="Always pause after each step in multi-step processes",
+            guidance_type="explicit"
+        )
+
+        # Log implicit feedback
+        log_user_guidance(
+            content="That was frustrating when you did multiple things at once",
+            guidance_type="implicit"
+        )
+    """
+    try:
+        pi_system = _get_pi_system()
+
+        # Validate guidance_type
+        if guidance_type not in ("explicit", "implicit"):
+            return {
+                "logged": False,
+                "error": f"Invalid guidance_type: '{guidance_type}'. Must be 'explicit' or 'implicit'.",
+            }
+
+        # Create or update guidance entry
+        pi = pi_system.create_user_guidance(
+            content=content,
+            guidance_type=guidance_type,
+            context=context,
+            source_task=None,  # Could be enhanced to capture current task context
+        )
+
+        logger.info(f"User guidance logged: {pi.id} ({guidance_type})")
+
+        return {
+            "logged": True,
+            "pi_id": pi.id,
+            "occurrence_count": pi.occurrence_count,
+            "ready_for_promotion": pi.occurrence_count >= 3,
+            "guidance_type": guidance_type,
+            "message": "Guidance recorded. "
+            + (
+                "Ready for promotion to instruction file."
+                if pi.occurrence_count >= 3
+                else f"Seen {pi.occurrence_count} time(s)."
+            ),
+        }
+
+    except Exception as e:
+        logger.error(f"Error logging user guidance: {e}", exc_info=True)
+        return {"logged": False, "error": str(e)}
+
+
+@mcp.tool()
+async def promote_to_instruction(
+    pi_id: str, instruction_filename: str, category: str = "custom"
+) -> dict:
+    """
+    Promote validated user guidance to an instruction file.
+
+    Called when occurrence_count >= 3 or user explicitly confirms promotion.
+
+    Creates instruction file in .pongogo/instructions/{category}/
+
+    Args:
+        pi_id: PI identifier of the guidance to promote (e.g., "PI-001")
+        instruction_filename: Name for the instruction file (without .md)
+        category: Category subdirectory (default: "custom")
+
+    Returns:
+        Dictionary with:
+        - success: True if promotion succeeded
+        - file_path: Path to created instruction file
+        - pi_id: PI identifier
+        - message: Human-readable status
+
+    Examples:
+        # Promote guidance to instruction
+        promote_to_instruction(
+            pi_id="PI-042",
+            instruction_filename="pause_between_steps",
+            category="workflow"
+        )
+    """
+    try:
+        pi_system = _get_pi_system()
+
+        result = pi_system.promote_guidance_to_instruction(
+            pi_id=pi_id, instruction_filename=instruction_filename, category=category
+        )
+
+        if result.get("success"):
+            logger.info(f"Guidance promoted to instruction: {result.get('file_path')}")
+            result["message"] = f"Guidance {pi_id} promoted to {result.get('file_path')}"
+
+            # Trigger reindex to include new instruction
+            logger.info("Triggering reindex to include new instruction...")
+            _reindex_knowledge_base()
+        else:
+            logger.warning(f"Guidance promotion failed: {result.get('error')}")
+            result["message"] = f"Promotion failed: {result.get('error')}"
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Error promoting guidance: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
+
+
+@mcp.tool()
+async def get_pending_guidance(threshold: int = 3) -> dict:
+    """
+    Get user guidance ready for promotion.
+
+    Returns guidance entries that have reached the occurrence threshold
+    and are ready to be promoted to instruction files.
+
+    Args:
+        threshold: Minimum occurrence count (default: 3)
+
+    Returns:
+        Dictionary with:
+        - count: Number of guidance entries ready
+        - guidance: List of ready entries with details
+    """
+    try:
+        pi_system = _get_pi_system()
+
+        ready = pi_system.find_at_threshold(pi_type=PIType.USER_GUIDANCE, threshold=threshold)
+
+        return {
+            "count": len(ready),
+            "guidance": [
+                {
+                    "pi_id": pi.id,
+                    "title": pi.title,
+                    "summary": pi.summary,
+                    "occurrence_count": pi.occurrence_count,
+                    "guidance_type": pi.context,
+                    "identified_date": pi.identified_date,
+                }
+                for pi in ready
+            ],
+            "message": f"{len(ready)} guidance entries ready for promotion"
+            if ready
+            else "No guidance at threshold yet",
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting pending guidance: {e}", exc_info=True)
+        return {"count": 0, "guidance": [], "error": str(e)}
 
 
 def _check_consistency():

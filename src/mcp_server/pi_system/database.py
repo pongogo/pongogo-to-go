@@ -20,9 +20,7 @@ DEFAULT_DB_PATH = (
 class PIDatabase:
     """SQLite database for Potential Improvements system."""
 
-    SCHEMA_VERSION = (
-        2  # v2: Added classification_reason, classification_model, classification_date
-    )
+    SCHEMA_VERSION = 3  # v3: Added pi_type and context columns for user guidance
 
     SCHEMA = """
     -- Schema version tracking
@@ -39,6 +37,8 @@ class PIDatabase:
         status TEXT NOT NULL DEFAULT 'CANDIDATE',
         confidence TEXT NOT NULL DEFAULT 'LOW',
         classification TEXT,                     -- CORRECTIVE, EXPLORATORY
+        pi_type TEXT DEFAULT 'improvement',      -- improvement, glossary_candidate, faq_candidate, user_guidance
+        context TEXT,                            -- Additional context (e.g., guidance_type for user_guidance)
         classification_reason TEXT,              -- Why this classification was chosen
         classification_model TEXT,               -- Which model made the classification
         classification_date TEXT,                -- When classification was made
@@ -87,6 +87,7 @@ class PIDatabase:
     CREATE INDEX IF NOT EXISTS idx_pi_status ON potential_improvements(status);
     CREATE INDEX IF NOT EXISTS idx_pi_confidence ON potential_improvements(confidence);
     CREATE INDEX IF NOT EXISTS idx_pi_classification ON potential_improvements(classification);
+    CREATE INDEX IF NOT EXISTS idx_pi_type ON potential_improvements(pi_type);
     CREATE INDEX IF NOT EXISTS idx_pi_cluster ON potential_improvements(cluster);
     CREATE INDEX IF NOT EXISTS idx_pi_archived ON potential_improvements(archived);
     CREATE INDEX IF NOT EXISTS idx_evidence_pi_id ON pi_evidence(pi_id);
@@ -109,10 +110,28 @@ class PIDatabase:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         with self.connection() as conn:
             conn.executescript(self.SCHEMA)
+            # Run migrations if needed
+            self._run_migrations(conn)
             # Set schema version
             conn.execute(
                 "INSERT OR REPLACE INTO schema_info (key, value) VALUES (?, ?)",
                 ("schema_version", str(self.SCHEMA_VERSION)),
+            )
+
+    def _run_migrations(self, conn):
+        """Run schema migrations to add new columns."""
+        # Check current columns in potential_improvements
+        cursor = conn.execute("PRAGMA table_info(potential_improvements)")
+        columns = {row[1] for row in cursor.fetchall()}
+
+        # v3 migration: Add pi_type and context columns
+        if "pi_type" not in columns:
+            conn.execute(
+                "ALTER TABLE potential_improvements ADD COLUMN pi_type TEXT DEFAULT 'improvement'"
+            )
+        if "context" not in columns:
+            conn.execute(
+                "ALTER TABLE potential_improvements ADD COLUMN context TEXT"
             )
 
     @contextmanager

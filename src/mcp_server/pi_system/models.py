@@ -32,6 +32,21 @@ class PIClassification(str, Enum):
     EXPLORATORY = "EXPLORATORY"  # Proposes improvement without failure evidence
 
 
+class PIType(str, Enum):
+    """Type of Potential Improvement / Candidate.
+
+    All types follow the same threshold-based pattern detection:
+    - 1st occurrence: Track it
+    - 2nd occurrence: Increment, watch for more
+    - 3rd+ occurrence: Suggest action
+    """
+
+    IMPROVEMENT = "improvement"  # Default - general improvement pattern
+    GLOSSARY_CANDIDATE = "glossary_candidate"  # Term needing definition
+    FAQ_CANDIDATE = "faq_candidate"  # Question asked repeatedly
+    USER_GUIDANCE = "user_guidance"  # User guidance/rule
+
+
 class RelationshipType(str, Enum):
     """Types of relationships between PIs."""
 
@@ -63,6 +78,8 @@ class PotentialImprovement:
     status: PIStatus = PIStatus.CANDIDATE
     confidence: PIConfidence = PIConfidence.LOW
     classification: PIClassification | None = None
+    pi_type: PIType = PIType.IMPROVEMENT
+    context: str | None = None  # Additional context (e.g., guidance_type for USER_GUIDANCE)
     classification_reason: str | None = None  # Why this classification
     classification_model: str | None = None  # Which model classified
     classification_date: str | None = None  # When classified
@@ -89,6 +106,10 @@ class PotentialImprovement:
             "classification": self.classification.value
             if isinstance(self.classification, PIClassification)
             else self.classification,
+            "pi_type": self.pi_type.value
+            if isinstance(self.pi_type, PIType)
+            else self.pi_type,
+            "context": self.context,
             "classification_reason": self.classification_reason,
             "classification_model": self.classification_model,
             "classification_date": self.classification_date,
@@ -115,6 +136,10 @@ class PotentialImprovement:
             classification=PIClassification(row["classification"])
             if row["classification"]
             else None,
+            pi_type=PIType(row["pi_type"])
+            if row.get("pi_type")
+            else PIType.IMPROVEMENT,
+            context=row.get("context"),
             classification_reason=row.get("classification_reason", None),
             classification_model=row.get("classification_model", None),
             classification_date=row.get("classification_date", None),

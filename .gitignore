@@ -52,3 +52,6 @@ logs/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# PI System runtime data
+src/docs/project_management/potential_improvements.db
