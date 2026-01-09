@@ -606,6 +606,85 @@ COMPILED_IMPLICIT_GUIDANCE = _re.compile(
 )
 
 
+# =============================================================================
+# Phase 6: Guidance Adherence Detection (Issue #390)
+# =============================================================================
+# Detect whether agent complied with, partially followed, or ignored guidance
+# Based on patterns in agent_response
+
+GUIDANCE_COMPLIANCE_PATTERNS = {
+    # Acknowledgment signals (strong compliance indicators)
+    "acknowledgment": [
+        r"understood",
+        r"noted",
+        r"i['\u2019]?ll\s+remember",
+        r"you['\u2019]?re\s+right",
+        r"good\s+point",
+        r"that['\u2019]?s\s+(?:a\s+)?(?:good|fair|valid)\s+point",
+        r"i\s+(?:will|shall)\s+(?:do\s+that|follow\s+that)",
+        r"makes\s+sense",
+        r"absolutely",
+        r"of\s+course",
+        r"i['\u2019]?ll\s+(?:keep\s+that\s+in\s+mind|make\s+sure)",
+    ],
+    # Pace compliance signals (following "one at a time" guidance)
+    "pace_compliance": [
+        r"let\s+me\s+start\s+with",
+        r"focusing\s+(?:on|first\s+on)",
+        r"let['\u2019]?s\s+(?:start|begin)\s+with\s+(?:the\s+)?first",
+        r"i['\u2019]?ll\s+(?:focus|concentrate)\s+on",
+        r"one\s+(?:thing\s+)?at\s+a\s+time",
+        r"taking\s+(?:this|it)\s+step\s+by\s+step",
+        r"let\s+me\s+(?:just\s+)?handle\s+(?:this|the\s+first)",
+    ],
+    # Action compliance signals (stopping when told)
+    "action_compliance": [
+        r"let\s+me\s+(?:just\s+)?(?:check|investigate|review)\s+first",
+        r"before\s+(?:proceeding|making\s+changes|i\s+do\s+anything)",
+        r"i['\u2019]?ll\s+(?:hold\s+off|wait|pause)",
+        r"won['\u2019]?t\s+(?:make\s+(?:any\s+)?changes|proceed)",
+        r"let\s+me\s+(?:just\s+)?read",
+        r"i['\u2019]?ll\s+(?:investigate|look\s+into)\s+(?:this\s+)?first",
+        r"stopping\s+(?:here|now)",
+    ],
+    # Non-compliance signals (ignoring or defying guidance)
+    "non_compliance": [
+        r"let\s+me\s+also",
+        r"while\s+(?:we['\u2019]?re|i['\u2019]?m)\s+at\s+it",
+        r"i['\u2019]?ll\s+(?:just\s+)?quickly",
+        r"(?:just\s+)?need\s+to\s+(?:also|first)",
+        r"might\s+as\s+well",
+        r"i['\u2019]?ll\s+go\s+ahead\s+and",
+        r"let\s+me\s+(?:also\s+)?(?:add|include|fix)",
+        r"while\s+i['\u2019]?m\s+(?:here|at\s+it)",
+        r"i['\u2019]?ll\s+(?:handle|do)\s+(?:all|both|everything)",
+    ],
+    # Contradiction signals (doing opposite of guidance)
+    "contradiction": [
+        r"(?:actually|but)\s+i\s+(?:think|believe)\s+(?:we\s+should|it['\u2019]?s\s+better)",
+        r"instead,?\s+(?:let\s+me|i['\u2019]?ll)",
+        r"i['\u2019]?m\s+going\s+to\s+(?:go\s+ahead|proceed)\s+(?:anyway|despite)",
+        r"i\s+disagree",
+        r"that['\u2019]?s\s+not\s+(?:the\s+best|optimal|necessary)",
+    ],
+}
+
+# Compile adherence patterns for performance
+COMPILED_COMPLIANCE_PATTERNS = {
+    category: _re.compile("|".join(f"({p})" for p in patterns), _re.IGNORECASE)
+    for category, patterns in GUIDANCE_COMPLIANCE_PATTERNS.items()
+}
+
+# Adherence scoring weights
+ADHERENCE_WEIGHTS = {
+    "acknowledgment": {"complied": 0.7, "partial": 0.2, "ignored": 0.0, "defied": 0.0},
+    "pace_compliance": {"complied": 0.8, "partial": 0.15, "ignored": 0.0, "defied": 0.0},
+    "action_compliance": {"complied": 0.9, "partial": 0.1, "ignored": 0.0, "defied": 0.0},
+    "non_compliance": {"complied": 0.0, "partial": 0.3, "ignored": 0.5, "defied": 0.2},
+    "contradiction": {"complied": 0.0, "partial": 0.0, "ignored": 0.2, "defied": 0.8},
+}
+
+
 def _load_custom_guidance_triggers(config_path: Path | None = None) -> dict:
     """Load custom guidance triggers from .pongogo/guidance_triggers.json."""
     import json
@@ -918,6 +997,90 @@ class RuleBasedRouter(RoutingEngine):
             "guidance_type": guidance_type,
             "signals": signals,
             "content": matched_content,
+        }
+
+    def _detect_guidance_adherence(self, agent_response: str) -> dict[str, Any]:
+        """
+        Detect guidance adherence signals in agent response.
+
+        Phase 6 (Issue #390): Automated adherence detection from agent_response.
+        Uses pattern matching to infer whether agent complied with, partially
+        followed, ignored, or defied user guidance.
+
+        Adherence Categories:
+        - acknowledgment: "understood", "noted", "I'll remember"
+        - pace_compliance: "let me start with", "focusing on"
+        - action_compliance: "let me check first", "before proceeding"
+        - non_compliance: "let me also", "while we're at it", "I'll quickly"
+        - contradiction: "actually I think we should", "instead"
+
+        Args:
+            agent_response: The agent's response text to analyze
+
+        Returns:
+            Dictionary with:
+            - detected: True if any adherence signals found
+            - adherence: 'complied' | 'partial' | 'ignored' | 'defied' | 'not_applicable'
+            - confidence: 0.0-1.0 confidence in classification
+            - signals: List of detected signal categories
+            - matches: Specific patterns that matched
+        """
+        signals = []
+        matches = []
+
+        # Check each category for matches
+        for category, pattern in COMPILED_COMPLIANCE_PATTERNS.items():
+            match = pattern.search(agent_response)
+            if match:
+                signals.append(category)
+                matches.append({"category": category, "matched_text": match.group()[:50]})
+                logger.debug(
+                    f"Phase 6: Adherence signal '{category}': {match.group()[:30]}"
+                )
+
+        if not signals:
+            return {
+                "detected": False,
+                "adherence": "not_applicable",
+                "confidence": 0.5,
+                "signals": [],
+                "matches": [],
+            }
+
+        # Calculate weighted adherence scores
+        adherence_scores = {
+            "complied": 0.0,
+            "partial": 0.0,
+            "ignored": 0.0,
+            "defied": 0.0,
+        }
+        for category in signals:
+            weights = ADHERENCE_WEIGHTS.get(category, {})
+            for adherence_type, weight in weights.items():
+                adherence_scores[adherence_type] += weight
+
+        # Normalize scores
+        total = sum(adherence_scores.values())
+        if total > 0:
+            adherence_scores = {k: v / total for k, v in adherence_scores.items()}
+
+        # Determine primary adherence type
+        primary_adherence = max(adherence_scores, key=adherence_scores.get)
+        confidence = adherence_scores[primary_adherence]
+
+        # Log detection
+        logger.info(
+            f"Phase 6: Adherence detected: {primary_adherence} "
+            f"(confidence: {confidence:.2f}, signals: {signals})"
+        )
+
+        return {
+            "detected": True,
+            "adherence": primary_adherence,
+            "confidence": confidence,
+            "signals": signals,
+            "matches": matches,
+            "scores": adherence_scores,
         }
 
     def route(self, message: str, context: dict | None = None, limit: int = 5) -> dict:
