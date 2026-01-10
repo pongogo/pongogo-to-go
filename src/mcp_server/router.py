@@ -756,6 +756,18 @@ EXPLICIT_GUIDANCE_TRIGGERS = {
     r"yes,?\s+(?:correct|update|add|fix|close)\s+(?:the|it|this|that)",
     # Permission grants
     r"you\s+can\s+(?:close|proceed|continue|add|create|update|fix)",
+    # === Bullet-point imperative guidelines (common in session setup) ===
+    # "No [restriction]" patterns
+    r"no\s+(?:shortcuts|automatic|auto)\s+(?:git\s+)?(?:commits?|pushes?)?",
+    r"no\s+(?:assumptions|guessing)",
+    # "Ask/pause before [noun]" patterns (noun form, not verb)
+    r"(?:ask|check|pause|stop)\s+(?:before|on)\s+(?:commits?|questions?|divergence|changes?)",
+    r"(?:ask|check)\s+(?:me\s+)?(?:first|before\s+\w+ing)",
+    # Imperative guideline markers (bullet list style)
+    r"^[-•*]\s*(?:plan|ask|pause|stop|check|track|be\s+thorough)",
+    r"quality\s+over\s+(?:speed|quantity)",
+    r"measure\s+twice",
+    r"(?:move|go)\s+(?:slowly|carefully|deliberately)",
 }
 
 # Implicit guidance: Softer feedback that may become rules
