@@ -293,6 +293,83 @@ jobs:
                 echo "✓ No .mcp.json found in current directory"
               fi
 
+              # Remove MCP config from .claude/mcp.json (Claude Code project location)
+              if [ -f ".claude/mcp.json" ] && command -v python3 &> /dev/null; then
+                python3 -c "
+          import json, sys, os
+          p = '.claude/mcp.json'
+          try:
+              c = json.load(open(p))
+              if 'mcpServers' in c and 'pongogo-knowledge' in c['mcpServers']:
+                  del c['mcpServers']['pongogo-knowledge']
+                  if not c['mcpServers']:
+                      os.remove(p)
+                      # Remove .claude dir if empty
+                      if os.path.isdir('.claude') and not os.listdir('.claude'):
+                          os.rmdir('.claude')
+                          print('✓ Removed .claude/mcp.json and empty .claude/ directory')
+                      else:
+                          print('✓ Removed .claude/mcp.json (no other MCP servers configured)')
+                  else:
+                      json.dump(c, open(p, 'w'), indent=2)
+                      print('✓ Removed pongogo-knowledge from .claude/mcp.json')
+              else:
+                  print('✓ No pongogo-knowledge config found in .claude/mcp.json')
+          except FileNotFoundError:
+              pass
+          except Exception as e:
+              print(f'⚠ Could not modify .claude/mcp.json: {e}')
+          "
+              elif [ -f ".claude/mcp.json" ]; then
+                echo "⚠ Found .claude/mcp.json but Python 3 not available"
+                echo "  Manually remove 'pongogo-knowledge' from mcpServers in .claude/mcp.json"
+              fi
+
+              # Remove UserPromptSubmit hook from .claude/settings.local.json
+              if [ -f ".claude/settings.local.json" ] && command -v python3 &> /dev/null; then
+                python3 -c "
+          import json, sys, os
+          p = '.claude/settings.local.json'
+          try:
+              c = json.load(open(p))
+              modified = False
+              if 'hooks' in c and 'UserPromptSubmit' in c['hooks']:
+                  # Remove pongogo-route hooks
+                  new_hooks = []
+                  for hook_group in c['hooks']['UserPromptSubmit']:
+                      if 'hooks' in hook_group:
+                          hook_group['hooks'] = [h for h in hook_group['hooks']
+                                                  if 'pongogo-route' not in h.get('command', '')]
+                          if hook_group['hooks']:
+                              new_hooks.append(hook_group)
+                      else:
+                          new_hooks.append(hook_group)
+                  if new_hooks:
+                      c['hooks']['UserPromptSubmit'] = new_hooks
+                  else:
+                      del c['hooks']['UserPromptSubmit']
+                  if not c['hooks']:
+                      del c['hooks']
+                  modified = True
+              if modified:
+                  if not c:
+                      os.remove(p)
+                      print('✓ Removed .claude/settings.local.json (no other settings)')
+                  else:
+                      json.dump(c, open(p, 'w'), indent=2)
+                      print('✓ Removed pongogo hooks from .claude/settings.local.json')
+              else:
+                  print('✓ No pongogo hooks found in .claude/settings.local.json')
+          except FileNotFoundError:
+              pass
+          except Exception as e:
+              print(f'⚠ Could not modify .claude/settings.local.json: {e}')
+          "
+              elif [ -f ".claude/settings.local.json" ]; then
+                echo "⚠ Found .claude/settings.local.json but Python 3 not available"
+                echo "  Manually remove pongogo hooks from .claude/settings.local.json"
+              fi
+
               # Also check global ~/.claude.json (legacy location)
               CLAUDE_CONFIG="$HOME/.claude.json"
               if [ -f "$CLAUDE_CONFIG" ] && command -v python3 &> /dev/null; then
