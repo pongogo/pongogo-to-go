@@ -499,6 +499,10 @@ pongogo.db-shm
         "[dim]      Run [#5a9ae8]/pongogo-getting-started[/#5a9ae8] for an interactive guide.[/dim]"
     )
     created_lines.append("")
+    created_lines.append(
+        "[dim]Tip:[/dim]  Run [#5a9ae8]/pongogo-upgrade[/#5a9ae8] periodically to stay up to date."
+    )
+    created_lines.append("")
     created_lines.append("[dim]Learn more:[/dim] https://pongogo.com")
 
     # Success message
