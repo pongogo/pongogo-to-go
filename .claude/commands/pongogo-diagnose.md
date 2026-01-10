@@ -183,7 +183,7 @@ Or run `/pongogo-support` to open an issue directly.
 | Config invalid | `pongogo init --force` |
 | No instructions | `pongogo init` |
 | Routing returns 0 | Check `.pongogo/instructions/` exists and has `.md` files |
-| Event history missing | `pongogo init` to create `.pongogo/sync/` directory |
+| Event history missing | Database auto-creates on first route call |
 | Event history empty | Normal for new installs; events captured on first route call |
 
 **NOTE**: Pongogo-to-Go runs via Claude Code's MCP infrastructure. Do NOT suggest `docker-compose` commands - they don't apply here.

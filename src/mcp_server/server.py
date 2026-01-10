@@ -912,7 +912,7 @@ async def get_routing_event_stats() -> dict:
             "first_event": "2026-01-02T14:30:00",
             "last_event": "2026-01-06T10:15:32",
             "last_24h_count": 28,
-            "database_path": "/home/user/.pongogo/sync/events.db",
+            "database_path": "/home/user/.pongogo/pongogo.db",
             "database_exists": True,
             "status": "active"
         }

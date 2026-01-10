@@ -149,15 +149,15 @@ These are NOT stored in `.pongogo/`:
 
 Pongogo stores data locally in the `.pongogo/` directory:
 
-| Directory | Purpose | Cloud Sync |
-|-----------|---------|------------|
+| File/Directory | Purpose | Cloud Sync |
+|----------------|---------|------------|
 | `instructions/` | Your custom instructions | Git-tracked |
-| `state/` | Session state | No |
-| `sync/` | Routing history | Paid tiers only |
+| `config.yaml` | Configuration | Git-tracked |
+| `pongogo.db` | Routing history & observations | Paid tiers only |
 
 ### Routing History
 
-Routing events are stored in `.pongogo/sync/events.db`. This enables:
+Routing events are stored in `.pongogo/pongogo.db`. This enables:
 - **Lookback features**: Learning from past routing decisions
 - **Diagnostic information**: Used by `/pongogo-diagnose` to show event health
 - **Future cloud sync**: Available in paid tiers
@@ -168,11 +168,11 @@ Routing events are stored in `.pongogo/sync/events.db`. This enables:
 
 **Why is my routing history empty on a new machine?**
 
-Routing history is stored locally in `.pongogo/sync/events.db`. If you work on multiple computers, each machine has its own history. Cloud sync is available in paid tiers.
+Routing history is stored locally in `.pongogo/pongogo.db`. If you work on multiple computers, each machine has its own history. Cloud sync is available in paid tiers.
 
-**What happens if I delete `.pongogo/sync/`?**
+**What happens if I delete `.pongogo/pongogo.db`?**
 
-The sync directory will be recreated on next routing call. You'll lose routing history but Pongogo will continue to work normally.
+The database will be recreated on next routing call. You'll lose routing history but Pongogo will continue to work normally.
 
 ---
 
