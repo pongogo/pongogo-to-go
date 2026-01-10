@@ -144,7 +144,7 @@ During the retrospective, watch for patterns:
 
 **If the same insight appears 3+ times** across different work:
 - This is a validated pattern
-- Consider creating an instruction file to institutionalize it
+- Offer to make it a standard process going forward
 - See `pi_tracking.instructions.md` for threshold tracking
 
 **If this is the 1st or 2nd occurrence**:
@@ -174,7 +174,7 @@ For significant features or multi-day work:
 For major milestones or after incidents:
 - Comprehensive 4 questions
 - Root cause analysis if failure occurred
-- Create/update instruction files
+- Institutionalize learnings as standard processes
 - Update documentation and patterns
 
 ---

@@ -92,7 +92,7 @@ Create `.pongogo/patterns.md`:
 - **First seen**: 2025-01-10
 - **Last seen**: 2025-01-22
 - **Context**: API endpoints returning 500 instead of proper errors
-- **Action taken**: Created error handling instruction file
+- **Action taken**: Made error handling a standard process
 
 ## Resolved Patterns
 
@@ -120,13 +120,13 @@ Create `.pongogo/patterns.md`:
 
 When a pattern reaches 3+ occurrences:
 
-### Option 1: Create Instruction File
+### Option 1: Make It Standard
 
 For process/workflow patterns:
 
 ```markdown
 "I've noticed [pattern] has occurred 3 times now.
-Want me to create an instruction file to prevent this?"
+Want me to make this a standard process going forward?"
 ```
 
 ### Option 2: Add to Documentation
@@ -166,7 +166,7 @@ prioritize a proper fix? I can create an issue for it."
 - Missing steps in procedures
 - Communication breakdowns
 
-**Resolution**: Instruction files, checklists, templates
+**Resolution**: Standard processes, checklists, templates
 
 ### Technical Patterns
 
@@ -208,13 +208,13 @@ Questions asked 3+ times:
 Should I add it to an FAQ?"
 ```
 
-### Instruction Candidates
+### Process Candidates
 
 Procedures explained 3+ times:
 
 ```markdown
 "I've explained how to [do thing] 3 times now.
-Want me to create an instruction file for it?"
+Want me to make this a standard process?"
 ```
 
 ---
@@ -252,7 +252,7 @@ Want me to create an instruction file for it?"
 >
 > "I've noticed test timeouts from API rate limits have occurred 3 times now. This seems like a validated pattern. Would you like me to:
 >
-> 1. Create an instruction file for test API mocking best practices?
+> 1. Make test API mocking a standard practice going forward?
 > 2. Create an issue to add proper API mocking infrastructure?
 > 3. Just note it and continue?"
 
