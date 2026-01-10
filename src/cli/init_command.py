@@ -260,9 +260,21 @@ def init_command(
     """Initialize Pongogo in the current directory.
 
     Creates a .pongogo/ directory with configuration and seeded instruction files.
+    Files are created at the git repository root (if in a repo) or current directory.
     """
     cwd = Path.cwd()
-    pongogo_dir = cwd / PONGOGO_DIR
+
+    # Find git root first - all files should be created at repo root, not cwd
+    git_root = get_git_root(cwd)
+    project_root = git_root if git_root else cwd
+
+    # Inform user if running from subdirectory
+    if git_root and git_root != cwd:
+        console.print(
+            f"[dim]Running from subdirectory, will create files at repo root: {git_root}[/dim]\n"
+        )
+
+    pongogo_dir = project_root / PONGOGO_DIR
 
     # Check for existing installation
     if pongogo_dir.exists():
@@ -281,12 +293,9 @@ def init_command(
 
             shutil.rmtree(pongogo_dir)
 
-    # Find git root (if in a git repo) for detecting existing knowledge folders
-    git_root = get_git_root(cwd)
-
     # Detect existing knowledge folders BEFORE showing welcome
     # Check both cwd and git root to avoid creating duplicates when in subdirectory
-    wiki_path, docs_path = detect_knowledge_folders(cwd, git_root)
+    wiki_path, docs_path = detect_knowledge_folders(project_root, git_root)
     missing_folders = []
     if wiki_path is None:
         missing_folders.append("wiki/")
@@ -328,7 +337,7 @@ def init_command(
             raise typer.Exit(0)
 
     # Create wiki/docs folders if missing
-    created_wiki, created_docs = create_knowledge_folders(cwd, wiki_path, docs_path)
+    created_wiki, created_docs = create_knowledge_folders(project_root, wiki_path, docs_path)
 
     # Track created folders for config
     final_wiki = created_wiki or wiki_path
@@ -399,7 +408,7 @@ pongogo.db-shm
 
     # Copy slash commands to .claude/commands/
     console.print("\n[bold]Installing slash commands...[/bold]")
-    claude_commands_dir = cwd / ".claude" / "commands"
+    claude_commands_dir = project_root / ".claude" / "commands"
     commands_copied = copy_slash_commands(claude_commands_dir)
     if commands_copied > 0:
         console.print(f"  [green]Installed[/green] {commands_copied} slash commands")
@@ -412,7 +421,7 @@ pongogo.db-shm
     # Configure UserPromptSubmit hook for automatic routing
     # This enables automatic context injection on every user message
     console.print("\n[bold]Configuring automatic routing hook...[/bold]")
-    claude_settings_path = cwd / ".claude" / "settings.local.json"
+    claude_settings_path = project_root / ".claude" / "settings.local.json"
     claude_settings_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Use HOST path for Docker volume mount
@@ -476,7 +485,7 @@ pongogo.db-shm
     # Create Claude Code MCP config for this project
     # Official location is .mcp.json at project root (not .claude/mcp.json)
     console.print("\n[bold]Configuring Claude Code MCP server...[/bold]")
-    mcp_config_path = cwd / ".mcp.json"
+    mcp_config_path = project_root / ".mcp.json"
 
     # Use HOST path for Docker volume mount (not container path)
     # When running in Docker, HOST_PROJECT_DIR contains the actual host path
@@ -520,7 +529,7 @@ pongogo.db-shm
         console.print("  [green]Created[/green] .mcp.json")
 
     # Get repo name from current directory
-    repo_name = cwd.name
+    repo_name = project_root.name
 
     # Build success message with created folders and their purposes
     created_lines = [f"[green]Pongogo is now initialized in {repo_name}![/green]\n"]
