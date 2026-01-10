@@ -365,8 +365,8 @@ pongogo.db-shm
     # Copy manifest
     copy_manifest(source_dir, dest_instructions_dir)
 
-    # Core instructions (8) are bundled separately, always available
-    core_count = 8
+    # Core instructions (10) are bundled separately, always available
+    core_count = 10
     total_count = files_copied + core_count
     console.print(
         f"  [green]Seeded[/green] {total_count} instruction files "
@@ -393,6 +393,57 @@ pongogo.db-shm
         )
     else:
         console.print("  [yellow]No slash commands found in package[/yellow]")
+
+    # Configure UserPromptSubmit hook for automatic routing
+    # This enables automatic context injection on every user message
+    console.print("\n[bold]Configuring automatic routing hook...[/bold]")
+    claude_settings_path = cwd / ".claude" / "settings.local.json"
+    claude_settings_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Use HOST path for Docker volume mount
+    host_project_dir = os.environ.get("HOST_PROJECT_DIR")
+    if host_project_dir:
+        hook_pongogo_path = f"{host_project_dir}/.pongogo"
+    else:
+        hook_pongogo_path = str(pongogo_dir.resolve())
+
+    # Hook configuration - runs pongogo-route on each user message
+    # The hook receives user message via stdin and outputs context via stdout
+    hook_config = {
+        "hooks": {
+            "UserPromptSubmit": [
+                {
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": f"docker run -i --rm -v {hook_pongogo_path}:/project/.pongogo:ro pongogo.azurecr.io/pongogo:stable pongogo-route",
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+
+    # Write or merge hook config
+    if claude_settings_path.exists():
+        try:
+            existing = json.loads(claude_settings_path.read_text())
+            # Merge hooks, preserving other settings
+            existing.setdefault("hooks", {})
+            existing["hooks"]["UserPromptSubmit"] = hook_config["hooks"][
+                "UserPromptSubmit"
+            ]
+            claude_settings_path.write_text(json.dumps(existing, indent=2) + "\n")
+            console.print("  [green]Updated[/green] .claude/settings.local.json")
+        except (json.JSONDecodeError, KeyError):
+            claude_settings_path.write_text(json.dumps(hook_config, indent=2) + "\n")
+            console.print("  [green]Created[/green] .claude/settings.local.json")
+    else:
+        claude_settings_path.write_text(json.dumps(hook_config, indent=2) + "\n")
+        console.print("  [green]Created[/green] .claude/settings.local.json")
+    console.print(
+        "  [dim]Routing runs automatically on each message - no tool calls needed[/dim]"
+    )
 
     # Scan repository for existing knowledge patterns (silently skip if nothing found)
     try:
@@ -470,6 +521,10 @@ pongogo.db-shm
     created_lines.append("")
     created_lines.append(
         "Created: .mcp.json [dim](MCP server config for Claude Code)[/dim]"
+    )
+    created_lines.append("")
+    created_lines.append(
+        "Created: .claude/settings.local.json [dim](automatic routing hook)[/dim]"
     )
 
     if commands_copied > 0:

@@ -97,6 +97,12 @@ categories:
         title: "Work Logging"
         protected: true
 
+      - path: "_pongogo_core/user_guidance_capture.instructions.md"
+        id: "core:user_guidance_capture"
+        version: "1.0.0"
+        title: "User Guidance Capture"
+        protected: true
+
   software_engineering:
     description: "Development standards, git safety, commit formats"
     classification: "ADOPT"
@@ -367,10 +373,10 @@ instruction_frontmatter_schema:
 
 # Statistics for this bundle
 stats:
-  total_files: 40           # 31 user + 9 core
+  total_files: 41           # 31 user + 10 core
   total_categories: 13      # 12 user + 1 core
   classification_breakdown:
-    core: 9                 # Protected, bundled (not copied to user repo)
+    core: 10                # Protected, bundled (not copied to user repo)
     adopt: 9
     adapt: 22
   sample_batch: false

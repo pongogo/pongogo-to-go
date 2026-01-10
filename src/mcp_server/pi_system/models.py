@@ -140,13 +140,11 @@ class PotentialImprovement:
             classification=PIClassification(r["classification"])
             if r["classification"]
             else None,
-            pi_type=PIType(r["pi_type"])
-            if r.get("pi_type")
-            else PIType.IMPROVEMENT,
+            pi_type=PIType(r["pi_type"]) if r.get("pi_type") else PIType.IMPROVEMENT,
             context=r.get("context"),
-            classification_reason=r.get("classification_reason", None),
-            classification_model=r.get("classification_model", None),
-            classification_date=r.get("classification_date", None),
+            classification_reason=r.get("classification_reason"),
+            classification_model=r.get("classification_model"),
+            classification_date=r.get("classification_date"),
             cluster=r["cluster"],
             identified_date=r["identified_date"],
             last_updated=r["last_updated"],

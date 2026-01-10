@@ -59,6 +59,7 @@ dev = [
 [project.scripts]
 pongogo = "cli.main:app"
 pongogo-server = "mcp_server.server:main"
+pongogo-route = "mcp_server.cli:route_cli"
 
 [project.urls]
 Homepage = "https://github.com/pongogo/pongogo-to-go"
