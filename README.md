@@ -234,6 +234,18 @@ This adds the Pongogo MCP server to your `~/.claude.json` configuration. Docker 
 
 ### Upgrading Pongogo
 
+**Check for Updates**
+
+Pongogo doesn't auto-update. Check for updates periodically using:
+
+| Method | Command |
+|--------|---------|
+| Slash command | `/pongogo-status` - shows version and update availability |
+| Slash command | `/pongogo-diagnose` - includes version comparison |
+| MCP tool | `check_for_updates()` - programmatic version check |
+
+**Upgrade Steps**
+
 **Option 1: Slash Command (Recommended)**
 
 Run `/pongogo-upgrade` in Claude Code. The agent will execute the upgrade and instruct you to restart.
@@ -247,7 +259,7 @@ pongogo upgrade
 **Option 3: Manual**
 
 ```bash
-docker pull pongogo.azurecr.io/pongogo:stable
+docker pull ghcr.io/pongogo/pongogo-server:stable
 ```
 
 After upgrading, restart Claude Code and run `/mcp` to verify the new version is active.

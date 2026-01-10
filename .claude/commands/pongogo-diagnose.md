@@ -68,9 +68,10 @@ Use MCP tools to verify connection and get comprehensive health status:
 - Call `get_routing_info()` via MCP
 - Extract `engine` from response (e.g., "durian-0.6.1")
 
-**Get pongogo package version**:
-- Call `upgrade_pongogo()` via MCP
-- Extract `current_version` from response
+**Get pongogo package version and check for updates**:
+- Call `check_for_updates()` via MCP
+- Extract `current_version` and `latest_version` from response
+- Note if `update_available` is true
 
 **Test routing**:
 - [ ] Call `route_instructions` with test query "how do I commit code?"
@@ -117,7 +118,8 @@ Generate a copyable diagnostic report:
 ## Pongogo Diagnostic Report
 
 **Generated**: [timestamp]
-**Pongogo Version**: [from upgrade_pongogo MCP tool]
+**Pongogo Version**: [current_version from check_for_updates]
+**Latest Version**: [latest_version from check_for_updates] [⚠️ Update available if update_available=true]
 **Routing Engine**: [from get_routing_info MCP tool, e.g., durian-0.6.1]
 
 ### Environment
@@ -132,7 +134,7 @@ Generate a copyable diagnostic report:
 
 ### MCP Server
 - **Status**: ✅ Connected / ❌ Not connected
-- **Version**: [from upgrade_pongogo response]
+- **Version**: [current_version] → [latest_version] [✅ Up to date / ⚠️ Update available]
 
 ### Event History
 - **Status**: ✅ Active / ⚠️ Empty / ❌ Missing
@@ -155,6 +157,7 @@ Generate a copyable diagnostic report:
 
 ### Recommended Actions
 [Specific fix commands if issues found]
+[If update_available: "Run `[upgrade_command]` then restart Claude Code"]
 ```
 
 ### Support Integration

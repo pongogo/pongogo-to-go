@@ -167,6 +167,10 @@ JSON
     echo "Next steps:"
     echo "  1. Restart Claude Code to pick up the configuration"
     echo "  2. Run 'pongogo init' in your project to create .pongogo/"
+    echo ""
+    echo "Check for updates periodically:"
+    echo "  /pongogo-status   - shows version and update availability"
+    echo "  /pongogo-diagnose - includes full version comparison"
 }
 
 # Menu when Docker not available

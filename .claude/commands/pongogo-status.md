@@ -18,17 +18,21 @@ Quick health check for Pongogo knowledge routing.
 
 **Step 1**: Call the `get_routing_info()` MCP tool (from pongogo-knowledge server).
 
-**Step 2**: Display the result.
+**Step 2**: Call the `check_for_updates()` MCP tool to get version info.
 
-If the MCP tool call succeeds, output EXACTLY:
+**Step 3**: Display the result.
+
+If the MCP tool calls succeed, output EXACTLY:
 
 ```
 ## Pongogo Status ✅
 
+**Version**: [current_version] [→ latest_version available if update_available=true]
 **Routing Engine**: [engine value from response]
 **Instructions Loaded**: [instruction_count value from response] (includes core + seeded)
 
 All systems operational.
+[If update_available: "Update available: Run `[upgrade_command]` then restart Claude Code"]
 ```
 
 If the MCP tool call fails or is not available, output EXACTLY:

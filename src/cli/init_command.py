@@ -9,6 +9,21 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 
+# Version check import (lazy to avoid import issues)
+def _check_for_updates_cli():
+    """Check for updates and return message if available."""
+    try:
+        from mcp_server.upgrade import check_for_updates
+        result = check_for_updates()
+        if result.update_available:
+            return (
+                f"\n[yellow]Update available:[/yellow] {result.current_version} → {result.latest_version}\n"
+                f"Run: [#5a9ae8]{result.upgrade_command}[/#5a9ae8]"
+            )
+    except Exception:
+        pass  # Silently skip if version check fails
+    return None
+
 
 def get_git_root(cwd: Path) -> Path | None:
     """Find the root of the git repository.
@@ -495,3 +510,8 @@ sync/
             border_style="green",
         )
     )
+
+    # Check for updates (non-blocking, fails silently)
+    update_msg = _check_for_updates_cli()
+    if update_msg:
+        console.print(update_msg)

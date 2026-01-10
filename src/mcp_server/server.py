@@ -61,6 +61,7 @@ from mcp_server.upgrade import detect_install_method, get_current_version
 
 # Upgrade functionality
 from mcp_server.upgrade import upgrade as do_upgrade
+from mcp_server.upgrade import check_for_updates as do_check_for_updates
 
 # Configure logging
 logging.basicConfig(
@@ -731,6 +732,58 @@ async def upgrade_pongogo() -> dict:
             "error": str(e),
             "method": detect_install_method().value,
             "current_version": get_current_version(),
+        }
+
+
+@mcp.tool()
+async def check_for_updates() -> dict:
+    """
+    Check if a newer version of Pongogo is available.
+
+    Compares current version against latest GitHub release.
+    Uses caching (1 hour TTL) to avoid rate limiting.
+    Handles offline gracefully (returns check_failed=True).
+
+    Returns:
+        Dictionary with:
+        - current_version: Currently installed version
+        - latest_version: Latest available version (or None if check failed)
+        - update_available: True if newer version exists
+        - check_failed: True if version check failed (offline, rate limited)
+        - error_message: Error description if check failed
+        - upgrade_command: Command to upgrade (only if update available)
+
+    Example:
+        check_for_updates()
+        # Returns {"current_version": "0.1.17", "latest_version": "0.2.0",
+        #          "update_available": True, "upgrade_command": "docker pull ..."}
+    """
+    try:
+        result = do_check_for_updates()
+
+        response = {
+            "current_version": result.current_version,
+            "latest_version": result.latest_version,
+            "update_available": result.update_available,
+            "check_failed": result.check_failed,
+        }
+
+        if result.error_message:
+            response["error_message"] = result.error_message
+
+        if result.upgrade_command:
+            response["upgrade_command"] = result.upgrade_command
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Version check error: {e}", exc_info=True)
+        return {
+            "current_version": get_current_version(),
+            "latest_version": None,
+            "update_available": False,
+            "check_failed": True,
+            "error_message": str(e),
         }
 
 
