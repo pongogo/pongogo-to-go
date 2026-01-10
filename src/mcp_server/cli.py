@@ -12,6 +12,7 @@ Related: Task #482, Sub-Task #483
 import sys
 from pathlib import Path
 
+import mcp_server.engines  # noqa: F401 - imported for side effect (engine registration)
 from mcp_server.config import (
     get_core_instructions_path,
     get_knowledge_path,
