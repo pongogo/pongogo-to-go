@@ -22,7 +22,8 @@ try:
     from rich.table import Table
 
     RICH_AVAILABLE = True
-    console = Console()
+    # Use 256-color system for consistent rendering across terminals/Docker
+    console = Console(color_system="256")
 except ImportError:
     RICH_AVAILABLE = False
     console = None  # type: ignore
