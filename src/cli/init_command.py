@@ -9,11 +9,13 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 
+
 # Version check import (lazy to avoid import issues)
 def _check_for_updates_cli():
     """Check for updates and return message if available."""
     try:
         from mcp_server.upgrade import check_for_updates
+
         result = check_for_updates()
         if result.update_available:
             return (

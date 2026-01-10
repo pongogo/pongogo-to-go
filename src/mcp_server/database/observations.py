@@ -199,7 +199,9 @@ def promote_observation(
             (ObservationStatus.PROMOTED.value, impl_id, now, discovered_id),
         )
 
-        logger.info(f"Promoted observation {discovered_id} as {implementation_type.value}")
+        logger.info(
+            f"Promoted observation {discovered_id} as {implementation_type.value}"
+        )
         return impl_id
 
     except Exception as e:

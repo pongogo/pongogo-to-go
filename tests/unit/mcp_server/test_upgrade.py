@@ -6,9 +6,7 @@ without requiring Docker.
 
 import os
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
-
-import pytest
+from unittest.mock import mock_open, patch
 
 from mcp_server.upgrade import (
     InstallMethod,
@@ -30,27 +28,33 @@ class TestDetectInstallMethod:
 
     def test_detects_docker_via_cgroup(self):
         """Should detect Docker when /proc/1/cgroup contains 'docker'."""
-        with patch.object(Path, "exists", return_value=False):
-            with patch(
+        with (
+            patch.object(Path, "exists", return_value=False),
+            patch(
                 "builtins.open",
                 mock_open(read_data="12:devices:/docker/abc123\n"),
-            ):
-                result = detect_install_method()
-                assert result == InstallMethod.DOCKER
+            ),
+        ):
+            result = detect_install_method()
+            assert result == InstallMethod.DOCKER
 
     def test_detects_pip_when_no_docker_markers(self):
         """Should detect pip when no Docker markers present."""
-        with patch.object(Path, "exists", return_value=False):
-            with patch("builtins.open", side_effect=FileNotFoundError):
-                result = detect_install_method()
-                assert result == InstallMethod.PIP
+        with (
+            patch.object(Path, "exists", return_value=False),
+            patch("builtins.open", side_effect=FileNotFoundError),
+        ):
+            result = detect_install_method()
+            assert result == InstallMethod.PIP
 
     def test_handles_permission_error_on_cgroup(self):
         """Should handle PermissionError when reading cgroup."""
-        with patch.object(Path, "exists", return_value=False):
-            with patch("builtins.open", side_effect=PermissionError):
-                result = detect_install_method()
-                assert result == InstallMethod.PIP
+        with (
+            patch.object(Path, "exists", return_value=False),
+            patch("builtins.open", side_effect=PermissionError),
+        ):
+            result = detect_install_method()
+            assert result == InstallMethod.PIP
 
 
 class TestGetCurrentVersion:
@@ -94,38 +98,42 @@ class TestUpgrade:
 
     def test_docker_upgrade_returns_docker_command(self):
         """Should return docker pull command for Docker installs."""
-        with patch(
-            "mcp_server.upgrade.detect_install_method",
-            return_value=InstallMethod.DOCKER,
-        ):
-            with patch(
+        with (
+            patch(
+                "mcp_server.upgrade.detect_install_method",
+                return_value=InstallMethod.DOCKER,
+            ),
+            patch(
                 "mcp_server.upgrade.get_current_version",
                 return_value="1.0.0",
-            ):
-                result = upgrade()
+            ),
+        ):
+            result = upgrade()
 
-                assert result.success is True
-                assert result.method == InstallMethod.DOCKER
-                assert "docker pull" in result.upgrade_command
-                assert "ghcr.io" in result.upgrade_command
-                assert result.current_version == "1.0.0"
+            assert result.success is True
+            assert result.method == InstallMethod.DOCKER
+            assert "docker pull" in result.upgrade_command
+            assert "ghcr.io" in result.upgrade_command
+            assert result.current_version == "1.0.0"
 
     def test_pip_upgrade_returns_pip_command(self):
         """Should return pip install command for pip installs."""
-        with patch(
-            "mcp_server.upgrade.detect_install_method",
-            return_value=InstallMethod.PIP,
-        ):
-            with patch(
+        with (
+            patch(
+                "mcp_server.upgrade.detect_install_method",
+                return_value=InstallMethod.PIP,
+            ),
+            patch(
                 "mcp_server.upgrade.get_current_version",
                 return_value="0.1.0",
-            ):
-                result = upgrade()
+            ),
+        ):
+            result = upgrade()
 
-                assert result.success is True
-                assert result.method == InstallMethod.PIP
-                assert "pip install" in result.upgrade_command
-                assert "pongogo" in result.upgrade_command
+            assert result.success is True
+            assert result.method == InstallMethod.PIP
+            assert "pip install" in result.upgrade_command
+            assert "pongogo" in result.upgrade_command
 
     def test_unknown_method_returns_failure(self):
         """Should return failure for unknown install method."""

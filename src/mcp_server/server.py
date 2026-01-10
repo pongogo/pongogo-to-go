@@ -48,20 +48,20 @@ from mcp_server.event_capture import get_event_stats, store_routing_event
 
 # Health check for diagnostics (Task #470)
 from mcp_server.health_check import get_health_status as _get_health_status
+from mcp_server.instruction_handler import InstructionHandler
 
 # PI System for user guidance capture
 from mcp_server.pi_system import PISystem
 from mcp_server.pi_system.models import PIType
-from mcp_server.instruction_handler import InstructionHandler
 from mcp_server.routing_engine import (
     RoutingEngine,
     create_router,
 )
+from mcp_server.upgrade import check_for_updates as do_check_for_updates
 from mcp_server.upgrade import detect_install_method, get_current_version
 
 # Upgrade functionality
 from mcp_server.upgrade import upgrade as do_upgrade
-from mcp_server.upgrade import check_for_updates as do_check_for_updates
 
 # Configure logging
 logging.basicConfig(
@@ -1102,7 +1102,9 @@ async def promote_to_instruction(
 
         if result.get("success"):
             logger.info(f"Guidance promoted to instruction: {result.get('file_path')}")
-            result["message"] = f"Guidance {pi_id} promoted to {result.get('file_path')}"
+            result["message"] = (
+                f"Guidance {pi_id} promoted to {result.get('file_path')}"
+            )
 
             # Trigger reindex to include new instruction
             logger.info("Triggering reindex to include new instruction...")
@@ -1137,7 +1139,9 @@ async def get_pending_guidance(threshold: int = 3) -> dict:
     try:
         pi_system = _get_pi_system()
 
-        ready = pi_system.find_at_threshold(pi_type=PIType.USER_GUIDANCE, threshold=threshold)
+        ready = pi_system.find_at_threshold(
+            pi_type=PIType.USER_GUIDANCE, threshold=threshold
+        )
 
         return {
             "count": len(ready),

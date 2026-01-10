@@ -3,28 +3,26 @@
 import sqlite3
 from pathlib import Path
 
-import pytest
-
 from mcp_server.database import (
-    PongogoDatabase,
-    get_default_db_path,
-    store_routing_event,
-    get_event_stats,
-    get_recent_events,
-    TriggerType,
-    upsert_trigger,
-    get_triggers_by_type,
-    get_trigger_stats,
     ArtifactStatus,
-    SourceType,
-    store_artifact_discovery,
-    get_artifacts_by_status,
-    get_artifact_stats,
-    ObservationType,
     GuidanceType,
-    store_observation,
-    get_observations_by_status,
+    ObservationType,
+    PongogoDatabase,
+    SourceType,
+    TriggerType,
+    get_artifact_stats,
+    get_artifacts_by_status,
+    get_default_db_path,
+    get_event_stats,
     get_observation_stats,
+    get_observations_by_status,
+    get_recent_events,
+    get_trigger_stats,
+    get_triggers_by_type,
+    store_artifact_discovery,
+    store_observation,
+    store_routing_event,
+    upsert_trigger,
 )
 
 
@@ -53,13 +51,13 @@ class TestPongogoDatabase:
     def test_creates_database(self, tmp_path):
         """Should create database file."""
         db_path = tmp_path / ".pongogo" / "pongogo.db"
-        db = PongogoDatabase(db_path=db_path)
+        PongogoDatabase(db_path=db_path)
         assert db_path.exists()
 
     def test_creates_schema(self, tmp_path):
         """Should create all schema tables."""
         db_path = tmp_path / ".pongogo" / "pongogo.db"
-        db = PongogoDatabase(db_path=db_path)
+        PongogoDatabase(db_path=db_path)
 
         expected_tables = [
             "routing_events",
@@ -74,9 +72,7 @@ class TestPongogoDatabase:
         ]
 
         conn = sqlite3.connect(db_path)
-        cursor = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        )
+        cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables = [row[0] for row in cursor.fetchall()]
         conn.close()
 

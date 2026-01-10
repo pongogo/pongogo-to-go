@@ -256,7 +256,12 @@ def archive_artifact(
             SET status = ?, archived_at = ?, archive_reason = ?
             WHERE id = ?
             """,
-            (ArtifactStatus.ARCHIVED.value, datetime.now().isoformat(), reason, artifact_id),
+            (
+                ArtifactStatus.ARCHIVED.value,
+                datetime.now().isoformat(),
+                reason,
+                artifact_id,
+            ),
         )
 
         return rows > 0

@@ -251,7 +251,7 @@ def check_config_validity() -> dict[str, Any]:
 
     try:
         with open(config_path) as f:
-            config = yaml.safe_load(f)
+            yaml.safe_load(f)
 
         # Count instruction categories
         instructions_dir = pongogo_dir / "instructions"

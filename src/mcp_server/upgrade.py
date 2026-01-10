@@ -8,17 +8,16 @@ docker commands. Instead, we return instructions for the user to run on
 their host machine.
 """
 
+import json
 import logging
 import os
+import re
 import time
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Optional
-import urllib.request
-import urllib.error
-import json
-import re
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,9 @@ _version_cache: dict = {"latest": None, "timestamp": 0}
 VERSION_CACHE_TTL = 3600  # 1 hour in seconds
 
 # GitHub releases API endpoint
-GITHUB_RELEASES_URL = "https://api.github.com/repos/pongogo/pongogo-to-go/releases/latest"
+GITHUB_RELEASES_URL = (
+    "https://api.github.com/repos/pongogo/pongogo-to-go/releases/latest"
+)
 
 
 class InstallMethod(Enum):
@@ -222,7 +223,10 @@ def fetch_latest_version() -> str | None:
 
     # Check cache
     now = time.time()
-    if _version_cache["latest"] and (now - _version_cache["timestamp"]) < VERSION_CACHE_TTL:
+    if (
+        _version_cache["latest"]
+        and (now - _version_cache["timestamp"]) < VERSION_CACHE_TTL
+    ):
         logger.debug("Using cached version info")
         return _version_cache["latest"]
 

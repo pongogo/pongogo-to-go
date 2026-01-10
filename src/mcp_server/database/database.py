@@ -13,9 +13,9 @@ Fallback: ~/.pongogo/pongogo.db (user-level)
 
 import logging
 import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
 
 logger = logging.getLogger(__name__)
 
@@ -249,7 +249,9 @@ CREATE INDEX IF NOT EXISTS idx_guidance_fulfillment_action ON guidance_fulfillme
 class PongogoDatabase:
     """Unified database for all Pongogo routing data."""
 
-    def __init__(self, db_path: Path | str | None = None, project_root: Path | None = None):
+    def __init__(
+        self, db_path: Path | str | None = None, project_root: Path | None = None
+    ):
         """Initialize database connection.
 
         Args:

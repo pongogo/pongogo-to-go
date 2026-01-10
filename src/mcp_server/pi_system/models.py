@@ -79,7 +79,9 @@ class PotentialImprovement:
     confidence: PIConfidence = PIConfidence.LOW
     classification: PIClassification | None = None
     pi_type: PIType = PIType.IMPROVEMENT
-    context: str | None = None  # Additional context (e.g., guidance_type for USER_GUIDANCE)
+    context: str | None = (
+        None  # Additional context (e.g., guidance_type for USER_GUIDANCE)
+    )
     classification_reason: str | None = None  # Why this classification
     classification_model: str | None = None  # Which model classified
     classification_date: str | None = None  # When classified

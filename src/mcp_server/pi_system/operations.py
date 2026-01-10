@@ -517,7 +517,9 @@ class PISystem:
                 source=source_task or "user_session",
                 description=f"Repeated guidance: {content[:100]}...",
             )
-            return self.queries.get_by_id(existing.id)
+            result = self.queries.get_by_id(existing.id)
+            assert result is not None  # existing was just found, must still exist
+            return result
 
         # Create new guidance entry
         pi_id = self.get_next_pi_id()
@@ -609,14 +611,19 @@ class PISystem:
             notes="Promoted from user guidance",
         )
 
-        return {"success": True, "file_path": str(file_path), "pi_id": pi_id, "status": "IMPLEMENTED"}
+        return {
+            "success": True,
+            "file_path": str(file_path),
+            "pi_id": pi_id,
+            "status": "IMPLEMENTED",
+        }
 
     def _generate_instruction_content(self, pi: PotentialImprovement) -> str:
         """Generate instruction file content from PI."""
         now = datetime.now().strftime("%Y-%m-%d")
         guidance_type = pi.context or "explicit"
 
-        return f'''---
+        return f"""---
 title: "{pi.title}"
 description: "User guidance captured and promoted to instruction"
 applies_to:
@@ -657,7 +664,7 @@ Apply this rule when the context matches the original guidance scenario.
 ---
 
 **Note**: This instruction was automatically generated from user guidance.
-'''
+"""
 
     def find_at_threshold(
         self, pi_type: PIType | None = None, threshold: int = 3

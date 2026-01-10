@@ -130,9 +130,7 @@ class PIDatabase:
                 "ALTER TABLE potential_improvements ADD COLUMN pi_type TEXT DEFAULT 'improvement'"
             )
         if "context" not in columns:
-            conn.execute(
-                "ALTER TABLE potential_improvements ADD COLUMN context TEXT"
-            )
+            conn.execute("ALTER TABLE potential_improvements ADD COLUMN context TEXT")
 
     @contextmanager
     def connection(self):

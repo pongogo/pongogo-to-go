@@ -4,13 +4,12 @@ Tests that upgrading between schema versions works correctly,
 preserving existing data while adding new tables/columns.
 """
 
-import json
 import sqlite3
 from pathlib import Path
 
 import pytest
 
-from mcp_server.database import PongogoDatabase, SCHEMA_VERSION
+from mcp_server.database import SCHEMA_VERSION, PongogoDatabase
 
 
 class TestSchemaMigration:

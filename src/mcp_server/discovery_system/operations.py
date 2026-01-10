@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from ..database.database import PongogoDatabase, get_default_db_path
+from ..database.database import PongogoDatabase
 from .scanner import DiscoveryScanner
 
 

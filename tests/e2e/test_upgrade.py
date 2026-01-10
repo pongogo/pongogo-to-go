@@ -10,12 +10,12 @@ Tests the complete upgrade flow:
 These tests require Docker and network access to pull stable images.
 """
 
-import json
+import contextlib
 import shutil
 import sqlite3
-import time
+from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 import pytest
 
@@ -114,10 +114,8 @@ def run_container_command(
         logs = container.logs().decode("utf-8")
         return exit_code, logs
     finally:
-        try:
+        with contextlib.suppress(Exception):
             container.remove(force=True)
-        except Exception:
-            pass
 
 
 class TestUpgradeFlow:
@@ -283,7 +281,9 @@ print(f"ROUTE_SUCCESS: count={result.get('count', 0)}")
 
         # Verify 3.0.0 schema was created
         conn = sqlite3.connect(db_path)
-        cursor = conn.execute("SELECT value FROM schema_info WHERE key='schema_version'")
+        cursor = conn.execute(
+            "SELECT value FROM schema_info WHERE key='schema_version'"
+        )
         version = cursor.fetchone()[0]
         conn.close()
         assert version == "3.0.0", f"Test setup failed: got version {version}"

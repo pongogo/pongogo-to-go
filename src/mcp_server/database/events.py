@@ -92,18 +92,24 @@ def store_routing_event(
             # Retry on database locked errors
             if "database is locked" in str(e) and attempt < MAX_RETRIES - 1:
                 delay = RETRY_BASE_DELAY * (2**attempt)  # Exponential backoff
-                logger.debug(f"Database locked, retrying in {delay:.3f}s (attempt {attempt + 1}/{MAX_RETRIES})")
+                logger.debug(
+                    f"Database locked, retrying in {delay:.3f}s (attempt {attempt + 1}/{MAX_RETRIES})"
+                )
                 time.sleep(delay)
                 continue
             else:
-                logger.warning(f"Failed to store routing event after {attempt + 1} attempts: {e}")
+                logger.warning(
+                    f"Failed to store routing event after {attempt + 1} attempts: {e}"
+                )
                 return False
 
         except Exception as e:
             logger.warning(f"Failed to store routing event: {e}")
             return False
 
-    logger.warning(f"Failed to store routing event after {MAX_RETRIES} attempts: {last_error}")
+    logger.warning(
+        f"Failed to store routing event after {MAX_RETRIES} attempts: {last_error}"
+    )
     return False
 
 
