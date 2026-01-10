@@ -127,31 +127,33 @@ class PotentialImprovement:
     @classmethod
     def from_row(cls, row) -> "PotentialImprovement":
         """Create from database row."""
+        # Convert sqlite3.Row to dict for .get() access
+        r = dict(row)
         return cls(
-            id=row["id"],
-            title=row["title"],
-            summary=row["summary"],
-            status=PIStatus(row["status"]) if row["status"] else PIStatus.CANDIDATE,
-            confidence=PIConfidence(row["confidence"])
-            if row["confidence"]
+            id=r["id"],
+            title=r["title"],
+            summary=r["summary"],
+            status=PIStatus(r["status"]) if r["status"] else PIStatus.CANDIDATE,
+            confidence=PIConfidence(r["confidence"])
+            if r["confidence"]
             else PIConfidence.LOW,
-            classification=PIClassification(row["classification"])
-            if row["classification"]
+            classification=PIClassification(r["classification"])
+            if r["classification"]
             else None,
-            pi_type=PIType(row["pi_type"])
-            if row.get("pi_type")
+            pi_type=PIType(r["pi_type"])
+            if r.get("pi_type")
             else PIType.IMPROVEMENT,
-            context=row.get("context"),
-            classification_reason=row.get("classification_reason", None),
-            classification_model=row.get("classification_model", None),
-            classification_date=row.get("classification_date", None),
-            cluster=row["cluster"],
-            identified_date=row["identified_date"],
-            last_updated=row["last_updated"],
-            occurrence_count=row["occurrence_count"] or 1,
-            source_task=row["source_task"],
-            file_path=row["file_path"],
-            archived=bool(row["archived"]),
+            context=r.get("context"),
+            classification_reason=r.get("classification_reason", None),
+            classification_model=r.get("classification_model", None),
+            classification_date=r.get("classification_date", None),
+            cluster=r["cluster"],
+            identified_date=r["identified_date"],
+            last_updated=r["last_updated"],
+            occurrence_count=r["occurrence_count"] or 1,
+            source_task=r["source_task"],
+            file_path=r["file_path"],
+            archived=bool(r["archived"]),
         )
 
 
