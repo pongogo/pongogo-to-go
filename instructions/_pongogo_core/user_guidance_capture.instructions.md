@@ -105,22 +105,39 @@ last_updated: YYYY-MM-DD
 
 ## Core Principles
 
-- **Non-disruptive**: Capture silently - never interrupt user workflow
+- **Non-disruptive**: Capture without interrupting user workflow
 - **Deduplication**: Similar guidance accumulates as evidence, not duplicates
-- **Threshold-based**: Only surface for promotion after 3+ occurrences
+- **Explicit = Immediate**: Direct user requests are immediately ready for action
+- **Implicit = Threshold**: Soft feedback needs 3+ occurrences before surfacing
 - **User-controlled**: All promotions require explicit user approval
 
 ---
 
-## Pattern Detection
+## Guidance Type Behavior
+
+### Explicit Guidance (Direct Requests)
+
+When user explicitly states rules ("always do X", "from now on", "remember this"):
+
+- **Immediate action**: Ready for promotion right away
+- **Acknowledge naturally**: "Got it - I'll remember that going forward."
+- **Offer to make standard**: "Should I apply this to all future work?"
+
+Example:
+> User: "Always run tests before committing"
+> Response: "Got it - I'll run tests before every commit going forward."
+
+### Implicit Guidance (Soft Feedback)
+
+When user provides indirect feedback (corrections, preferences expressed in passing):
 
 **After 3+ occurrences** of similar guidance:
-- Surface the pattern to the user at a natural breakpoint
-- Offer to make it standard going forward (never mention "instruction files")
-- Example: "I've noticed you prefer TypeScript for new files. Want me to make this standard going forward?"
+- Surface the pattern at a natural breakpoint
+- Offer to make it standard (never mention "instruction files")
+- Example: "I've noticed you prefer TypeScript for new files. Want me to make this standard?"
 
 **For 1-2 occurrences**:
-- Log silently
+- Log without interrupting
 - Continue tracking
 
 ### User-Focused Language (Required)

@@ -996,35 +996,43 @@ async def log_user_guidance(
     content: str, guidance_type: str, context: str | None = None
 ) -> dict:
     """
-    Log user guidance for automatic knowledge capture.
+    Record user guidance for future work.
 
-    Called by agent when user provides behavioral guidance.
-    User should not be aware this tool exists - it's invisible infrastructure.
+    Use when user provides behavioral rules, preferences, or feedback.
+    Pongogo learns from these to personalize future interactions.
 
     Args:
         content: The guidance/rule/feedback from user
-        guidance_type: "explicit" for direct rules, "implicit" for soft feedback
+        guidance_type: "explicit" for direct rules/requests, "implicit" for soft feedback
         context: Optional context about when/why this was given
 
     Returns:
         Dictionary with:
         - logged: True if guidance was recorded
-        - pi_id: PI identifier for the guidance
-        - occurrence_count: How many times this guidance has been seen
-        - ready_for_promotion: True if occurrence_count >= 3
+        - pi_id: PI identifier for tracking
+        - occurrence_count: How many times similar guidance has been seen
+        - ready_for_promotion: True if ready to become standard practice
+        - guidance_type: The type of guidance recorded
+        - message: Human-friendly status message
+
+    Behavior by guidance_type:
+        - explicit: Direct user request - immediately ready for promotion
+        - implicit: Soft feedback - needs 3+ occurrences before surfacing
 
     Examples:
-        # Log explicit rule
+        # Log explicit rule (direct request - immediate)
         log_user_guidance(
             content="Always pause after each step in multi-step processes",
             guidance_type="explicit"
         )
+        # Returns ready_for_promotion: true
 
-        # Log implicit feedback
+        # Log implicit feedback (requires pattern detection)
         log_user_guidance(
             content="That was frustrating when you did multiple things at once",
             guidance_type="implicit"
         )
+        # Returns ready_for_promotion: false until 3+ occurrences
     """
     try:
         pi_system = _get_pi_system()
@@ -1046,18 +1054,27 @@ async def log_user_guidance(
 
         logger.info(f"User guidance logged: {pi.id} ({guidance_type})")
 
+        # Explicit guidance from direct user request is immediately ready
+        # Implicit guidance from soft feedback needs 3+ occurrences
+        is_ready = (
+            guidance_type == "explicit" or pi.occurrence_count >= 3
+        )
+
+        # User-friendly messages (outcome-focused, not implementation-focused)
+        if guidance_type == "explicit":
+            message = "Got it - I'll remember that going forward."
+        elif pi.occurrence_count >= 3:
+            message = "I've noticed this pattern. Ready to make it standard."
+        else:
+            message = f"Noted. Seen {pi.occurrence_count} time(s)."
+
         return {
             "logged": True,
             "pi_id": pi.id,
             "occurrence_count": pi.occurrence_count,
-            "ready_for_promotion": pi.occurrence_count >= 3,
+            "ready_for_promotion": is_ready,
             "guidance_type": guidance_type,
-            "message": "Guidance recorded. "
-            + (
-                "Ready for promotion to instruction file."
-                if pi.occurrence_count >= 3
-                else f"Seen {pi.occurrence_count} time(s)."
-            ),
+            "message": message,
         }
 
     except Exception as e:
