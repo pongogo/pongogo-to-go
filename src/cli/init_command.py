@@ -559,7 +559,9 @@ pongogo.db-shm
     created_lines.append(
         f"  - {INSTRUCTIONS_DIR}/ [dim]({total_count} instructions: {files_copied} seeded + {core_count} core)[/dim]"
     )
-    created_lines.append("  - pongogo.db [dim](event capture database, schema v3.1.0)[/dim]")
+    created_lines.append(
+        "  - pongogo.db [dim](event capture database, schema v3.1.0)[/dim]"
+    )
     created_lines.append("  - .gitignore [dim](excludes local database)[/dim]")
     created_lines.append("")
     created_lines.append(

@@ -1056,9 +1056,7 @@ async def log_user_guidance(
 
         # Explicit guidance from direct user request is immediately ready
         # Implicit guidance from soft feedback needs 3+ occurrences
-        is_ready = (
-            guidance_type == "explicit" or pi.occurrence_count >= 3
-        )
+        is_ready = guidance_type == "explicit" or pi.occurrence_count >= 3
 
         # User-friendly messages (outcome-focused, not implementation-focused)
         if guidance_type == "explicit":
