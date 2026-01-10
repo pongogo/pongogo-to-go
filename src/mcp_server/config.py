@@ -221,6 +221,39 @@ def get_routing_config(config: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def get_project_root() -> Path:
+    """
+    Get the project root directory where .pongogo/ is located.
+
+    Resolution order:
+    1. PONGOGO_KNOWLEDGE_PATH env var → parent.parent (.pongogo/instructions → project/)
+    2. PONGOGO_PROJECT_ROOT env var (explicit override)
+    3. Fallback to current working directory
+
+    This is critical for containerized deployments where:
+    - WORKDIR is /app (package location)
+    - Volume mount is /project/.pongogo (user's config)
+    - These are different paths!
+
+    Returns:
+        Path to project root (directory containing .pongogo/)
+    """
+    # Check explicit project root override
+    explicit_root = os.environ.get("PONGOGO_PROJECT_ROOT")
+    if explicit_root:
+        return Path(explicit_root)
+
+    # Derive from knowledge path (most common case)
+    # Knowledge path is .pongogo/instructions, so parent.parent = project root
+    knowledge_path = os.environ.get("PONGOGO_KNOWLEDGE_PATH")
+    if knowledge_path:
+        # /project/.pongogo/instructions → /project
+        return Path(knowledge_path).parent.parent
+
+    # Fallback to cwd (development mode)
+    return Path.cwd()
+
+
 def get_core_instructions_path() -> Path | None:
     """
     Get path to package-bundled core instructions.

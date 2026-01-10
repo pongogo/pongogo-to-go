@@ -506,7 +506,8 @@ pongogo.db-shm
                     "-i",
                     "--rm",
                     "-v",
-                    f"{pongogo_abs_path}:/project/.pongogo:ro",
+                    # Read-write mount needed for database (event capture, PI system, lookback)
+                    f"{pongogo_abs_path}:/project/.pongogo",
                     "pongogo.azurecr.io/pongogo:stable",
                 ],
             }

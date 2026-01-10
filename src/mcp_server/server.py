@@ -94,11 +94,14 @@ router: RoutingEngine = create_router(instruction_handler, routing_config)
 # Version format: durian-{major}.{minor}[-dev] (e.g., durian-0.5)
 
 # Initialize discovery system for observation-triggered promotion
-# Project root is parent of .pongogo directory (which is parent of instructions/)
-PROJECT_ROOT = KNOWLEDGE_BASE_PATH.parent.parent
+# Use get_project_root() for consistent path resolution (handles container paths)
+from mcp_server.config import get_project_root
+
+PROJECT_ROOT = get_project_root()
 discovery_system: DiscoverySystem | None = None
 try:
-    if (PROJECT_ROOT / ".pongogo" / "discovery.db").exists():
+    # Initialize if .pongogo directory exists (database auto-creates on first write)
+    if (PROJECT_ROOT / ".pongogo").exists():
         discovery_system = DiscoverySystem(PROJECT_ROOT)
         logger.info(f"Discovery system initialized for: {PROJECT_ROOT}")
 except Exception as e:

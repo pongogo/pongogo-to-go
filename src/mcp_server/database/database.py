@@ -28,7 +28,8 @@ def get_default_db_path(project_root: Path | None = None) -> Path:
 
     Path resolution:
     1. If project_root provided: .pongogo/pongogo.db (project-local)
-    2. Otherwise: ~/.pongogo/pongogo.db (user-level fallback)
+    2. Derive from PONGOGO_KNOWLEDGE_PATH env var (container deployment)
+    3. Fallback: ~/.pongogo/pongogo.db (user-level fallback)
 
     Args:
         project_root: If provided, uses project-local database.
@@ -38,9 +39,20 @@ def get_default_db_path(project_root: Path | None = None) -> Path:
     """
     if project_root:
         return Path(project_root) / ".pongogo" / "pongogo.db"
-    else:
-        # User-level fallback
-        return Path.home() / ".pongogo" / "pongogo.db"
+
+    # Import here to avoid circular imports
+    from mcp_server.config import get_project_root
+
+    # Use project root derived from config (handles container paths correctly)
+    derived_root = get_project_root()
+    db_path = derived_root / ".pongogo" / "pongogo.db"
+
+    # Only use derived path if .pongogo directory exists there
+    if (derived_root / ".pongogo").exists():
+        return db_path
+
+    # User-level fallback (development mode or no project)
+    return Path.home() / ".pongogo" / "pongogo.db"
 
 
 # Embedded schema (unified v3.0.0)

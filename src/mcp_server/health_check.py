@@ -15,6 +15,7 @@ from typing import Any
 
 import yaml
 
+from mcp_server.config import get_project_root
 from mcp_server.event_capture import get_events_db_path
 
 logger = logging.getLogger(__name__)
@@ -229,8 +230,10 @@ def check_config_validity() -> dict[str, Any]:
         - reason: Explanation
         - categories_count: Number of instruction categories (if valid)
     """
-    # Check .pongogo directory
-    pongogo_dir = Path.cwd() / ".pongogo"
+    # Check .pongogo directory using project root (not cwd!)
+    # This is critical for containers where cwd=/app but config is at /project/.pongogo
+    project_root = get_project_root()
+    pongogo_dir = project_root / ".pongogo"
     config_path = pongogo_dir / "config.yaml"
 
     if not pongogo_dir.exists():
