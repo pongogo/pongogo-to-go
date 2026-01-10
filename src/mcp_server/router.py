@@ -685,11 +685,14 @@ EXPLICIT_GUIDANCE_TRIGGERS = {
     r"always\s+(?:do|ensure|make|use|check|verify)",
     r"never\s+(?:do|use|commit|skip|forget)",
     r"never\s+without\s+(?:first|asking|checking)",
-    # Rule declarations
+    # Rule/guideline declarations
     r"(?:my\s+)?rule\s*(?:is)?:",
     r"the\s+rule\s+is",
     r"follow\s+this\s+rule",
     r"here'?s?\s+(?:a\s+)?rule",
+    r"here\s+are\s+(?:some\s+)?(?:general\s+)?(?:guidelines|rules)",
+    r"(?:some\s+)?guidelines\s+to\s+follow",
+    r"follow\s+these\s+(?:guidelines|rules)",
     # Strong directives with context
     r"i\s+want\s+you\s+to\s+(?:always|never)",
     r"you\s+should\s+(?:always|never)",
@@ -723,6 +726,8 @@ EXPLICIT_GUIDANCE_TRIGGERS = {
     # Confirmation requests
     r"let\s+me\s+know\s+what\s+you\s+think",
     r"before\s+proceeding,?\s+let\s+me\s+know",
+    r"ask\s+(?:me\s+)?before\s+(?:doing|making|committing|pushing)",
+    r"pause\s+if\s+(?:you\s+have|there\s+is)",
     # Direct commands
     r"implement\s+option\s+\d",
     r"close\s+it\s+and\s+(?:note|log)",
