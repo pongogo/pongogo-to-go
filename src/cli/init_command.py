@@ -11,12 +11,27 @@ from rich.panel import Panel
 
 
 # Version check import (lazy to avoid import issues)
-def _check_for_updates_cli():
-    """Check for updates and return message if available."""
+def _check_for_updates_cli(console: Console):
+    """Check for updates and return message if available.
+
+    Args:
+        console: Rich console for spinner display
+
+    Returns:
+        Update message string if update available, None otherwise
+    """
+    # Skip version check if running from installer (we just installed latest)
+    if os.environ.get("PONGOGO_FROM_INSTALLER"):
+        return None
+
     try:
         from mcp_server.upgrade import check_for_updates
 
-        result = check_for_updates()
+        with console.status(
+            "[dim]Checking for updates...[/dim]", spinner="dots"
+        ):
+            result = check_for_updates()
+
         if result.update_available:
             return (
                 f"\n[yellow]Update available:[/yellow] {result.current_version} → {result.latest_version}\n"
@@ -307,7 +322,7 @@ def init_command(
 
     # Interactive mode: confirm before proceeding
     if not no_interactive:
-        response = console.input("\nContinue? [Y/n]: ").strip().lower()
+        response = console.input("\nContinue? [#5a9ae8][Y/n]:[/#5a9ae8] ").strip().lower()
         if response and response not in ("y", "yes"):
             console.print("[yellow]Installation cancelled.[/yellow]")
             raise typer.Exit(0)
@@ -570,6 +585,7 @@ pongogo.db-shm
     )
 
     # Check for updates (non-blocking, fails silently)
-    update_msg = _check_for_updates_cli()
+    # Skipped if PONGOGO_FROM_INSTALLER is set (install already has latest)
+    update_msg = _check_for_updates_cli(console)
     if update_msg:
         console.print(update_msg)
