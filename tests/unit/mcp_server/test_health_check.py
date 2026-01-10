@@ -131,6 +131,9 @@ class TestCheckConfigValidity:
 
     def test_missing_when_no_pongogo_dir(self, tmp_path, monkeypatch):
         """Should report missing when .pongogo doesn't exist."""
+        # Clear env vars so get_project_root falls back to cwd
+        monkeypatch.delenv("PONGOGO_KNOWLEDGE_PATH", raising=False)
+        monkeypatch.delenv("PONGOGO_PROJECT_ROOT", raising=False)
         monkeypatch.chdir(tmp_path)
 
         result = check_config_validity()
@@ -138,6 +141,9 @@ class TestCheckConfigValidity:
 
     def test_missing_when_no_config_file(self, tmp_path, monkeypatch):
         """Should report missing when config.yaml doesn't exist."""
+        # Clear env vars so get_project_root falls back to cwd
+        monkeypatch.delenv("PONGOGO_KNOWLEDGE_PATH", raising=False)
+        monkeypatch.delenv("PONGOGO_PROJECT_ROOT", raising=False)
         pongogo_dir = tmp_path / ".pongogo"
         pongogo_dir.mkdir()
         monkeypatch.chdir(tmp_path)
@@ -147,6 +153,9 @@ class TestCheckConfigValidity:
 
     def test_valid_when_config_exists(self, tmp_path, monkeypatch):
         """Should report valid when config.yaml is valid YAML."""
+        # Clear env vars so get_project_root falls back to cwd
+        monkeypatch.delenv("PONGOGO_KNOWLEDGE_PATH", raising=False)
+        monkeypatch.delenv("PONGOGO_PROJECT_ROOT", raising=False)
         pongogo_dir = tmp_path / ".pongogo"
         pongogo_dir.mkdir()
         config_path = pongogo_dir / "config.yaml"
@@ -158,6 +167,9 @@ class TestCheckConfigValidity:
 
     def test_invalid_when_bad_yaml(self, tmp_path, monkeypatch):
         """Should report invalid when config.yaml is invalid YAML."""
+        # Clear env vars so get_project_root falls back to cwd
+        monkeypatch.delenv("PONGOGO_KNOWLEDGE_PATH", raising=False)
+        monkeypatch.delenv("PONGOGO_PROJECT_ROOT", raising=False)
         pongogo_dir = tmp_path / ".pongogo"
         pongogo_dir.mkdir()
         config_path = pongogo_dir / "config.yaml"
