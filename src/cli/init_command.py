@@ -370,6 +370,19 @@ pongogo.db-shm
     gitignore_path.write_text(gitignore_content)
     console.print(f"  [green]Created[/green] {PONGOGO_DIR}/.gitignore")
 
+    # Initialize empty database with schema (so health checks pass)
+    console.print("\n[bold]Initializing event database...[/bold]")
+    try:
+        from mcp_server.database import PongogoDatabase
+
+        PongogoDatabase(project_root=project_root)
+        console.print(f"  [green]Created[/green] {PONGOGO_DIR}/pongogo.db")
+        console.print("  [dim]Ready to capture routing events and observations[/dim]")
+    except Exception as e:
+        # Database init is optional - don't fail init if it errors
+        console.print(f"  [yellow]Warning:[/yellow] Could not initialize database: {e}")
+        console.print("  [dim]Database will be created on first routing event[/dim]")
+
     # Copy instruction files
     console.print("\n[bold]Copying instruction files...[/bold]")
 
@@ -546,6 +559,7 @@ pongogo.db-shm
     created_lines.append(
         f"  - {INSTRUCTIONS_DIR}/ [dim]({total_count} instructions: {files_copied} seeded + {core_count} core)[/dim]"
     )
+    created_lines.append("  - pongogo.db [dim](event capture database, schema v3.1.0)[/dim]")
     created_lines.append("  - .gitignore [dim](excludes local database)[/dim]")
     created_lines.append("")
     created_lines.append(
