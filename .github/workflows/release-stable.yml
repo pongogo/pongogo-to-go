@@ -1,13 +1,18 @@
-# Stable Release workflow - Manual promotion from beta
+# Stable Release workflow - Manual promotion from beta with auto-versioning
 name: Stable Release
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Stable version (e.g., 0.1.0)'
+      bump:
+        description: 'Version bump type'
         required: true
-        type: string
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: 'patch'
       beta_tag:
         description: 'Beta tag to promote (e.g., vbeta-20251231-abc123)'
         required: true
@@ -22,24 +27,54 @@ jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Validate version format
+      - name: Calculate next version
+        id: version
         run: |
-          if ! [[ "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Version must be in semver format (X.Y.Z)"
-            exit 1
+          # Get latest stable tag (semver format only, not beta tags)
+          LATEST=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | grep -v 'beta' | sort -V | tail -1)
+
+          if [ -z "$LATEST" ]; then
+            echo "No existing stable tags found, starting at 0.1.0"
+            NEXT="0.1.0"
+          else
+            echo "Latest stable tag: $LATEST"
+            # Strip 'v' prefix
+            VERSION=${LATEST#v}
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+            case "${{ inputs.bump }}" in
+              major)
+                NEXT="$((MAJOR+1)).0.0"
+                ;;
+              minor)
+                NEXT="${MAJOR}.$((MINOR+1)).0"
+                ;;
+              patch)
+                NEXT="${MAJOR}.${MINOR}.$((PATCH+1))"
+                ;;
+            esac
           fi
+
+          echo "Next version: $NEXT"
+          echo "version=$NEXT" >> $GITHUB_OUTPUT
+
+      - name: Display version info
+        run: |
+          echo "::notice::Releasing version ${{ steps.version.outputs.version }} (bump: ${{ inputs.bump }})"
 
       - name: Check beta tag exists
         run: |
           if ! git rev-parse "${{ inputs.beta_tag }}" >/dev/null 2>&1; then
             echo "Error: Beta tag ${{ inputs.beta_tag }} does not exist"
             echo "Available beta tags:"
-            git tag -l 'vbeta-*' | head -10
+            git tag -l 'vbeta-*' | tail -10
             exit 1
           fi
 
@@ -91,26 +126,26 @@ jobs:
       - name: Merge to stable branch
         run: |
           git checkout stable
-          git merge ${{ inputs.beta_tag }} --no-edit -m "Merge ${{ inputs.beta_tag }} into stable for v${{ inputs.version }}"
+          git merge ${{ inputs.beta_tag }} --no-edit -m "Merge ${{ inputs.beta_tag }} into stable for v${{ needs.validate.outputs.version }}"
           git push origin stable
 
       - name: Create stable tag
         run: |
-          TAG="v${{ inputs.version }}"
-          git tag -a "$TAG" -m "Stable release ${{ inputs.version }}"
+          TAG="v${{ needs.validate.outputs.version }}"
+          git tag -a "$TAG" -m "Stable release ${{ needs.validate.outputs.version }}"
           git push origin "$TAG"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version }}
-          name: Release ${{ inputs.version }}
+          tag_name: v${{ needs.validate.outputs.version }}
+          name: Release ${{ needs.validate.outputs.version }}
           prerelease: false
           body: |
             ## Stable Release
 
             **Channel**: Stable (production)
-            **Version**: ${{ inputs.version }}
+            **Version**: ${{ needs.validate.outputs.version }}
             **Promoted from**: ${{ inputs.beta_tag }}
 
             This is a production-ready stable release.
@@ -124,7 +159,7 @@ jobs:
             curl -sSL https://get.pongogo.com | bash
 
             # Or manually:
-            docker pull ghcr.io/${{ github.repository }}:v${{ inputs.version }}
+            docker pull ghcr.io/${{ github.repository }}:v${{ needs.validate.outputs.version }}
             ```
 
             ### Quick Start
@@ -171,14 +206,14 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:v${{ inputs.version }}
+            ghcr.io/${{ github.repository }}:v${{ needs.validate.outputs.version }}
             ghcr.io/${{ github.repository }}:stable
             ghcr.io/${{ github.repository }}:latest
-            pongogo.azurecr.io/pongogo:v${{ inputs.version }}
+            pongogo.azurecr.io/pongogo:v${{ needs.validate.outputs.version }}
             pongogo.azurecr.io/pongogo:stable
             pongogo.azurecr.io/pongogo:latest
           build-args: |
-            PONGOGO_VERSION=${{ inputs.version }}
+            PONGOGO_VERSION=${{ needs.validate.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -192,6 +227,6 @@ jobs:
               workflow_id: 'deploy.yml',
               ref: 'main',
               inputs: {
-                version: 'v${{ inputs.version }}'
+                version: 'v${{ needs.validate.outputs.version }}'
               }
             })
