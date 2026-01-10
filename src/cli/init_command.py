@@ -295,7 +295,7 @@ def init_command(
 
     # Build welcome message based on what exists
     welcome_lines = [
-        "[bold #ff8700]Pongogo[/bold #ff8700] - AI agent knowledge routing\n",
+        "[bold color(208)]Pongogo[/bold color(208)] - AI agent knowledge routing\n",
         "This will create:",
         "  [#5a9ae8].pongogo/[/#5a9ae8]",
         "    - config.yaml [dim](auto-configured, no edits needed)[/dim]",

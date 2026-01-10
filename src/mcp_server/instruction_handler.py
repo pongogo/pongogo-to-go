@@ -151,8 +151,10 @@ class InstructionHandler:
 
         # Phase 2: Load USER instructions (skip if shadows protected ID)
         if not self.knowledge_base_path.exists():
-            logger.error(
-                f"Knowledge base path does not exist: {self.knowledge_base_path}"
+            # Not an error - core instructions are still available
+            # User instructions are optional (projects may only use core)
+            logger.debug(
+                f"No user instructions at {self.knowledge_base_path} (using core only)"
             )
             return count
 
