@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 # Single source of truth for this engine's version
 # Used by @register_engine decorator and version property
-DURIAN_VERSION = "durian-0.6.2-dev"
+DURIAN_VERSION = "durian-0.6.2"
 
 # IMP-003: Simple approval patterns that should suppress routing
 # These messages are typically conversational continuations, not queries
