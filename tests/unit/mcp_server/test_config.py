@@ -18,6 +18,7 @@ from mcp_server.config import (
     _resolve_path,
     get_core_instructions_path,
     get_knowledge_path,
+    get_project_root,
     get_routing_config,
     load_config,
 )
@@ -245,3 +246,85 @@ class TestGetCoreInstructionsPath:
         # Either returns a Path that exists or None
         if result is not None:
             assert isinstance(result, Path)
+
+
+class TestGetProjectRoot:
+    """Tests for get_project_root function.
+
+    Critical for container deployments where:
+    - WORKDIR is /app (package location)
+    - Volume mount is /project/.pongogo (user's config)
+    """
+
+    def test_derives_from_knowledge_path(self, tmp_path: Path):
+        """Derives project root from PONGOGO_KNOWLEDGE_PATH."""
+        # Simulate: /project/.pongogo/instructions -> /project
+        knowledge_path = tmp_path / ".pongogo" / "instructions"
+        knowledge_path.mkdir(parents=True)
+
+        with patch.dict(
+            os.environ,
+            {"PONGOGO_KNOWLEDGE_PATH": str(knowledge_path)},
+            clear=True,
+        ):
+            result = get_project_root()
+
+        assert result == tmp_path
+
+    def test_explicit_project_root_override(self, tmp_path: Path):
+        """PONGOGO_PROJECT_ROOT takes precedence."""
+        explicit_root = tmp_path / "explicit"
+        explicit_root.mkdir()
+        knowledge_path = tmp_path / "other" / ".pongogo" / "instructions"
+        knowledge_path.mkdir(parents=True)
+
+        with patch.dict(
+            os.environ,
+            {
+                "PONGOGO_PROJECT_ROOT": str(explicit_root),
+                "PONGOGO_KNOWLEDGE_PATH": str(knowledge_path),
+            },
+            clear=True,
+        ):
+            result = get_project_root()
+
+        # Explicit override takes precedence
+        assert result == explicit_root
+
+    def test_fallback_to_cwd(self, tmp_path: Path):
+        """Falls back to cwd when no env vars set."""
+        with patch.dict(os.environ, {}, clear=True):
+            with patch("mcp_server.config.Path.cwd", return_value=tmp_path):
+                result = get_project_root()
+
+        assert result == tmp_path
+
+    def test_container_path_simulation(self, tmp_path: Path):
+        """Simulates container deployment path resolution.
+
+        Container scenario:
+        - WORKDIR=/app (where Python runs)
+        - Volume: /project/.pongogo mounted
+        - PONGOGO_KNOWLEDGE_PATH=/project/.pongogo/instructions
+        - Expected: project root = /project
+        """
+        # Create simulated container structure
+        project_dir = tmp_path / "project"
+        pongogo_dir = project_dir / ".pongogo"
+        instructions_dir = pongogo_dir / "instructions"
+        instructions_dir.mkdir(parents=True)
+
+        # Create config file
+        config_file = pongogo_dir / "config.yaml"
+        config_file.write_text("routing:\n  engine: durian-0.6.1\n")
+
+        with patch.dict(
+            os.environ,
+            {"PONGOGO_KNOWLEDGE_PATH": str(instructions_dir)},
+            clear=True,
+        ):
+            result = get_project_root()
+
+        assert result == project_dir
+        # Verify we can find config from this root
+        assert (result / ".pongogo" / "config.yaml").exists()

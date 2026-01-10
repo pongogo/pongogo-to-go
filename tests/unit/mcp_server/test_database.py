@@ -1,7 +1,9 @@
 """Tests for unified database module (schema v3.0.0)."""
 
+import os
 import sqlite3
 from pathlib import Path
+from unittest.mock import patch
 
 from mcp_server.database import (
     ArtifactStatus,
@@ -31,18 +33,64 @@ class TestGetDefaultDbPath:
 
     def test_returns_path(self):
         """Should return a Path object."""
-        path = get_default_db_path()
+        with patch.dict(os.environ, {}, clear=True):
+            path = get_default_db_path()
         assert isinstance(path, Path)
 
-    def test_user_level_fallback(self):
-        """Without project root, should use ~/.pongogo/pongogo.db."""
-        path = get_default_db_path()
+    def test_user_level_fallback_no_env(self, tmp_path):
+        """Without env vars and no .pongogo dir, falls back to ~/.pongogo/pongogo.db."""
+        # Clear env vars and mock cwd to tmp_path (which has no .pongogo)
+        with patch.dict(os.environ, {}, clear=True):
+            with patch("mcp_server.config.Path.cwd", return_value=tmp_path):
+                path = get_default_db_path()
         assert path == Path.home() / ".pongogo" / "pongogo.db"
 
-    def test_project_local(self, tmp_path):
-        """With project root, should use .pongogo/pongogo.db."""
+    def test_project_local_explicit(self, tmp_path):
+        """With explicit project root, should use .pongogo/pongogo.db."""
         path = get_default_db_path(project_root=tmp_path)
         assert path == tmp_path / ".pongogo" / "pongogo.db"
+
+    def test_derives_from_knowledge_path(self, tmp_path):
+        """Derives db path from PONGOGO_KNOWLEDGE_PATH (container deployment)."""
+        # Simulate: /project/.pongogo/instructions -> /project/.pongogo/pongogo.db
+        pongogo_dir = tmp_path / ".pongogo"
+        instructions_dir = pongogo_dir / "instructions"
+        instructions_dir.mkdir(parents=True)
+
+        with patch.dict(
+            os.environ,
+            {"PONGOGO_KNOWLEDGE_PATH": str(instructions_dir)},
+            clear=True,
+        ):
+            path = get_default_db_path()
+
+        assert path == pongogo_dir / "pongogo.db"
+
+    def test_container_path_resolution(self, tmp_path):
+        """Simulates container deployment database path resolution.
+
+        Container scenario:
+        - WORKDIR=/app (Python runs here)
+        - Volume: host/.pongogo -> /project/.pongogo
+        - PONGOGO_KNOWLEDGE_PATH=/project/.pongogo/instructions
+        - Expected db path: /project/.pongogo/pongogo.db
+        """
+        # Create simulated container structure
+        project_dir = tmp_path / "project"
+        pongogo_dir = project_dir / ".pongogo"
+        instructions_dir = pongogo_dir / "instructions"
+        instructions_dir.mkdir(parents=True)
+
+        with patch.dict(
+            os.environ,
+            {"PONGOGO_KNOWLEDGE_PATH": str(instructions_dir)},
+            clear=True,
+        ):
+            path = get_default_db_path()
+
+        # Database should be in the same .pongogo directory as instructions
+        assert path == pongogo_dir / "pongogo.db"
+        # NOT in ~/.pongogo or /app/.pongogo
 
 
 class TestPongogoDatabase:
