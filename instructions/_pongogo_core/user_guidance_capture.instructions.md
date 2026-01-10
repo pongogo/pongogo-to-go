@@ -116,12 +116,25 @@ last_updated: YYYY-MM-DD
 
 **After 3+ occurrences** of similar guidance:
 - Surface the pattern to the user at a natural breakpoint
-- Offer to create an instruction file to formalize it
-- Example: "I've noticed you've mentioned preferring TypeScript 3 times. Would you like me to create an instruction for this?"
+- Offer to make it standard going forward (never mention "instruction files")
+- Example: "I've noticed you prefer TypeScript for new files. Want me to make this standard going forward?"
 
 **For 1-2 occurrences**:
 - Log silently
 - Continue tracking
+
+### User-Focused Language (Required)
+
+When discussing guidance capture with users, always use outcome-focused language:
+
+| Never Say | Say Instead |
+|-----------|-------------|
+| "Create an instruction file" | "Remember this going forward" |
+| "Capture in .pongogo/instructions/" | "Make this standard" |
+| "Formalize as an instruction" | "Apply this to future work" |
+| "Add to the knowledge base" | "Remember this preference" |
+
+See `_pongogo_collaboration.instructions.md` → "Technical Abstraction" section for complete language guide.
 
 ---
 
