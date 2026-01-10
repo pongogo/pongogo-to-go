@@ -467,6 +467,38 @@ jobs:
               echo "  pongogo uninstall --force # Remove Pongogo (no confirmation)"
               ;;
 
+            init)
+              # Check for updates before init (unless we just installed)
+              if [ -z "$PONGOGO_FROM_INSTALLER" ]; then
+                # Compare local and remote image digests
+                LOCAL_DIGEST=$(docker inspect pongogo.azurecr.io/pongogo:stable --format='{{index .RepoDigests 0}}' 2>/dev/null | cut -d'@' -f2)
+                REMOTE_DIGEST=$(docker manifest inspect pongogo.azurecr.io/pongogo:stable 2>/dev/null | grep -m1 '"digest"' | cut -d'"' -f4)
+
+                if [ -n "$REMOTE_DIGEST" ] && [ -n "$LOCAL_DIGEST" ] && [ "$LOCAL_DIGEST" != "$REMOTE_DIGEST" ]; then
+                  echo "🦧 A newer version of Pongogo is available."
+                  echo ""
+                  read -p $'Update before initializing? \033[94m[Y/n]:\033[0m ' -r < /dev/tty
+                  echo ""
+                  if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+                    echo "Pulling latest version..."
+                    docker pull pongogo.azurecr.io/pongogo:stable
+                    echo ""
+                  fi
+                fi
+              fi
+
+              # Run init in Docker container
+              ENV_ARGS="-e HOST_PROJECT_DIR=$(pwd)"
+              if [ -n "$PONGOGO_FROM_INSTALLER" ]; then
+                ENV_ARGS="$ENV_ARGS -e PONGOGO_FROM_INSTALLER=1"
+              fi
+              if [ -t 1 ] && [ -e /dev/tty ]; then
+                docker run -it --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/project:z -w /project $ENV_ARGS --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@" < /dev/tty
+              else
+                docker run --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/project:z -w /project $ENV_ARGS --entrypoint pongogo pongogo.azurecr.io/pongogo:stable "$@"
+              fi
+              ;;
+
             *)
               # All other commands run in Docker container
               # Use --user to match host user so created files have correct ownership
