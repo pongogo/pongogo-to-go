@@ -275,7 +275,7 @@ jobs:
                   if not c['mcpServers']:
                       import os
                       os.remove(p)
-                      print('✓ Removed .mcp.json (was only pongogo config)')
+                      print('✓ Removed .mcp.json (no other MCP servers configured)')
                   else:
                       json.dump(c, open(p, 'w'), indent=2)
                       print('✓ Removed pongogo-knowledge from .mcp.json')
