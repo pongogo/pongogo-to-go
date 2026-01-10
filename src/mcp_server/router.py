@@ -34,8 +34,8 @@ from datetime import datetime as _datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
-from instruction_handler import InstructionHandler
-from routing_engine import RoutingEngine, FeatureSpec, register_engine, set_default_engine
+from mcp_server.instruction_handler import InstructionHandler
+from mcp_server.routing_engine import RoutingEngine, FeatureSpec, register_engine, set_default_engine
 
 logger = logging.getLogger(__name__)
 

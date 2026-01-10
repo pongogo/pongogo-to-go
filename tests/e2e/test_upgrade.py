@@ -33,7 +33,7 @@ except ImportError:
     Container = Any
 
 
-STABLE_IMAGE = "ghcr.io/pongogo/pongogo-to-go:stable"
+STABLE_IMAGE = "pongogo.azurecr.io/pongogo:stable"
 TEST_IMAGE = "pongogo-server:test"
 
 
@@ -86,18 +86,38 @@ def test_image_available(docker_client: Any) -> bool:
         return True
 
 
-def wait_for_container(container: Container, timeout: int = 30) -> None:
-    """Wait for container to be running."""
-    start = time.time()
-    while time.time() - start < timeout:
-        container.reload()
-        if container.status == "running":
-            return
-        if container.status in ("exited", "dead"):
-            logs = container.logs().decode("utf-8")
-            raise RuntimeError(f"Container failed: {logs}")
-        time.sleep(0.5)
-    raise TimeoutError(f"Container did not start within {timeout}s")
+def run_container_command(
+    docker_client: Any,
+    image: str,
+    command: list[str],
+    volumes: dict | None = None,
+    environment: dict | None = None,
+    timeout: int = 60,
+) -> tuple[int, str]:
+    """Run a one-shot command in a container and return exit code and logs.
+
+    Returns:
+        Tuple of (exit_code, logs)
+    """
+    container = docker_client.containers.run(
+        image,
+        detach=True,
+        command=command,
+        volumes=volumes or {},
+        environment=environment or {},
+    )
+
+    try:
+        # Wait for container to finish
+        result = container.wait(timeout=timeout)
+        exit_code = result.get("StatusCode", -1)
+        logs = container.logs().decode("utf-8")
+        return exit_code, logs
+    finally:
+        try:
+            container.remove(force=True)
+        except Exception:
+            pass
 
 
 class TestUpgradeFlow:
@@ -135,19 +155,14 @@ class TestUpgradeFlow:
     ):
         """Routing should work before and after upgrade."""
         pongogo_dir = test_project / ".pongogo"
+        volumes = {str(pongogo_dir): {"bind": "/app/.pongogo", "mode": "rw"}}
+        environment = {
+            "PONGOGO_TEST_MODE": "1",
+            "PONGOGO_KNOWLEDGE_PATH": "/app/.pongogo/instructions",
+        }
 
         # Phase 1: Run stable version and verify routing works
-        stable_container = docker_client.containers.run(
-            STABLE_IMAGE,
-            detach=True,
-            environment={
-                "PONGOGO_TEST_MODE": "1",
-                "PONGOGO_KNOWLEDGE_PATH": "/app/.pongogo/instructions",
-            },
-            volumes={
-                str(pongogo_dir): {"bind": "/app/.pongogo", "mode": "rw"},
-            },
-            command=["python", "-c", """
+        routing_code = """
 import sys
 sys.path.insert(0, '/app/src')
 from mcp_server.instruction_handler import InstructionHandler
@@ -157,56 +172,31 @@ handler = InstructionHandler('/app/.pongogo/instructions')
 handler.load_instructions()
 router = InstructionRouter(handler)
 result = router.route('how do I test?', limit=3)
-print(f"STABLE_ROUTE_SUCCESS: count={result.get('count', 0)}")
-"""],
+print(f"ROUTE_SUCCESS: count={result.get('count', 0)}")
+"""
+
+        exit_code, logs = run_container_command(
+            docker_client,
+            STABLE_IMAGE,
+            ["python", "-c", routing_code],
+            volumes=volumes,
+            environment=environment,
         )
 
-        try:
-            wait_for_container(stable_container)
-            time.sleep(2)  # Allow command to complete
-            stable_container.reload()
-
-            stable_logs = stable_container.logs().decode("utf-8")
-            assert "STABLE_ROUTE_SUCCESS" in stable_logs, f"Stable routing failed: {stable_logs}"
-        finally:
-            stable_container.stop()
-            stable_container.remove()
+        assert exit_code == 0, f"Stable routing failed (exit {exit_code}): {logs}"
+        assert "ROUTE_SUCCESS" in logs, f"Stable routing failed: {logs}"
 
         # Phase 2: Run test (new) version and verify routing still works
-        test_container = docker_client.containers.run(
+        exit_code, logs = run_container_command(
+            docker_client,
             TEST_IMAGE,
-            detach=True,
-            environment={
-                "PONGOGO_TEST_MODE": "1",
-                "PONGOGO_KNOWLEDGE_PATH": "/app/.pongogo/instructions",
-            },
-            volumes={
-                str(pongogo_dir): {"bind": "/app/.pongogo", "mode": "rw"},
-            },
-            command=["python", "-c", """
-import sys
-sys.path.insert(0, '/app/src')
-from mcp_server.instruction_handler import InstructionHandler
-from mcp_server.router import InstructionRouter
-
-handler = InstructionHandler('/app/.pongogo/instructions')
-handler.load_instructions()
-router = InstructionRouter(handler)
-result = router.route('how do I test?', limit=3)
-print(f"TEST_ROUTE_SUCCESS: count={result.get('count', 0)}")
-"""],
+            ["python", "-c", routing_code],
+            volumes=volumes,
+            environment=environment,
         )
 
-        try:
-            wait_for_container(test_container)
-            time.sleep(2)
-            test_container.reload()
-
-            test_logs = test_container.logs().decode("utf-8")
-            assert "TEST_ROUTE_SUCCESS" in test_logs, f"Test routing failed: {test_logs}"
-        finally:
-            test_container.stop()
-            test_container.remove()
+        assert exit_code == 0, f"Test routing failed (exit {exit_code}): {logs}"
+        assert "ROUTE_SUCCESS" in logs, f"Test routing failed: {logs}"
 
     def test_upgrade_migrates_database_schema(
         self,
@@ -215,67 +205,105 @@ print(f"TEST_ROUTE_SUCCESS: count={result.get('count', 0)}")
         test_image_available: bool,
         test_project: Path,
     ):
-        """Database schema should migrate correctly during upgrade."""
+        """Database schema should migrate correctly during upgrade.
+
+        Note: The current stable image doesn't have mcp_server.database module,
+        so we create a 3.0.0 schema file directly and verify the new version
+        migrates it correctly.
+        """
         pongogo_dir = test_project / ".pongogo"
+        db_path = pongogo_dir / "pongogo.db"
 
-        # Phase 1: Create database with stable version
-        stable_container = docker_client.containers.run(
-            STABLE_IMAGE,
-            detach=True,
-            environment={"PONGOGO_TEST_MODE": "1"},
-            volumes={
-                str(pongogo_dir): {"bind": "/app/.pongogo", "mode": "rw"},
-            },
-            command=["python", "-c", """
-import sys
-sys.path.insert(0, '/app/src')
-from mcp_server.database import PongogoDatabase
+        # Create a 3.0.0 schema database directly (simulating stable version)
+        conn = sqlite3.connect(db_path)
+        conn.executescript("""
+            CREATE TABLE schema_info (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+            INSERT INTO schema_info (key, value) VALUES ('schema_version', '3.0.0');
 
-db = PongogoDatabase(db_path='/app/.pongogo/pongogo.db')
-version = db.get_schema_version()
-print(f"STABLE_SCHEMA_VERSION: {version}")
+            CREATE TABLE routing_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                user_message TEXT NOT NULL,
+                message_hash TEXT,
+                routed_instructions TEXT,
+                instruction_count INTEGER DEFAULT 0,
+                routing_scores TEXT,
+                engine_version TEXT DEFAULT 'durian-0.6.1',
+                session_id TEXT,
+                context TEXT,
+                routing_latency_ms REAL,
+                exclude_from_eval BOOLEAN DEFAULT 0,
+                exclude_reason TEXT,
+                mode TEXT NOT NULL DEFAULT 'enabled'
+            );
 
-# Insert test data
-db.execute_insert('''
-    INSERT INTO routing_events (timestamp, user_message, instruction_count)
-    VALUES ('2025-01-01', 'test upgrade', 1)
-''')
-print("STABLE_DATA_INSERTED")
-"""],
-        )
+            -- Insert test data
+            INSERT INTO routing_events (timestamp, user_message, instruction_count, mode)
+            VALUES ('2025-01-01T00:00:00', 'test upgrade message', 1, 'enabled');
 
-        try:
-            wait_for_container(stable_container)
-            time.sleep(3)
-            stable_container.reload()
-            stable_logs = stable_container.logs().decode("utf-8")
-            assert "STABLE_SCHEMA_VERSION" in stable_logs
-            assert "STABLE_DATA_INSERTED" in stable_logs
-        finally:
-            stable_container.stop()
-            stable_container.remove()
+            CREATE TABLE routing_triggers (
+                id INTEGER PRIMARY KEY,
+                trigger_type TEXT,
+                trigger_key TEXT,
+                trigger_value TEXT,
+                source TEXT,
+                enabled BOOLEAN DEFAULT 1
+            );
+            CREATE TABLE artifact_discovered (
+                id INTEGER PRIMARY KEY,
+                status TEXT,
+                source_type TEXT
+            );
+            CREATE TABLE artifact_implemented (
+                id INTEGER PRIMARY KEY,
+                status TEXT,
+                instruction_category TEXT
+            );
+            CREATE TABLE observation_discovered (
+                id INTEGER PRIMARY KEY,
+                status TEXT,
+                observation_type TEXT
+            );
+            CREATE TABLE observation_implemented (
+                id INTEGER PRIMARY KEY,
+                status TEXT,
+                implementation_type TEXT
+            );
+            CREATE TABLE scan_history (
+                id INTEGER PRIMARY KEY,
+                scan_date TEXT
+            );
+        """)
+        conn.commit()
+        conn.close()
 
-        # Phase 2: Open with test version - should migrate
-        test_container = docker_client.containers.run(
-            TEST_IMAGE,
-            detach=True,
-            environment={"PONGOGO_TEST_MODE": "1"},
-            volumes={
-                str(pongogo_dir): {"bind": "/app/.pongogo", "mode": "rw"},
-            },
-            command=["python", "-c", """
+        # Verify 3.0.0 schema was created
+        conn = sqlite3.connect(db_path)
+        cursor = conn.execute("SELECT value FROM schema_info WHERE key='schema_version'")
+        version = cursor.fetchone()[0]
+        conn.close()
+        assert version == "3.0.0", f"Test setup failed: got version {version}"
+
+        # Open with test version - should migrate to 3.1.0
+        volumes = {str(pongogo_dir): {"bind": "/app/.pongogo", "mode": "rw"}}
+
+        migration_code = """
 import sys
 sys.path.insert(0, '/app/src')
 from mcp_server.database import PongogoDatabase, SCHEMA_VERSION
 
 db = PongogoDatabase(db_path='/app/.pongogo/pongogo.db')
 version = db.get_schema_version()
-print(f"TEST_SCHEMA_VERSION: {version}")
+print(f"SCHEMA_VERSION: {version}")
 print(f"EXPECTED_VERSION: {SCHEMA_VERSION}")
 
 # Verify data preserved
 events = db.execute("SELECT user_message FROM routing_events")
-if events and events[0]['user_message'] == 'test upgrade':
+if events and events[0]['user_message'] == 'test upgrade message':
     print("DATA_PRESERVED: yes")
 else:
     print("DATA_PRESERVED: no")
@@ -286,21 +314,20 @@ if tables:
     print("NEW_TABLE_EXISTS: yes")
 else:
     print("NEW_TABLE_EXISTS: no")
-"""],
+"""
+
+        exit_code, logs = run_container_command(
+            docker_client,
+            TEST_IMAGE,
+            ["python", "-c", migration_code],
+            volumes=volumes,
+            environment={"PONGOGO_TEST_MODE": "1"},
         )
 
-        try:
-            wait_for_container(test_container)
-            time.sleep(3)
-            test_container.reload()
-            test_logs = test_container.logs().decode("utf-8")
-
-            assert "TEST_SCHEMA_VERSION: 3.1.0" in test_logs, f"Schema not upgraded: {test_logs}"
-            assert "DATA_PRESERVED: yes" in test_logs, f"Data not preserved: {test_logs}"
-            assert "NEW_TABLE_EXISTS: yes" in test_logs, f"New table not created: {test_logs}"
-        finally:
-            test_container.stop()
-            test_container.remove()
+        assert exit_code == 0, f"Migration failed (exit {exit_code}): {logs}"
+        assert "SCHEMA_VERSION: 3.1.0" in logs, f"Schema not upgraded: {logs}"
+        assert "DATA_PRESERVED: yes" in logs, f"Data not preserved: {logs}"
+        assert "NEW_TABLE_EXISTS: yes" in logs, f"New table not created: {logs}"
 
 
 class TestUpgradeToolOutput:
@@ -313,11 +340,7 @@ class TestUpgradeToolOutput:
         tmp_path: Path,
     ):
         """upgrade_pongogo tool should return upgrade instructions."""
-        container = docker_client.containers.run(
-            TEST_IMAGE,
-            detach=True,
-            environment={"PONGOGO_TEST_MODE": "1"},
-            command=["python", "-c", """
+        upgrade_code = """
 import sys
 sys.path.insert(0, '/app/src')
 from mcp_server.upgrade import upgrade
@@ -328,19 +351,17 @@ print(f"METHOD: {result.method.value}")
 print(f"HAS_COMMAND: {result.upgrade_command is not None}")
 if result.upgrade_command:
     print(f"COMMAND: {result.upgrade_command}")
-"""],
+"""
+
+        exit_code, logs = run_container_command(
+            docker_client,
+            TEST_IMAGE,
+            ["python", "-c", upgrade_code],
+            environment={"PONGOGO_TEST_MODE": "1"},
         )
 
-        try:
-            wait_for_container(container)
-            time.sleep(2)
-            container.reload()
-            logs = container.logs().decode("utf-8")
-
-            assert "SUCCESS: True" in logs
-            assert "METHOD: docker" in logs
-            assert "HAS_COMMAND: True" in logs
-            assert "docker pull" in logs
-        finally:
-            container.stop()
-            container.remove()
+        assert exit_code == 0, f"Upgrade tool failed (exit {exit_code}): {logs}"
+        assert "SUCCESS: True" in logs
+        assert "METHOD: docker" in logs
+        assert "HAS_COMMAND: True" in logs
+        assert "docker pull" in logs
