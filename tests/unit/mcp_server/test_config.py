@@ -293,9 +293,11 @@ class TestGetProjectRoot:
 
     def test_fallback_to_cwd(self, tmp_path: Path):
         """Falls back to cwd when no env vars set."""
-        with patch.dict(os.environ, {}, clear=True):
-            with patch("mcp_server.config.Path.cwd", return_value=tmp_path):
-                result = get_project_root()
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch("mcp_server.config.Path.cwd", return_value=tmp_path),
+        ):
+            result = get_project_root()
 
         assert result == tmp_path
 

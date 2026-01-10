@@ -40,9 +40,11 @@ class TestGetDefaultDbPath:
     def test_user_level_fallback_no_env(self, tmp_path):
         """Without env vars and no .pongogo dir, falls back to ~/.pongogo/pongogo.db."""
         # Clear env vars and mock cwd to tmp_path (which has no .pongogo)
-        with patch.dict(os.environ, {}, clear=True):
-            with patch("mcp_server.config.Path.cwd", return_value=tmp_path):
-                path = get_default_db_path()
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch("mcp_server.config.Path.cwd", return_value=tmp_path),
+        ):
+            path = get_default_db_path()
         assert path == Path.home() / ".pongogo" / "pongogo.db"
 
     def test_project_local_explicit(self, tmp_path):

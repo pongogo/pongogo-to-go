@@ -36,7 +36,9 @@ class PlainConsole:
     def print(self, *args: Any, style: str = "", **kwargs: Any) -> None:
         """Print with optional style (ignored in plain mode)."""
         # Filter out rich-specific kwargs
-        plain_kwargs = {k: v for k, v in kwargs.items() if k in ("end", "file", "flush")}
+        plain_kwargs = {
+            k: v for k, v in kwargs.items() if k in ("end", "file", "flush")
+        }
         print(*args, **plain_kwargs)
 
     def rule(self, title: str = "", style: str = "") -> None:

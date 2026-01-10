@@ -17,7 +17,11 @@ import pytest
 import yaml
 
 from mcp_server.config import get_project_root
-from mcp_server.database import PongogoDatabase, get_default_db_path, store_routing_event
+from mcp_server.database import (
+    PongogoDatabase,
+    get_default_db_path,
+    store_routing_event,
+)
 from mcp_server.health_check import check_config_validity, check_database_health
 
 
@@ -205,14 +209,16 @@ class TestPathMismatchDetection:
         app_dir = tmp_path / "app"
         app_dir.mkdir()
 
-        with patch.dict(
-            os.environ,
-            {"PONGOGO_KNOWLEDGE_PATH": str(instructions_dir)},
-            clear=True,
+        with (
+            patch.dict(
+                os.environ,
+                {"PONGOGO_KNOWLEDGE_PATH": str(instructions_dir)},
+                clear=True,
+            ),
+            patch("mcp_server.config.Path.cwd", return_value=app_dir),
         ):
             # Even though we're "in" app_dir, database should go to project_dir
-            with patch("mcp_server.config.Path.cwd", return_value=app_dir):
-                db_path = get_default_db_path()
+            db_path = get_default_db_path()
 
         # Database path should be in project_dir, NOT app_dir
         assert project_dir in db_path.parents or db_path.parent == pongogo_dir

@@ -18,6 +18,8 @@ def get_discovery_system():
     from discovery_system import DiscoverySystem
 
     return DiscoverySystem
+
+
 app = typer.Typer(
     name="discoveries",
     help="Manage repository knowledge discoveries",

@@ -148,7 +148,9 @@ def setup_mcp_command(
         console.print(f"Config path: {config_path}")
         console.print("Method: Docker (required for multi-repo isolation)\n")
         console.print("[bold]Configuration to add:[/bold]")
-        config_json = json.dumps({"mcpServers": {"pongogo-knowledge": mcp_config}}, indent=2)
+        config_json = json.dumps(
+            {"mcpServers": {"pongogo-knowledge": mcp_config}}, indent=2
+        )
         if RICH_AVAILABLE:
             console.print_json(config_json)
         else:

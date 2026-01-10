@@ -188,9 +188,9 @@ class TestGracefulDegradation:
         from cli.console import PlainConsole
 
         # Simulate what happens in console.py when rich unavailable
-        pc = PlainConsole()
+        console = PlainConsole()
         # Manual implementation of print_success fallback
-        print("+ Test success")
+        console.print("+ Test success")
 
         captured = capsys.readouterr()
         assert "Test success" in captured.out
@@ -199,8 +199,8 @@ class TestGracefulDegradation:
         """print_error should work with PlainConsole."""
         from cli.console import PlainConsole
 
-        pc = PlainConsole()
-        print("x Test error")
+        console = PlainConsole()
+        console.print("x Test error")
 
         captured = capsys.readouterr()
         assert "Test error" in captured.out
