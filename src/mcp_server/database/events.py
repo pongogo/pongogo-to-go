@@ -7,12 +7,18 @@ Captures routing events for lookback features, diagnostics, and analysis.
 import hashlib
 import json
 import logging
+import sqlite3
+import time
 from datetime import datetime
 from pathlib import Path
 
 from .database import PongogoDatabase, get_default_db_path
 
 logger = logging.getLogger(__name__)
+
+# Retry configuration for transient database locks
+MAX_RETRIES = 3
+RETRY_BASE_DELAY = 0.05  # 50ms base delay with exponential backoff
 
 
 def store_routing_event(
@@ -28,7 +34,8 @@ def store_routing_event(
     """Store a routing event to the database.
 
     Event capture is non-blocking - failures are logged but don't interrupt
-    the routing response.
+    the routing response. Uses retry with exponential backoff for transient
+    database lock errors under high contention.
 
     Args:
         user_message: The user's query/message
@@ -43,44 +50,61 @@ def store_routing_event(
     Returns:
         True if event was stored successfully, False otherwise
     """
-    try:
-        db = PongogoDatabase(db_path=db_path or get_default_db_path())
+    timestamp = datetime.now().isoformat()
+    message_hash = hashlib.sha256(user_message.encode()).hexdigest()[:16]
+    instructions_json = json.dumps(routed_instructions) if routed_instructions else None
+    scores_json = json.dumps(routing_scores) if routing_scores else None
+    context_json = json.dumps(context) if context else None
+    instruction_count = len(routed_instructions) if routed_instructions else 0
 
-        timestamp = datetime.now().isoformat()
-        message_hash = hashlib.sha256(user_message.encode()).hexdigest()[:16]
-        instructions_json = json.dumps(routed_instructions) if routed_instructions else None
-        scores_json = json.dumps(routing_scores) if routing_scores else None
-        context_json = json.dumps(context) if context else None
-        instruction_count = len(routed_instructions) if routed_instructions else 0
+    last_error = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            db = PongogoDatabase(db_path=db_path or get_default_db_path())
 
-        db.execute_insert(
-            """
-            INSERT INTO routing_events
-            (timestamp, user_message, message_hash, routed_instructions,
-             instruction_count, routing_scores, engine_version,
-             session_id, context, routing_latency_ms)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                timestamp,
-                user_message,
-                message_hash,
-                instructions_json,
-                instruction_count,
-                scores_json,
-                engine_version,
-                session_id,
-                context_json,
-                routing_latency_ms,
-            ),
-        )
+            db.execute_insert(
+                """
+                INSERT INTO routing_events
+                (timestamp, user_message, message_hash, routed_instructions,
+                 instruction_count, routing_scores, engine_version,
+                 session_id, context, routing_latency_ms)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    timestamp,
+                    user_message,
+                    message_hash,
+                    instructions_json,
+                    instruction_count,
+                    scores_json,
+                    engine_version,
+                    session_id,
+                    context_json,
+                    routing_latency_ms,
+                ),
+            )
 
-        logger.debug(f"Routing event captured: {instruction_count} instructions")
-        return True
+            logger.debug(f"Routing event captured: {instruction_count} instructions")
+            return True
 
-    except Exception as e:
-        logger.warning(f"Failed to store routing event: {e}")
-        return False
+        except sqlite3.OperationalError as e:
+            last_error = e
+            # Retry on database locked errors
+            if "database is locked" in str(e) and attempt < MAX_RETRIES - 1:
+                delay = RETRY_BASE_DELAY * (2**attempt)  # Exponential backoff
+                logger.debug(f"Database locked, retrying in {delay:.3f}s (attempt {attempt + 1}/{MAX_RETRIES})")
+                time.sleep(delay)
+                continue
+            else:
+                logger.warning(f"Failed to store routing event after {attempt + 1} attempts: {e}")
+                return False
+
+        except Exception as e:
+            logger.warning(f"Failed to store routing event: {e}")
+            return False
+
+    logger.warning(f"Failed to store routing event after {MAX_RETRIES} attempts: {last_error}")
+    return False
 
 
 def get_event_stats(db_path: Path | None = None) -> dict:
