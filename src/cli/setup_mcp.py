@@ -7,9 +7,8 @@ from datetime import datetime
 from pathlib import Path
 
 import typer
-from rich.console import Console
 
-console = Console()
+from .console import RICH_AVAILABLE, console
 
 
 def has_docker() -> bool:
@@ -149,9 +148,11 @@ def setup_mcp_command(
         console.print(f"Config path: {config_path}")
         console.print("Method: Docker (required for multi-repo isolation)\n")
         console.print("[bold]Configuration to add:[/bold]")
-        console.print_json(
-            json.dumps({"mcpServers": {"pongogo-knowledge": mcp_config}})
-        )
+        config_json = json.dumps({"mcpServers": {"pongogo-knowledge": mcp_config}}, indent=2)
+        if RICH_AVAILABLE:
+            console.print_json(config_json)
+        else:
+            print(config_json)
         return
 
     # Create backup

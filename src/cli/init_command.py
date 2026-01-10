@@ -6,16 +6,13 @@ import subprocess
 from pathlib import Path
 
 import typer
-from rich.console import Console
-from rich.panel import Panel
+
+from .console import RICH_AVAILABLE, console, print_panel
 
 
 # Version check import (lazy to avoid import issues)
-def _check_for_updates_cli(console: Console):
+def _check_for_updates_cli():
     """Check for updates and return message if available.
-
-    Args:
-        console: Rich console for spinner display
 
     Returns:
         Update message string if update available, None otherwise
@@ -27,14 +24,24 @@ def _check_for_updates_cli(console: Console):
     try:
         from mcp_server.upgrade import check_for_updates
 
-        with console.status("[dim]Checking for updates...[/dim]", spinner="dots"):
+        if RICH_AVAILABLE:
+            with console.status("[dim]Checking for updates...[/dim]", spinner="dots"):
+                result = check_for_updates()
+        else:
+            print("Checking for updates...")
             result = check_for_updates()
 
         if result.update_available:
-            return (
-                f"\n[yellow]Update available:[/yellow] {result.current_version} → {result.latest_version}\n"
-                f"Run: [#5a9ae8]{result.upgrade_command}[/#5a9ae8]"
-            )
+            if RICH_AVAILABLE:
+                return (
+                    f"\n[yellow]Update available:[/yellow] {result.current_version} → {result.latest_version}\n"
+                    f"Run: [#5a9ae8]{result.upgrade_command}[/#5a9ae8]"
+                )
+            else:
+                return (
+                    f"\nUpdate available: {result.current_version} → {result.latest_version}\n"
+                    f"Run: {result.upgrade_command}"
+                )
     except Exception:
         pass  # Silently skip if version check fails
     return None
@@ -84,8 +91,6 @@ def get_discovery_system():
 
     return DiscoverySystem
 
-
-console = Console()
 
 PONGOGO_DIR = ".pongogo"
 CONFIG_FILE = "config.yaml"
@@ -319,19 +324,16 @@ def init_command(
             welcome_lines.append(f"  [#5a9ae8]{folder}[/#5a9ae8]")
 
     # Show welcome message
-    console.print(
-        Panel(
-            "\n".join(welcome_lines),
-            title="Initializing Pongogo",
-            border_style="blue",
-        )
-    )
+    print_panel("Initializing Pongogo", "\n".join(welcome_lines), style="blue")
 
     # Interactive mode: confirm before proceeding
     if not no_interactive:
-        response = (
-            console.input("\nContinue? [#5a9ae8][Y/n]:[/#5a9ae8] ").strip().lower()
-        )
+        if RICH_AVAILABLE:
+            response = (
+                console.input("\nContinue? [#5a9ae8][Y/n]:[/#5a9ae8] ").strip().lower()
+            )
+        else:
+            response = input("\nContinue? [Y/n]: ").strip().lower()
         if response and response not in ("y", "yes"):
             console.print("[yellow]Installation cancelled.[/yellow]")
             raise typer.Exit(0)
@@ -588,16 +590,10 @@ pongogo.db-shm
     created_lines.append("[dim]Learn more:[/dim] https://pongogo.com")
 
     # Success message
-    console.print(
-        Panel(
-            "\n".join(created_lines),
-            title="Ready",
-            border_style="green",
-        )
-    )
+    print_panel("Ready", "\n".join(created_lines), style="green")
 
     # Check for updates (non-blocking, fails silently)
     # Skipped if PONGOGO_FROM_INSTALLER is set (install already has latest)
-    update_msg = _check_for_updates_cli(console)
+    update_msg = _check_for_updates_cli()
     if update_msg:
         console.print(update_msg)

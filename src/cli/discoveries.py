@@ -3,9 +3,8 @@
 from pathlib import Path
 
 import typer
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
+
+from .console import console, create_table, print_panel, print_table
 
 
 # Lazy import to avoid circular dependencies
@@ -19,9 +18,6 @@ def get_discovery_system():
     from discovery_system import DiscoverySystem
 
     return DiscoverySystem
-
-
-console = Console()
 app = typer.Typer(
     name="discoveries",
     help="Manage repository knowledge discoveries",
@@ -96,7 +92,7 @@ def list_discoveries(
         return
 
     # Create table
-    table = Table(title="Repository Knowledge Discoveries")
+    table = create_table("Repository Knowledge Discoveries")
     table.add_column("ID", style="cyan", justify="right")
     table.add_column("Status", style="magenta")
     table.add_column("Type", style="blue")
@@ -126,7 +122,7 @@ def list_discoveries(
             source,
         )
 
-    console.print(table)
+    print_table(table)
 
     # Show stats
     stats = ds.get_stats()
@@ -188,12 +184,10 @@ def show_discovery(
     content_lines.append(content)
 
     title = discovery.section_title or "(Untitled Section)"
-    console.print(
-        Panel(
-            "\n".join(content_lines),
-            title=f"Discovery #{discovery.id}: {title}",
-            border_style="blue",
-        )
+    print_panel(
+        f"Discovery #{discovery.id}: {title}",
+        "\n".join(content_lines),
+        style="blue",
     )
 
 
@@ -317,18 +311,15 @@ def show_stats() -> None:
     ds = _ensure_discovery_system()
     stats = ds.get_stats()
 
-    console.print(
-        Panel(
-            f"[bold]Total Discoveries:[/bold] {stats['total']}\n\n"
-            f"[bold]By Status:[/bold]\n"
-            f"  Discovered: {stats['by_status'].get('DISCOVERED', 0)}\n"
-            f"  Promoted: {stats['by_status'].get('PROMOTED', 0)}\n"
-            f"  Archived: {stats['by_status'].get('ARCHIVED', 0)}\n\n"
-            f"[bold]By Source:[/bold]\n"
-            f"  CLAUDE.md: {stats['by_source'].get('CLAUDE_MD', 0)}\n"
-            f"  Wiki: {stats['by_source'].get('WIKI', 0)}\n"
-            f"  Docs: {stats['by_source'].get('DOCS', 0)}",
-            title="Discovery System Statistics",
-            border_style="blue",
-        )
+    content = (
+        f"Total Discoveries: {stats['total']}\n\n"
+        f"By Status:\n"
+        f"  Discovered: {stats['by_status'].get('DISCOVERED', 0)}\n"
+        f"  Promoted: {stats['by_status'].get('PROMOTED', 0)}\n"
+        f"  Archived: {stats['by_status'].get('ARCHIVED', 0)}\n\n"
+        f"By Source:\n"
+        f"  CLAUDE.md: {stats['by_source'].get('CLAUDE_MD', 0)}\n"
+        f"  Wiki: {stats['by_source'].get('WIKI', 0)}\n"
+        f"  Docs: {stats['by_source'].get('DOCS', 0)}"
     )
+    print_panel("Discovery System Statistics", content, style="blue")

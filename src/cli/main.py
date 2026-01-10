@@ -1,9 +1,9 @@
 """Pongogo CLI entry point."""
 
 import typer
-from rich.console import Console
 
 from . import __version__
+from .console import console
 from .discoveries import app as discoveries_app
 from .init_command import init_command
 from .setup_mcp import setup_mcp_command
@@ -13,7 +13,6 @@ app = typer.Typer(
     help="Pongogo - AI agent knowledge routing for your repository",
     no_args_is_help=True,
 )
-console = Console()
 
 
 def version_callback(value: bool) -> None:

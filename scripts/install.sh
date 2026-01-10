@@ -103,6 +103,104 @@ install_docker() {
 # is unverified. Docker volume mounts are the only verified method for
 # multi-repo isolation. See: https://github.com/pongogo/pongogo-to-go/issues/1
 
+# Check if pip is available (needed for pongogo CLI)
+check_pip() {
+    if command -v pip3 &> /dev/null; then
+        return 0
+    elif command -v pip &> /dev/null; then
+        return 0
+    fi
+    return 1
+}
+
+# Detect Linux distribution
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    elif command -v lsb_release &> /dev/null; then
+        lsb_release -si | tr '[:upper:]' '[:lower:]'
+    else
+        echo "unknown"
+    fi
+}
+
+# Show pip installation instructions based on distro
+show_pip_install_instructions() {
+    local distro="$1"
+
+    echo ""
+    warn "pip is not installed. The pongogo CLI requires pip to install."
+    echo ""
+    echo "To install pip for your system:"
+    echo ""
+
+    case "$distro" in
+        fedora|rhel|centos|rocky|alma)
+            # Red Hat based
+            echo "  ${GREEN}# Red Hat/Fedora:${NC}"
+            echo "  sudo dnf install python3-pip"
+            echo ""
+            echo "  ${GREEN}# Or install rich directly (optional, for colored output):${NC}"
+            echo "  sudo dnf install python3-rich"
+            ;;
+        debian|ubuntu|linuxmint|pop)
+            # Debian based
+            echo "  ${GREEN}# Debian/Ubuntu:${NC}"
+            echo "  sudo apt update && sudo apt install python3-pip"
+            ;;
+        arch|manjaro|endeavouros)
+            # Arch based
+            echo "  ${GREEN}# Arch Linux:${NC}"
+            echo "  sudo pacman -S python-pip"
+            ;;
+        opensuse*|suse*)
+            # SUSE based
+            echo "  ${GREEN}# openSUSE:${NC}"
+            echo "  sudo zypper install python3-pip"
+            ;;
+        alpine)
+            echo "  ${GREEN}# Alpine Linux:${NC}"
+            echo "  sudo apk add py3-pip"
+            ;;
+        *)
+            echo "  ${GREEN}# Generic Linux:${NC}"
+            echo "  # Check your distribution's package manager for python3-pip"
+            echo "  # Common package names: python3-pip, python-pip, py3-pip"
+            ;;
+    esac
+
+    echo ""
+    echo "After installing pip, run this script again."
+    echo ""
+}
+
+# Install pongogo CLI via pip
+install_pongogo_cli() {
+    info "Installing Pongogo CLI..."
+
+    # Use pip3 if available, otherwise pip
+    local pip_cmd="pip3"
+    if ! command -v pip3 &> /dev/null; then
+        pip_cmd="pip"
+    fi
+
+    # Install pongogo package
+    if $pip_cmd install --user pongogo 2>/dev/null; then
+        info "Pongogo CLI installed successfully"
+        return 0
+    else
+        # Try without --user if that fails (some systems don't allow --user)
+        if $pip_cmd install pongogo 2>/dev/null; then
+            info "Pongogo CLI installed successfully"
+            return 0
+        fi
+    fi
+
+    error "Failed to install Pongogo CLI via pip"
+    return 1
+}
+
 # Docker-based installation
 install_docker_based() {
     info "Pulling Pongogo Docker image..."
@@ -162,11 +260,58 @@ PYTHON
 JSON
     fi
 
-    info "Pongogo installed successfully"
+    info "MCP server configured successfully"
+    echo ""
+
+    # Check for pip and install CLI
+    local cli_installed=false
+    if check_pip; then
+        if install_pongogo_cli; then
+            cli_installed=true
+        fi
+    else
+        # Show platform-specific pip installation instructions
+        case "$PLATFORM" in
+            macos)
+                echo ""
+                warn "pip not found. To install the Pongogo CLI:"
+                echo ""
+                echo "  ${GREEN}# macOS (via Homebrew):${NC}"
+                echo "  brew install python3"
+                echo ""
+                echo "  ${GREEN}# Then install pongogo:${NC}"
+                echo "  pip3 install pongogo"
+                ;;
+            wsl)
+                echo ""
+                warn "pip not found. To install the Pongogo CLI:"
+                echo ""
+                echo "  ${GREEN}# WSL (Debian/Ubuntu):${NC}"
+                echo "  sudo apt update && sudo apt install python3-pip"
+                echo ""
+                echo "  ${GREEN}# Then install pongogo:${NC}"
+                echo "  pip3 install pongogo"
+                ;;
+            linux)
+                distro=$(detect_distro)
+                show_pip_install_instructions "$distro"
+                echo "  ${GREEN}# Then install pongogo:${NC}"
+                echo "  pip3 install pongogo"
+                ;;
+        esac
+    fi
+
+    echo ""
+    info "Pongogo installation complete"
     echo ""
     echo "Next steps:"
     echo "  1. Restart Claude Code to pick up the configuration"
-    echo "  2. Run 'pongogo init' in your project to create .pongogo/"
+    if [ "$cli_installed" = true ]; then
+        echo "  2. Run 'pongogo init' in your project to create .pongogo/"
+    else
+        echo "  2. Install pip (see above), then run: pip3 install pongogo"
+        echo "  3. Run 'pongogo init' in your project to create .pongogo/"
+    fi
     echo ""
     echo "Check for updates periodically:"
     echo "  /pongogo-status   - shows version and update availability"
