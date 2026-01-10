@@ -27,9 +27,7 @@ def _check_for_updates_cli(console: Console):
     try:
         from mcp_server.upgrade import check_for_updates
 
-        with console.status(
-            "[dim]Checking for updates...[/dim]", spinner="dots"
-        ):
+        with console.status("[dim]Checking for updates...[/dim]", spinner="dots"):
             result = check_for_updates()
 
         if result.update_available:
@@ -331,13 +329,17 @@ def init_command(
 
     # Interactive mode: confirm before proceeding
     if not no_interactive:
-        response = console.input("\nContinue? [#5a9ae8][Y/n]:[/#5a9ae8] ").strip().lower()
+        response = (
+            console.input("\nContinue? [#5a9ae8][Y/n]:[/#5a9ae8] ").strip().lower()
+        )
         if response and response not in ("y", "yes"):
             console.print("[yellow]Installation cancelled.[/yellow]")
             raise typer.Exit(0)
 
     # Create wiki/docs folders if missing
-    created_wiki, created_docs = create_knowledge_folders(project_root, wiki_path, docs_path)
+    created_wiki, created_docs = create_knowledge_folders(
+        project_root, wiki_path, docs_path
+    )
 
     # Track created folders for config
     final_wiki = created_wiki or wiki_path
