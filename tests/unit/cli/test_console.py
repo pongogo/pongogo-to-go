@@ -4,11 +4,6 @@ Tests both rich-available and rich-unavailable scenarios to ensure
 CLI works on systems without rich installed.
 """
 
-import sys
-from unittest.mock import patch
-
-import pytest
-
 
 class TestRichAvailable:
     """Tests when rich is available."""
@@ -22,9 +17,9 @@ class TestRichAvailable:
 
     def test_console_is_rich_console(self):
         """Console should be rich.console.Console when available."""
-        from cli.console import console
-
         from rich.console import Console
+
+        from cli.console import console
 
         assert isinstance(console, Console)
 
@@ -195,7 +190,7 @@ class TestGracefulDegradation:
         # Simulate what happens in console.py when rich unavailable
         pc = PlainConsole()
         # Manual implementation of print_success fallback
-        print(f"+ Test success")
+        print("+ Test success")
 
         captured = capsys.readouterr()
         assert "Test success" in captured.out
@@ -205,7 +200,7 @@ class TestGracefulDegradation:
         from cli.console import PlainConsole
 
         pc = PlainConsole()
-        print(f"x Test error")
+        print("x Test error")
 
         captured = capsys.readouterr()
         assert "Test error" in captured.out
