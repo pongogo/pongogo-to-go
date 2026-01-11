@@ -310,16 +310,17 @@ def init_command(
         "[color(208)]Pongogo[/color(208)] - AI agent knowledge routing\n",
         "This will create:",
         "  [#5a9ae8].pongogo/[/#5a9ae8]",
-        "    - config.yaml [dim](auto-configured, no edits needed)[/dim]",
+        "    - config.yaml [dim](configuration)[/dim]",
         "    - instructions/ [dim](seeded instruction files)[/dim]",
+        "    - pongogo.db [dim](event database)[/dim]",
+        "  [#5a9ae8].mcp.json[/#5a9ae8] [dim](MCP server config)[/dim]",
+        "  [#5a9ae8].claude/[/#5a9ae8]",
+        "    - settings.local.json [dim](routing hook)[/dim]",
+        "    - commands/ [dim](slash commands)[/dim]",
     ]
 
     if missing_folders:
         welcome_lines.append("")
-        welcome_lines.append(
-            "[yellow]Pongogo uses wiki/ and docs/ folders to store knowledge.[/yellow]"
-        )
-        welcome_lines.append("Missing folders that will be created:")
         for folder in missing_folders:
             welcome_lines.append(f"  [#5a9ae8]{folder}[/#5a9ae8]")
 
