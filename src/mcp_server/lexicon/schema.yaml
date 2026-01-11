@@ -1,0 +1,125 @@
+# Guidance Trigger Lexicon Schema
+# Version: 1.0.0
+# Compatible with: durian-0.6.3+
+
+schema_version: "1.0.0"
+
+compatible_router_versions:
+  - "durian-0.6.3"
+  - "durian-0.7.0"
+
+# Valid guidance types
+guidance_types:
+  - explicit    # Direct rules, directives, preferences
+  - implicit    # Indirect hints, feedback, corrections
+
+# Valid pattern types
+pattern_types:
+  - regex       # Regular expression (default)
+  - literal     # Exact string match
+  - prefix      # Prefix match (faster for common patterns)
+
+# Valid categories
+categories:
+  # Original categories (high precision)
+  future_directive:
+    description: "Establishing rules for future behavior"
+    examples: ["from now on", "going forward"]
+    default_confidence: 0.90
+
+  rule_declaration:
+    description: "Declaring explicit rules or guidelines"
+    examples: ["my rule is", "follow this rule"]
+    default_confidence: 0.90
+
+  always_never:
+    description: "Always/never behavior patterns"
+    examples: ["always do X", "never commit without"]
+    default_confidence: 0.90
+
+  pace_control:
+    description: "Controlling execution speed or pausing"
+    examples: ["one at a time", "let's move slowly"]
+    default_confidence: 0.85
+
+  action_restriction:
+    description: "Restricting agent actions"
+    examples: ["don't commit yet", "before proceeding"]
+    default_confidence: 0.85
+
+  preference_statement:
+    description: "Expressing preferences"
+    examples: ["I prefer", "my preference is"]
+    default_confidence: 0.80
+
+  # New categories from gap analysis (#489)
+  imperative_lets:
+    description: "Imperative 'let's' + action verb"
+    examples: ["let's run", "let's fix", "let's work on"]
+    default_confidence: 0.75
+    requires_disambiguation: true
+
+  direct_request:
+    description: "Direct requests with 'please' + action"
+    examples: ["please take X through", "please investigate"]
+    default_confidence: 0.85
+
+  permission_grant:
+    description: "Granting permission to proceed"
+    examples: ["you can close", "yes please", "go ahead"]
+    default_confidence: 0.85
+
+  agreement_action:
+    description: "Agreement followed by action"
+    examples: ["I agree", "option A is good", "30: agree"]
+    default_confidence: 0.80
+
+  process_reference:
+    description: "Reference to following a process"
+    examples: ["take it through closure", "run through checklist"]
+    default_confidence: 0.90
+
+  question_command:
+    description: "Questions functioning as commands"
+    examples: ["can you add", "can you create"]
+    default_confidence: 0.70
+    requires_disambiguation: true
+
+# Valid source values
+sources:
+  - system      # Shipped with Pongogo (preserved on upgrade)
+  - user        # User-added (preserved on upgrade)
+  - observed    # Auto-suggested from gap detection (#502)
+
+# Entry schema definition
+entry_schema:
+  required:
+    - id          # Unique identifier (string)
+    - pattern     # Match pattern (string)
+    - category    # Category name (string)
+    - guidance_type  # explicit | implicit
+
+  optional:
+    - pattern_type       # regex | literal | prefix (default: regex)
+    - confidence         # 0.0-1.0 (default: category default)
+    - case_sensitive     # boolean (default: false)
+    - word_boundary      # boolean (default: true)
+    - context            # Context disambiguation rules
+    - synonyms           # List of synonym patterns
+    - synonym_source     # wordnet | llm | manual
+    - source             # system | user | observed (default: system)
+    - added_in_version   # Router version when added
+    - deprecated         # boolean (default: false)
+    - deprecation_reason # string
+    - imp_feature        # Related IMP feature ID
+    - notes              # Human-readable notes
+
+  context_schema:
+    positive_markers:
+      pattern: string    # Regex for positive context
+      weight: float      # Added to confidence (0.0-0.5)
+    negative_markers:
+      pattern: string    # Regex for negative context
+      weight: float      # Added to confidence (-0.5-0.0)
+    disambiguation_threshold: float  # Minimum confidence (0.0-1.0)
+    fallback_type: string  # implicit | none

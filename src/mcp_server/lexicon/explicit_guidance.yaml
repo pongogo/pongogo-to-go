@@ -1,0 +1,355 @@
+# Explicit Guidance Triggers Lexicon
+# Schema: 1.0.0
+# Last updated: 2026-01-11
+#
+# Migrated from: pongogo-knowledge-server/router.py EXPLICIT_GUIDANCE_TRIGGERS
+# Gap patterns from: #489 vocabulary gap analysis
+#
+# Usage: Loaded by router at startup, compiled to regex for matching
+
+entries:
+  # ===========================================================================
+  # FUTURE DIRECTIVES (High Precision)
+  # Original patterns from EXPLICIT_GUIDANCE_TRIGGERS
+  # ===========================================================================
+
+  - id: future_001
+    pattern: "from\\s+now\\s+on"
+    category: future_directive
+    guidance_type: explicit
+    confidence: 0.95
+    source: system
+    imp_feature: IMP-013
+    notes: "Very high precision, rarely false positive"
+
+  - id: future_002
+    pattern: "going\\s+forward"
+    category: future_directive
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  - id: future_003
+    pattern: "please\\s+always"
+    category: future_directive
+    guidance_type: explicit
+    confidence: 0.95
+    source: system
+    imp_feature: IMP-013
+
+  # ===========================================================================
+  # ALWAYS/NEVER PATTERNS
+  # ===========================================================================
+
+  - id: always_001
+    pattern: "always\\s+(?:do|ensure|make|use|check|verify)"
+    category: always_never
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  - id: never_001
+    pattern: "never\\s+(?:do|use|commit|skip|forget)"
+    category: always_never
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  - id: never_002
+    pattern: "never\\s+without\\s+(?:first|asking|checking)"
+    category: always_never
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  # ===========================================================================
+  # RULE DECLARATIONS
+  # ===========================================================================
+
+  - id: rule_001
+    pattern: "(?:my\\s+)?rule\\s*(?:is)?:"
+    category: rule_declaration
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  - id: rule_002
+    pattern: "the\\s+rule\\s+is"
+    category: rule_declaration
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  - id: rule_003
+    pattern: "follow\\s+this\\s+rule"
+    category: rule_declaration
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  - id: rule_004
+    pattern: "here'?s?\\s+(?:a\\s+)?rule"
+    category: rule_declaration
+    guidance_type: explicit
+    confidence: 0.85
+    source: system
+    imp_feature: IMP-013
+
+  - id: guideline_001
+    pattern: "here\\s+are\\s+(?:some\\s+)?(?:general\\s+)?(?:guidelines|rules)"
+    category: rule_declaration
+    guidance_type: explicit
+    confidence: 0.85
+    source: system
+    imp_feature: IMP-013
+
+  # ===========================================================================
+  # PACE CONTROL
+  # ===========================================================================
+
+  - id: pace_001
+    pattern: "one\\s+(?:at\\s+a\\s+time|by\\s+one)"
+    category: pace_control
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  - id: pace_002
+    pattern: "let'?s\\s+(?:move\\s+)?(?:incredibly\\s+)?slowly"
+    category: pace_control
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  - id: pace_003
+    pattern: "(?:we\\s+)?need\\s+to\\s+pause"
+    category: pace_control
+    guidance_type: explicit
+    confidence: 0.85
+    source: system
+    imp_feature: IMP-013
+
+  # ===========================================================================
+  # ACTION RESTRICTIONS
+  # ===========================================================================
+
+  - id: restrict_001
+    pattern: "(?:don'?t|do\\s+not)\\s+(?:take\\s+action|make\\s+changes|proceed)"
+    category: action_restriction
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  - id: restrict_002
+    pattern: "but\\s+(?:not|don'?t)\\s+(?:change|modify|edit|commit|push)"
+    category: action_restriction
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  - id: restrict_003
+    pattern: "before\\s+(?:we\\s+)?(?:progress|proceed|continue)"
+    category: action_restriction
+    guidance_type: explicit
+    confidence: 0.85
+    source: system
+    imp_feature: IMP-013
+
+  - id: restrict_004
+    pattern: "(?:don'?t|do\\s+not)\\s+begin\\s+(?:work|the\\s+work)\\s+yet"
+    category: action_restriction
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  # ===========================================================================
+  # NEW PATTERNS FROM GAP ANALYSIS (#489)
+  # ===========================================================================
+
+  # --- Imperative Let's (requires disambiguation) ---
+
+  - id: lets_001
+    pattern: "let'?s\\s+run"
+    category: imperative_lets
+    guidance_type: explicit
+    confidence: 0.55  # Below threshold - requires positive context to trigger
+    source: system
+    imp_feature: IMP-013
+    context:
+      positive_markers:
+        pattern: "\\b(tests?|evals?|builds?|scripts?|commands?)\\b"
+        weight: 0.15
+      negative_markers:
+        pattern: "\\b(see|away|late)\\b"
+        weight: -0.30
+      disambiguation_threshold: 0.60
+      fallback_type: none
+    notes: "Distinguish 'let's run tests' from 'let's run away'"
+
+  - id: lets_002
+    pattern: "let'?s\\s+(?:start|begin)\\s+(?:with|on|by)?"
+    category: imperative_lets
+    guidance_type: explicit
+    confidence: 0.55  # Below threshold - requires positive context to trigger
+    source: system
+    imp_feature: IMP-013
+    context:
+      positive_markers:
+        pattern: "\\b(task|issue|#\\d+|work|implementation)\\b"
+        weight: 0.15  # Increased to ensure above threshold with context
+      negative_markers:
+        pattern: "\\b(thinking|considering|wondering)\\b"
+        weight: -0.25
+      disambiguation_threshold: 0.60
+      fallback_type: none
+
+  - id: lets_003
+    pattern: "let'?s\\s+(?:work\\s+on|fix|create|add|do)"
+    category: imperative_lets
+    guidance_type: explicit
+    confidence: 0.80
+    source: system
+    imp_feature: IMP-013
+
+  - id: lets_004
+    pattern: "let'?s\\s+(?:document|review|check|update)"
+    category: imperative_lets
+    guidance_type: explicit
+    confidence: 0.85
+    source: system
+    imp_feature: IMP-013
+
+  # --- Direct Requests ---
+
+  - id: request_001
+    pattern: "please\\s+(?:take|run)\\s+(?:it|this|the\\s+\\w+)\\s+through"
+    category: direct_request
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+    notes: "Process/checklist references - very high precision"
+
+  - id: request_002
+    pattern: "please\\s+(?:investigate|review|check|look\\s+at)"
+    category: direct_request
+    guidance_type: explicit
+    confidence: 0.85
+    source: system
+    imp_feature: IMP-013
+
+  - id: request_003
+    pattern: "please\\s+(?:create|add|update|fix)"
+    category: direct_request
+    guidance_type: explicit
+    confidence: 0.85
+    source: system
+    imp_feature: IMP-013
+
+  - id: request_004
+    pattern: "please\\s+do\\s+(?:that|this|it)"
+    category: direct_request
+    guidance_type: explicit
+    confidence: 0.85
+    source: system
+    imp_feature: IMP-013
+
+  # --- Permission Patterns ---
+
+  - id: permission_001
+    pattern: "you\\s+(?:can|may)\\s+(?:close|proceed|continue|commit|push|start)"
+    category: permission_grant
+    guidance_type: explicit
+    confidence: 0.90
+    source: system
+    imp_feature: IMP-013
+
+  - id: permission_002
+    pattern: "yes,?\\s+(?:please\\s+)?(?:do|close|proceed|continue)"
+    category: permission_grant
+    guidance_type: explicit
+    confidence: 0.85
+    source: system
+    imp_feature: IMP-013
+
+  - id: permission_003
+    pattern: "yes\\s+please"
+    category: permission_grant
+    guidance_type: explicit
+    confidence: 0.80
+    source: system
+    imp_feature: IMP-013
+    context:
+      positive_markers:
+        pattern: "\\b(do|create|close|proceed|that|this)\\b"
+        weight: 0.10
+      disambiguation_threshold: 0.75
+      fallback_type: none
+    notes: "Needs context - standalone 'yes please' might be conversational"
+
+  # --- Agreement + Action ---
+
+  - id: agree_001
+    pattern: "(?:i\\s+)?agree(?:d)?(?:,|\\.|\\s+(?:please|and|let'?s))"
+    category: agreement_action
+    guidance_type: explicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+    context:
+      positive_markers:
+        pattern: "\\b(please|create|close|proceed|next|continue)\\b"
+        weight: 0.15
+      disambiguation_threshold: 0.70
+      fallback_type: none
+
+  - id: agree_002
+    pattern: "option\\s+[a-z]\\s+(?:is\\s+)?(?:good|fine|correct|best)"
+    category: agreement_action
+    guidance_type: explicit
+    confidence: 0.85
+    source: system
+    imp_feature: IMP-013
+
+  # --- Process References ---
+
+  - id: process_001
+    pattern: "(?:take|run)\\s+(?:it|this|the\\s+\\w+)\\s+through\\s+(?:the\\s+)?(?:closure|commencement|checklist)"
+    category: process_reference
+    guidance_type: explicit
+    confidence: 0.95
+    source: system
+    imp_feature: IMP-013
+    notes: "Very high precision - explicit process references"
+
+  # --- Question Commands (requires disambiguation) ---
+
+  - id: question_001
+    pattern: "can\\s+you\\s+(?:add|create|update|fix|run|check)"
+    category: question_command
+    guidance_type: explicit
+    confidence: 0.55  # Below threshold - requires positive context to trigger
+    source: system
+    imp_feature: IMP-013
+    context:
+      positive_markers:
+        pattern: "\\b(please|to\\s+the|for\\s+me|task|issue)\\b"
+        weight: 0.15
+      negative_markers:
+        pattern: "\\b(explain|tell|describe|help\\s+me\\s+understand|why)\\b"
+        weight: -0.35
+      disambiguation_threshold: 0.60
+      fallback_type: implicit  # Fall back to implicit if below threshold
+    notes: "Distinguish 'can you add a test?' from 'can you explain why?'"

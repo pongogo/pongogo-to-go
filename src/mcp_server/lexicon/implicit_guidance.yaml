@@ -1,0 +1,451 @@
+# Implicit Guidance Triggers Lexicon
+# Schema: 1.0.0
+# Last updated: 2026-01-11
+#
+# Migrated from: pongogo-knowledge-server/router.py IMPLICIT_GUIDANCE_TRIGGERS
+#
+# Usage: Loaded by router at startup, compiled to regex for matching
+
+entries:
+  # ===========================================================================
+  # FRUSTRATION SIGNALS
+  # ===========================================================================
+
+  - id: frustration_001
+    pattern: "that\\s+was\\s+frustrating"
+    category: frustration_signal
+    guidance_type: implicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+
+  - id: frustration_002
+    pattern: "that\\s+was\\s+annoying"
+    category: frustration_signal
+    guidance_type: implicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+
+  - id: frustration_003
+    pattern: "that\\s+was\\s+(?:not\\s+)?(?:great|good|helpful)"
+    category: frustration_signal
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: frustration_004
+    pattern: "i\\s+didn'?t\\s+like"
+    category: frustration_signal
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: frustration_005
+    pattern: "i\\s+don'?t\\s+like\\s+when"
+    category: frustration_signal
+    guidance_type: implicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+
+  - id: frustration_006
+    pattern: "please\\s+don'?t\\s+(?:do\\s+that|repeat)"
+    category: frustration_signal
+    guidance_type: implicit
+    confidence: 0.80
+    source: system
+    imp_feature: IMP-013
+
+  # ===========================================================================
+  # WISHES AND SUGGESTIONS
+  # ===========================================================================
+
+  - id: wish_001
+    pattern: "i\\s+wish\\s+you\\s+would"
+    category: wish
+    guidance_type: implicit
+    confidence: 0.80
+    source: system
+    imp_feature: IMP-013
+
+  - id: wish_002
+    pattern: "it\\s+would\\s+be\\s+(?:better|nice|good)\\s+if"
+    category: wish
+    guidance_type: implicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+
+  - id: wish_003
+    pattern: "next\\s+time"
+    category: wish
+    guidance_type: implicit
+    confidence: 0.65
+    source: system
+    imp_feature: IMP-013
+
+  - id: wish_004
+    pattern: "maybe\\s+next\\s+time"
+    category: wish
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: wish_005
+    pattern: "in\\s+the\\s+past"
+    category: wish
+    guidance_type: implicit
+    confidence: 0.60
+    source: system
+    imp_feature: IMP-013
+
+  # ===========================================================================
+  # CORRECTIONS (Implicit rules from mistakes)
+  # ===========================================================================
+
+  - id: correction_001
+    pattern: "you\\s+should\\s+have"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.80
+    source: system
+    imp_feature: IMP-013
+
+  - id: correction_002
+    pattern: "you\\s+could\\s+have"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+
+  - id: correction_003
+    pattern: "why\\s+didn'?t\\s+you"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+
+  - id: correction_004
+    pattern: "i\\s+expected\\s+you\\s+to"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.80
+    source: system
+    imp_feature: IMP-013
+
+  - id: correction_005
+    pattern: "that'?s\\s+not\\s+(?:right|correct|what\\s+i)"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.80
+    source: system
+    imp_feature: IMP-013
+
+  - id: correction_006
+    pattern: "wait,?\\s+you"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: correction_007
+    pattern: "defeats\\s+(?:our|the)\\s+(?:objective|goal|purpose)"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.85
+    source: system
+    imp_feature: IMP-013
+
+  - id: correction_008
+    pattern: "are\\s+(?:we|you)\\s+sure\\s+(?:that|about)"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.65
+    source: system
+    imp_feature: IMP-013
+
+  - id: correction_009
+    pattern: "(?:what|when)\\s+i\\s+meant"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+
+  - id: correction_010
+    pattern: "sorry,?\\s+i\\s+meant"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: correction_011
+    pattern: "i\\s+don'?t\\s+think\\s+you'?re?\\s+(?:right|correct)"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.80
+    source: system
+    imp_feature: IMP-013
+
+  - id: correction_012
+    pattern: "that\\s+isn'?t\\s+(?:what|how|the)"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+
+  - id: correction_013
+    pattern: "not\\s+the\\s+intended"
+    category: correction
+    guidance_type: implicit
+    confidence: 0.80
+    source: system
+    imp_feature: IMP-013
+
+  # ===========================================================================
+  # PREFERENCES (Softer than explicit)
+  # ===========================================================================
+
+  - id: preference_001
+    pattern: "i'?d\\s+rather"
+    category: preference
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: preference_002
+    pattern: "i\\s+like\\s+(?:it\\s+)?when"
+    category: preference
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: preference_003
+    pattern: "i\\s+(?:usually|typically|normally)\\s+(?:prefer|want|like)"
+    category: preference
+    guidance_type: implicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+
+  - id: preference_004
+    pattern: "i\\s+think\\s+we\\s+can"
+    category: preference
+    guidance_type: implicit
+    confidence: 0.60
+    source: system
+    imp_feature: IMP-013
+
+  - id: preference_005
+    pattern: "i\\s+think\\s+it\\s+makes\\s+sense"
+    category: preference
+    guidance_type: implicit
+    confidence: 0.65
+    source: system
+    imp_feature: IMP-013
+
+  - id: preference_006
+    pattern: "(?:that\\s+)?seems?\\s+(?:cleanest|cleaner|better)"
+    category: preference
+    guidance_type: implicit
+    confidence: 0.65
+    source: system
+    imp_feature: IMP-013
+
+  # ===========================================================================
+  # STYLE SIGNALS
+  # ===========================================================================
+
+  - id: style_001
+    pattern: "(?:more|less)\\s+(?:verbose|detailed|concise)"
+    category: style
+    guidance_type: implicit
+    confidence: 0.80
+    source: system
+    imp_feature: IMP-013
+
+  - id: style_002
+    pattern: "(?:keep\\s+it|be)\\s+(?:brief|short|concise)"
+    category: style
+    guidance_type: implicit
+    confidence: 0.80
+    source: system
+    imp_feature: IMP-013
+
+  - id: style_003
+    pattern: "don'?t\\s+(?:be\\s+so|over)"
+    category: style
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: style_004
+    pattern: "(?:too\\s+)?(?:much|many)\\s+(?:detail|explanation)"
+    category: style
+    guidance_type: implicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+
+  - id: style_005
+    pattern: "where\\s+appropriate"
+    category: style
+    guidance_type: implicit
+    confidence: 0.55
+    source: system
+    imp_feature: IMP-013
+
+  - id: style_006
+    pattern: "we\\s+want\\s+(?:a\\s+)?(?:minimal|clean|simple)"
+    category: style
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  # ===========================================================================
+  # IMPLICIT RULES (We want/should/need patterns)
+  # ===========================================================================
+
+  - id: implicit_rule_001
+    pattern: "we\\s+want\\s+to\\s+ensure"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: implicit_rule_002
+    pattern: "we\\s+likely\\s+want"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.65
+    source: system
+    imp_feature: IMP-013
+
+  - id: implicit_rule_003
+    pattern: "we\\s+should\\s+(?!have)"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.65
+    source: system
+    imp_feature: IMP-013
+    notes: "'we should' but not 'we should have' (correction)"
+
+  - id: implicit_rule_004
+    pattern: "we\\s+need\\s+to\\s+(?!pause)"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.65
+    source: system
+    imp_feature: IMP-013
+    notes: "'we need to' but not pause (explicit)"
+
+  - id: implicit_rule_005
+    pattern: "we\\s+may\\s+need"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.60
+    source: system
+    imp_feature: IMP-013
+
+  - id: implicit_rule_006
+    pattern: "this\\s+needs\\s+to\\s+be"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: implicit_rule_007
+    pattern: "we\\s+must\\s+(?!never|always)"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+    notes: "'we must' without always/never (explicit)"
+
+  - id: implicit_rule_008
+    pattern: "i\\s+would\\s+go\\s+further"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.65
+    source: system
+    imp_feature: IMP-013
+
+  - id: implicit_rule_009
+    pattern: "i\\s+think\\s+we\\s+need\\s+to"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: implicit_rule_010
+    pattern: "please\\s+make\\s+sure"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+
+  - id: implicit_rule_011
+    pattern: "we\\s+need\\s+to\\s+figure\\s+out"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.65
+    source: system
+    imp_feature: IMP-013
+
+  - id: implicit_rule_012
+    pattern: "i'?d\\s+like\\s+to"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.60
+    source: system
+    imp_feature: IMP-013
+
+  - id: implicit_rule_013
+    pattern: "let'?s\\s+make\\s+sure\\s+(?:the|that|it)"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: implicit_rule_014
+    pattern: "(?:I\\s+do\\s+)?think\\s+the\\s+best\\s+practice"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.75
+    source: system
+    imp_feature: IMP-013
+
+  - id: implicit_rule_015
+    pattern: "I\\s+actually\\s+would\\s+go\\s+further"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.70
+    source: system
+    imp_feature: IMP-013
+
+  - id: implicit_rule_016
+    pattern: "we'?ll\\s+want\\s+to\\s+(?:see|ensure|make)"
+    category: implicit_rule
+    guidance_type: implicit
+    confidence: 0.65
+    source: system
+    imp_feature: IMP-013
