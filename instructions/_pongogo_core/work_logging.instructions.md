@@ -14,7 +14,9 @@ routing:
       - done_for_today
       - session_end
       - wrap_up
-    nlp: "Create work log entry to track progress and decisions"
+      - friction_entry
+      - correction_signal
+    nlp: "Create work log entry to track progress, decisions, and friction events"
   includes:
     - _pongogo_core/_pongogo_collaboration.instructions.md
 ---
@@ -35,6 +37,7 @@ This instruction triggers when:
 - Key decision is made
 - Session is ending
 - Blocker is encountered or resolved
+- **Friction signal detected** (user correction, "wait", "that's not what I") - log immediately
 - User explicitly requests work log entry
 
 ---
@@ -85,6 +88,7 @@ Description of what was done.
 | `decision` | Key architectural or design choice |
 | `blocker` | Obstacle encountered or resolved |
 | `learning` | Insight or pattern discovered |
+| `friction` | User correction signal (IMP-018) - capture immediately |
 | `session` | End-of-session summary |
 
 ---
@@ -143,6 +147,26 @@ Discovered effective pattern for cache invalidation:
 **Where This Applies**: Any multi-service cached data
 **Evidence**: Reduced stale data issues by 90%
 ```
+
+### Friction Entry (IMP-018)
+
+```markdown
+### 2:15 PM [friction] - Missing verification step
+
+User said: "you're skipping the tests again"
+
+**What I Was Doing**: Proceeding directly to implementation
+**What User Expected**: Run tests before applying changes
+
+**Mini-Retro**:
+- Caused by: Optimization bias - tried to move fast
+- Prevention: Add verification checkpoint before significant actions
+
+**Implicit Guidance**: "Always run tests before applying changes"
+**Occurrence**: 2nd (tracking for pattern)
+```
+
+**Note**: Log friction immediately while context is fresh. After 3+ occurrences of same type, consider promoting implicit guidance to standard preference.
 
 ### Session End
 
