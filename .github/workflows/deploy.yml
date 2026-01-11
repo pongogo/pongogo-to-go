@@ -383,12 +383,14 @@ jobs:
             init)
               # Check for updates before init (unless we just installed)
               if [ -z "$PONGOGO_FROM_INSTALLER" ]; then
-                # Compare local and remote image digests
+                # Compare local and remote digests using version.json
                 LOCAL_DIGEST=$(docker inspect pongogo.azurecr.io/pongogo:stable --format='{{index .RepoDigests 0}}' 2>/dev/null | cut -d'@' -f2)
-                REMOTE_DIGEST=$(docker manifest inspect pongogo.azurecr.io/pongogo:stable 2>/dev/null | grep -m1 '"digest"' | cut -d'"' -f4)
+                VERSION_JSON=$(curl -s --max-time 5 https://get.pongogo.com/version.json 2>/dev/null)
+                REMOTE_DIGEST=$(echo "$VERSION_JSON" | grep -o '"digest"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4)
 
                 if [ -n "$REMOTE_DIGEST" ] && [ -n "$LOCAL_DIGEST" ] && [ "$LOCAL_DIGEST" != "$REMOTE_DIGEST" ]; then
-                  echo "🦧 A newer version of Pongogo is available."
+                  REMOTE_VERSION=$(echo "$VERSION_JSON" | grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' | cut -d'"' -f4)
+                  echo "🦧 A newer version of Pongogo is available (v$REMOTE_VERSION)."
                   echo ""
                   read -p $'Update before initializing? \033[94m[Y/n]:\033[0m ' -r < /dev/tty
                   echo ""
@@ -474,6 +476,31 @@ jobs:
           # Verify script is valid bash
           bash -n deploy/install.sh
 
+      - name: Generate version.json
+        run: |
+          # Get manifest digest from ACR using anonymous token
+          TOKEN=$(curl -s "https://pongogo.azurecr.io/oauth2/token?service=pongogo.azurecr.io&scope=repository:pongogo:pull" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+          DIGEST=$(curl -sI -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" \
+            "https://pongogo.azurecr.io/v2/pongogo/manifests/stable" | grep -i "^docker-content-digest:" | awk '{print $2}' | tr -d '\r\n')
+
+          if [ -z "$DIGEST" ]; then
+            echo "Warning: Could not fetch digest from registry"
+            DIGEST="unknown"
+          fi
+
+          # Create version.json
+          cat > deploy/version.json << EOF
+          {
+            "version": "${{ steps.version.outputs.version }}",
+            "digest": "$DIGEST",
+            "released": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
+          echo "Generated version.json:"
+          cat deploy/version.json
+
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -501,6 +528,15 @@ jobs:
             --auth-mode login \
             --content-type "text/x-shellscript" \
             --pattern "*.sh"
+
+          az storage blob upload-batch \
+            --account-name ${{ env.AZURE_STORAGE_ACCOUNT }} \
+            --destination '$web' \
+            --source deploy \
+            --overwrite \
+            --auth-mode login \
+            --content-type "application/json" \
+            --pattern "*.json"
 
           echo "Deployed to https://get.pongogo.com"
 
