@@ -247,16 +247,6 @@ jobs:
                 esac
               done
 
-              # Debug helper
-              debug() {
-                if $DEBUG; then
-                  echo "[DEBUG] $1"
-                fi
-              }
-
-              debug "CWD: $(pwd)"
-              debug "FORCE=$FORCE DEBUG=$DEBUG"
-
               if ! $FORCE; then
                 echo "This will remove the Pongogo CLI wrapper and MCP configuration."
                 echo ""
@@ -268,217 +258,32 @@ jobs:
                 fi
               fi
 
-              # Remove CLI wrapper
+              # Remove CLI wrapper first (before Docker image removal)
               if [ -f "$HOME/.local/bin/pongogo" ]; then
-                debug "Found CLI wrapper at $HOME/.local/bin/pongogo"
                 rm "$HOME/.local/bin/pongogo"
                 echo "✓ Removed ~/.local/bin/pongogo"
-              else
-                debug "No CLI wrapper at $HOME/.local/bin/pongogo"
               fi
 
-              # Remove MCP config from project-local .mcp.json (primary location)
-              debug "Checking for .mcp.json at $(pwd)/.mcp.json"
-              if [ -f ".mcp.json" ] && command -v python3 &> /dev/null; then
-                debug "Found .mcp.json, processing with Python"
-                python3 -c "
-          import json, sys, os
-          debug = '$DEBUG' == 'true'
-          p = '.mcp.json'
-          abs_path = os.path.abspath(p)
-          if debug:
-              print(f'[DEBUG] Processing: {abs_path}')
-          try:
-              with open(p, 'r') as f:
-                  c = json.load(f)
-              if debug:
-                  print(f'[DEBUG] Keys in mcpServers: {list(c.get(\"mcpServers\", {}).keys())}')
-              if 'mcpServers' in c and 'pongogo-knowledge' in c['mcpServers']:
-                  del c['mcpServers']['pongogo-knowledge']
-                  if not c['mcpServers']:
-                      os.remove(p)
-                      if os.path.exists(p):
-                          print(f'⚠ Failed to remove {abs_path} - file still exists!')
-                          sys.exit(1)
-                      else:
-                          print('✓ Removed .mcp.json (no other MCP servers configured)')
-                  else:
-                      with open(p, 'w') as f:
-                          json.dump(c, f, indent=2)
-                      print('✓ Removed pongogo-knowledge from .mcp.json')
-              else:
-                  print('✓ No pongogo-knowledge config found in .mcp.json')
-          except FileNotFoundError:
-              if debug:
-                  print(f'[DEBUG] File not found: {abs_path}')
-          except PermissionError as e:
-              print(f'⚠ Permission denied: {abs_path} - {e}')
-              sys.exit(1)
-          except Exception as e:
-              print(f'⚠ Could not modify .mcp.json: {e}')
-              if debug:
-                  import traceback
-                  traceback.print_exc()
-              sys.exit(1)
-          "
-              elif [ -f ".mcp.json" ]; then
-                echo "⚠ Found .mcp.json but Python 3 not available"
-                echo "  Manually remove 'pongogo-knowledge' from mcpServers in .mcp.json"
-              else
-                debug "No .mcp.json found at $(pwd)/.mcp.json"
-                echo "✓ No .mcp.json found in current directory"
+              # Run cleanup via Docker (handles all config file cleanup)
+              CLEANUP_ARGS=""
+              if $DEBUG; then
+                CLEANUP_ARGS="--debug"
               fi
 
-              # Remove MCP config from .claude/mcp.json (Claude Code project location)
-              debug "Checking for .claude/mcp.json"
-              if [ -f ".claude/mcp.json" ] && command -v python3 &> /dev/null; then
-                debug "Found .claude/mcp.json, processing with Python"
-                python3 -c "
-          import json, sys, os
-          debug = '$DEBUG' == 'true'
-          p = '.claude/mcp.json'
-          abs_path = os.path.abspath(p)
-          if debug:
-              print(f'[DEBUG] Processing: {abs_path}')
-          try:
-              with open(p, 'r') as f:
-                  c = json.load(f)
-              if 'mcpServers' in c and 'pongogo-knowledge' in c['mcpServers']:
-                  del c['mcpServers']['pongogo-knowledge']
-                  if not c['mcpServers']:
-                      os.remove(p)
-                      if os.path.exists(p):
-                          print(f'⚠ Failed to remove {abs_path} - file still exists!')
-                          sys.exit(1)
-                      if os.path.isdir('.claude') and not os.listdir('.claude'):
-                          os.rmdir('.claude')
-                          print('✓ Removed .claude/mcp.json and empty .claude/ directory')
-                      else:
-                          print('✓ Removed .claude/mcp.json (no other MCP servers configured)')
-                  else:
-                      with open(p, 'w') as f:
-                          json.dump(c, f, indent=2)
-                      print('✓ Removed pongogo-knowledge from .claude/mcp.json')
-              else:
-                  print('✓ No pongogo-knowledge config found in .claude/mcp.json')
-          except FileNotFoundError:
-              if debug:
-                  print(f'[DEBUG] File not found: {abs_path}')
-          except PermissionError as e:
-              print(f'⚠ Permission denied: {abs_path} - {e}')
-              sys.exit(1)
-          except Exception as e:
-              print(f'⚠ Could not modify .claude/mcp.json: {e}')
-              if debug:
-                  import traceback
-                  traceback.print_exc()
-              sys.exit(1)
-          "
-              elif [ -f ".claude/mcp.json" ]; then
-                echo "⚠ Found .claude/mcp.json but Python 3 not available"
-                echo "  Manually remove 'pongogo-knowledge' from mcpServers in .claude/mcp.json"
+              if docker image inspect pongogo.azurecr.io/pongogo:stable &> /dev/null 2>&1; then
+                # Build volume mounts - always mount project dir
+                MOUNT_ARGS="-v $(pwd):/project:z"
+                # Only mount ~/.claude.json if it exists (avoid creating directory)
+                if [ -f "$HOME/.claude.json" ]; then
+                  MOUNT_ARGS="$MOUNT_ARGS -v $HOME/.claude.json:/root/.claude.json:z"
+                fi
+                docker run --rm $MOUNT_ARGS -w /project \
+                  --entrypoint pongogo-cleanup \
+                  pongogo.azurecr.io/pongogo:stable \
+                  cleanup $CLEANUP_ARGS 2>/dev/null || true
               else
-                debug "No .claude/mcp.json found"
-              fi
-
-              # Remove UserPromptSubmit hook from .claude/settings.local.json
-              debug "Checking for .claude/settings.local.json"
-              if [ -f ".claude/settings.local.json" ] && command -v python3 &> /dev/null; then
-                debug "Found .claude/settings.local.json, processing with Python"
-                python3 -c "
-          import json, sys, os
-          debug = '$DEBUG' == 'true'
-          p = '.claude/settings.local.json'
-          abs_path = os.path.abspath(p)
-          if debug:
-              print(f'[DEBUG] Processing: {abs_path}')
-          try:
-              with open(p, 'r') as f:
-                  c = json.load(f)
-              modified = False
-              if 'hooks' in c and 'UserPromptSubmit' in c['hooks']:
-                  new_hooks = []
-                  for hook_group in c['hooks']['UserPromptSubmit']:
-                      if 'hooks' in hook_group:
-                          hook_group['hooks'] = [h for h in hook_group['hooks']
-                                                  if 'pongogo-route' not in h.get('command', '')]
-                          if hook_group['hooks']:
-                              new_hooks.append(hook_group)
-                      else:
-                          new_hooks.append(hook_group)
-                  if new_hooks:
-                      c['hooks']['UserPromptSubmit'] = new_hooks
-                  else:
-                      del c['hooks']['UserPromptSubmit']
-                  if not c['hooks']:
-                      del c['hooks']
-                  modified = True
-              if modified:
-                  if not c:
-                      os.remove(p)
-                      if os.path.exists(p):
-                          print(f'⚠ Failed to remove {abs_path} - file still exists!')
-                          sys.exit(1)
-                      print('✓ Removed .claude/settings.local.json (no other settings)')
-                  else:
-                      with open(p, 'w') as f:
-                          json.dump(c, f, indent=2)
-                      print('✓ Removed pongogo hooks from .claude/settings.local.json')
-              else:
-                  print('✓ No pongogo hooks found in .claude/settings.local.json')
-          except FileNotFoundError:
-              if debug:
-                  print(f'[DEBUG] File not found: {abs_path}')
-          except PermissionError as e:
-              print(f'⚠ Permission denied: {abs_path} - {e}')
-              sys.exit(1)
-          except Exception as e:
-              print(f'⚠ Could not modify .claude/settings.local.json: {e}')
-              if debug:
-                  import traceback
-                  traceback.print_exc()
-              sys.exit(1)
-          "
-              elif [ -f ".claude/settings.local.json" ]; then
-                echo "⚠ Found .claude/settings.local.json but Python 3 not available"
-                echo "  Manually remove pongogo hooks from .claude/settings.local.json"
-              else
-                debug "No .claude/settings.local.json found"
-              fi
-
-              # Also check global ~/.claude.json (legacy location)
-              CLAUDE_CONFIG="$HOME/.claude.json"
-              debug "Checking for $CLAUDE_CONFIG"
-              if [ -f "$CLAUDE_CONFIG" ] && command -v python3 &> /dev/null; then
-                debug "Found $CLAUDE_CONFIG, processing with Python"
-                python3 -c "
-          import json, sys, os
-          debug = '$DEBUG' == 'true'
-          p = sys.argv[1]
-          if debug:
-              print(f'[DEBUG] Processing: {p}')
-          try:
-              with open(p, 'r') as f:
-                  c = json.load(f)
-              if 'mcpServers' in c and 'pongogo-knowledge' in c['mcpServers']:
-                  del c['mcpServers']['pongogo-knowledge']
-                  with open(p, 'w') as f:
-                      json.dump(c, f, indent=2)
-                  print('✓ Removed pongogo-knowledge from ~/.claude.json')
-              else:
-                  print('✓ No pongogo-knowledge config found in ~/.claude.json')
-          except PermissionError as e:
-              print(f'⚠ Permission denied: {p} - {e}')
-              sys.exit(1)
-          except Exception as e:
-              print(f'⚠ Could not modify ~/.claude.json: {e}')
-              if debug:
-                  import traceback
-                  traceback.print_exc()
-              sys.exit(1)
-          " "$CLAUDE_CONFIG"
-              else
-                debug "No $CLAUDE_CONFIG found or Python not available"
+                echo "⚠ Docker image not found, skipping config cleanup"
+                echo "  Manually remove 'pongogo-knowledge' from .mcp.json and .claude/ configs"
               fi
 
               # Offer to remove .pongogo directory (skip prompt if --force)

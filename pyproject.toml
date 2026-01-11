@@ -60,6 +60,7 @@ dev = [
 pongogo = "cli.main:app"
 pongogo-server = "mcp_server.server:main"
 pongogo-route = "mcp_server.cli:route_cli"
+pongogo-cleanup = "cli.uninstall:main"
 
 [project.urls]
 Homepage = "https://github.com/pongogo/pongogo-to-go"
