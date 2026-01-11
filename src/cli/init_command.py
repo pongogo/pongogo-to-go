@@ -450,6 +450,8 @@ pongogo.db-shm
 
     # Hook configuration - runs pongogo-route on each user message
     # The hook receives user message via stdin and outputs context via stdout
+    # Note: Hook uses :ro (read-only) since pongogo-route only reads instructions
+    # :z suffix enables SELinux relabeling for Fedora/RHEL compatibility
     hook_config = {
         "hooks": {
             "UserPromptSubmit": [
@@ -457,7 +459,7 @@ pongogo.db-shm
                     "hooks": [
                         {
                             "type": "command",
-                            "command": f"docker run -i --rm -v {hook_pongogo_path}:/project/.pongogo:ro pongogo.azurecr.io/pongogo:stable pongogo-route",
+                            "command": f"docker run -i --rm -v {hook_pongogo_path}:/project/.pongogo:ro,z pongogo.azurecr.io/pongogo:stable pongogo-route",
                         }
                     ]
                 }
@@ -512,6 +514,11 @@ pongogo.db-shm
         pongogo_abs_path = f"{host_project_dir}/.pongogo"
     else:
         pongogo_abs_path = str(pongogo_dir.resolve())
+    # Capture uid/gid at init time for proper container permissions
+    # Container runs as non-root 'pongogo' user, but we need file ownership to match host user
+    uid = os.getuid()
+    gid = os.getgid()
+
     mcp_config = {
         "mcpServers": {
             "pongogo-knowledge": {
@@ -520,9 +527,12 @@ pongogo.db-shm
                     "run",
                     "-i",
                     "--rm",
+                    "--user",
+                    f"{uid}:{gid}",
                     "-v",
                     # Read-write mount needed for database (event capture, PI system, lookback)
-                    f"{pongogo_abs_path}:/project/.pongogo",
+                    # :z suffix enables SELinux relabeling for Fedora/RHEL compatibility
+                    f"{pongogo_abs_path}:/project/.pongogo:z",
                     "pongogo.azurecr.io/pongogo:stable",
                 ],
             }

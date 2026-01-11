@@ -162,16 +162,14 @@ Generate a copyable diagnostic report:
 
 ### Support Integration
 
-If issues are found, offer to generate support request:
+If issues are found, offer support options:
 
 ```
 Issues detected. To get help:
 
-1. Copy the diagnostic report above
-2. Open: https://github.com/pongogo/pongogo-to-go/issues/new
-3. Paste the report and describe your issue
+1. Run `/pongogo-contact issue` to generate a support email with diagnostics
 
-Or run `/pongogo-support` to open an issue directly.
+2. Or email directly: [support@pongogo.com](mailto:support@pongogo.com?subject=%5BIssue%5D%20Pongogo%20Diagnostic%20Failure&body=Please%20paste%20the%20diagnostic%20report%20above%20and%20describe%20your%20issue.)
 ```
 
 ### Quick Fixes Reference

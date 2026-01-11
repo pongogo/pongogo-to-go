@@ -131,7 +131,7 @@ I've prepared a support email for you. Here's what will be sent:
 
 ---
 
-**To**: contact@pongogo.com
+**To**: support@pongogo.com
 **Subject**: [Issue]
 
 **Body**:
@@ -142,15 +142,12 @@ I've prepared a support email for you. Here's what will be sent:
 ### Send Options
 
 1. **Click to open email client**:
-   [Open Email](mailto:contact@pongogo.com?subject=...)
+   [Open Email](mailto:support@pongogo.com?subject=...)
 
 2. **Copy and paste** (if mailto doesn't work):
-   - Email: contact@pongogo.com
+   - Email: support@pongogo.com
    - Subject: [copy from above]
    - Body: [copy from above]
-
-3. **Open GitHub Issue** (for bugs):
-   https://github.com/pongogo/pongogo-to-go/issues/new
 
 ---
 
@@ -175,7 +172,7 @@ body = """## Issue Description
 - Docker: Docker version 24.0.7
 """
 
-mailto = f"mailto:contact@pongogo.com?subject={urllib.parse.quote(subject)}&body={urllib.parse.quote(body)}"
+mailto = f"mailto:support@pongogo.com?subject={urllib.parse.quote(subject)}&body={urllib.parse.quote(body)}"
 ```
 
 ### Privacy Note
@@ -194,15 +191,4 @@ It does NOT include:
 - API keys or secrets
 
 You can remove any info you prefer not to share before sending.
-```
-
-### Alternative: GitHub Issues
-
-If user prefers GitHub:
-
-```
-Prefer GitHub? Open an issue directly:
-https://github.com/pongogo/pongogo-to-go/issues/new
-
-For faster response on critical issues, email contact@pongogo.com
 ```
