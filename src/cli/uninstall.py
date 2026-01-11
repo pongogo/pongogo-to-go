@@ -7,12 +7,10 @@ to avoid inline Python in deploy.yml (which hit GitHub's expression limit).
 
 import json
 import os
-import sys
-from pathlib import Path
 
 import typer
 
-from .console import console, print_error, print_success, print_warning
+from .console import console, print_error, print_success
 
 app = typer.Typer(
     name="uninstall-cleanup",
@@ -45,7 +43,7 @@ def remove_from_mcp_json(path: str, debug: bool = False) -> bool:
         return True  # Not an error - file doesn't exist
 
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             config = json.load(f)
 
         if debug:
@@ -101,7 +99,7 @@ def remove_from_claude_mcp_json(debug: bool = False) -> bool:
         return True
 
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             config = json.load(f)
 
         if "mcpServers" in config and "pongogo-knowledge" in config["mcpServers"]:
@@ -116,7 +114,9 @@ def remove_from_claude_mcp_json(debug: bool = False) -> bool:
                 # Remove .claude dir if empty
                 if os.path.isdir(".claude") and not os.listdir(".claude"):
                     os.rmdir(".claude")
-                    print_success("Removed .claude/mcp.json and empty .claude/ directory")
+                    print_success(
+                        "Removed .claude/mcp.json and empty .claude/ directory"
+                    )
                 else:
                     print_success("Removed .claude/mcp.json (no other MCP servers)")
             else:
@@ -151,7 +151,7 @@ def remove_hooks_from_settings(debug: bool = False) -> bool:
         return True
 
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             config = json.load(f)
 
         modified = False
@@ -217,7 +217,7 @@ def remove_from_global_claude_json(debug: bool = False) -> bool:
         return True
 
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             config = json.load(f)
 
         if "mcpServers" in config and "pongogo-knowledge" in config["mcpServers"]:
