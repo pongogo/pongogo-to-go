@@ -105,6 +105,28 @@ Can Epic/Task be marked complete?
 - Dependencies not verified operational
 - Rollback procedure not tested
 
+**7. User Expectation Validation** (NEW - Routing IMP-018):
+
+Friction signals often indicate validation gaps where implementation diverged from user expectations:
+
+**Friction Signals → Validation Gaps**:
+| Friction Signal | What It Reveals | Validation Action |
+|-----------------|-----------------|-------------------|
+| "that's not what I expected" | Output validation missing | Add expected output check |
+| "you skipped the tests" | Sequence validation missing | Add prerequisite gate |
+| "wait, I wanted to review first" | Approval gate missing | Add user confirmation step |
+| "we already discussed this" | Context validation missing | Verify understanding before proceeding |
+
+**Expectation Validation Protocol**:
+1. **Before execution**: Confirm understanding of expected outcome
+2. **During execution**: Check for friction signals (pause if detected)
+3. **After completion**: Verify output matches expectation (not just "works")
+
+**Why This Matters**:
+- Technical validation (code works) ≠ Expectation validation (output matches intent)
+- Friction signals are real-time feedback that expectation validation failed
+- Capturing friction patterns improves future validation criteria
+
 ---
 
 ## Core Principles
@@ -290,6 +312,13 @@ describe('Agent Routing Service Integration', () => {
 - **Why it happens**: Pressure to complete tasks quickly or misunderstanding of "done" definition
 - ✅ **Solution**: All quality gates must pass before completion; use Epic Validation Standards checklist as mandatory gate
 - **Example**: Feature implementation complete but not validated is NOT done; validation must show 100% pass in controlled environment
+
+### Pitfall 4: Ignoring Friction Signals (Routing IMP-018)
+
+- ❌ **Problem**: Continuing execution when user expresses "wait", "that's not what I", "you're skipping" signals
+- **Why it happens**: Focus on technical validation while missing expectation validation
+- ✅ **Solution**: Treat friction signals as real-time validation failures; PAUSE immediately, clarify, resume correctly
+- **Example**: User says "wait, I wanted to review first" → STOP → This signals missing approval gate → Add confirmation step
 
 ## Edge Cases
 

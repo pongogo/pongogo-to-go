@@ -101,6 +101,27 @@ Starting dependent work?
 - ❌ **DON'T**: "Task wasn't really complete. Add more validation before marking work complete."
 - **Principle**: Improve forward, don't doubt backward
 
+**7. Correction Signals During Execution** (NEW - Routing IMP-018):
+
+Trust applies to COMPLETED prerequisite work, not current execution. When users signal corrections during active work:
+
+**Correction Signals** (PAUSE immediately):
+- "wait, hold on" - User has new information
+- "that's not what I" - Expectation mismatch
+- "sorry, actually" - User changing direction
+- "you're skipping" - Missing something important
+
+**Correct Response**:
+1. STOP current action
+2. Acknowledge: "Let me pause here"
+3. Clarify: "What should I do differently?"
+4. Resume with corrected understanding
+
+**Why This Isn't Distrust**:
+- Trusting completed work ≠ ignoring user feedback
+- Correction signals are NEW information, not re-analysis
+- Responding to corrections prevents friction
+
 ---
 
 ## Core Principles

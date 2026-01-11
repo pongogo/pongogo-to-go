@@ -431,6 +431,95 @@ User urgency signal → EXTRA process compliance → Clarify before acting
 
 ---
 
+## Friction Signals and Recovery
+
+**CRITICAL PATTERN**: When users signal friction, PAUSE and RECOVER, don't continue current approach.
+
+### The Friction Detection Principle
+
+**Common Mistake** (friction blindness):
+```
+Friction signal → Continue current approach → More friction
+"wait, that's not" → Assume user is confirming → Build on wrong foundation
+```
+
+**Correct Response** (friction → recovery):
+```
+Friction signal → STOP → Clarify → Recover with correct approach
+"wait, that's not" → Pause → "What should I do differently?" → Proceed correctly
+```
+
+### Why Friction INCREASES Process Need
+
+Same principle as urgency signals:
+- **Intuition**: "User seems frustrated, go faster to fix it"
+- **Reality**: "User signaled problem, PAUSE to understand what's wrong"
+
+**Cost Analysis**:
+- Quick clarification: 30 seconds (1 question)
+- Continuing wrong direction: 20+ minutes (more friction + rework + trust damage)
+- **Ratio**: 40:1 cost increase from ignoring friction
+
+### Friction Signal Detection
+
+**Strong Friction Signals** (STOP immediately):
+- "wait, hold on" - User interrupting current action
+- "that's not what I" - Direct contradiction of approach
+- "you're skipping" - Missing expected step
+- "yet another example of" - Repeated issue (pattern!)
+- "i thought we" - Expectation mismatch
+
+**Soft Friction Signals** (proceed carefully, watch for escalation):
+- "hmm, I was thinking" - Mild redirection
+- "actually, could you" - Polite correction
+- "sorry, I meant" - User self-correcting
+
+### Friction Recovery Protocol
+
+**Step 1: Acknowledge**
+- "Let me pause here"
+- "I see I may have misunderstood"
+
+**Step 2: Clarify**
+- "What should I do differently?"
+- "What was I missing?"
+
+**Step 3: Confirm Before Proceeding**
+- "So you'd like me to [corrected approach]?"
+- Wait for explicit confirmation
+
+**Step 4: Proceed with Corrected Understanding**
+- Implement user's actual intent
+- Note learning for future (potential pattern)
+
+### Common Friction Patterns
+
+| Friction Signal | What It Means | Correct Response |
+|-----------------|---------------|------------------|
+| "you're skipping X" | User expects step X | Ask what X should include |
+| "wait, I wanted to review" | User wants approval gates | Pause, show work, get approval |
+| "that's not what I meant" | Misunderstood requirements | Clarify exact expectation |
+| "we already discussed this" | Repeated issue = pattern | Acknowledge, capture as learning |
+
+### Anti-Pattern: Friction Blindness
+
+**What It Looks Like**:
+- User signals correction → Agent explains why current approach is good
+- User shows frustration → Agent speeds up to "fix it faster"
+- Soft correction → Agent continues assuming it's on track
+
+**Why It's Wrong**:
+- Friction signals mean something is WRONG
+- Explaining doesn't fix the wrong approach
+- Speed amplifies the wrong direction
+
+**How to Fix**:
+1. Add friction detector: Correction language = PAUSE
+2. Override "helpful" instinct: Don't explain, ask
+3. Trust user signals: They know what they want
+
+---
+
 ## Troubleshooting
 
 | Symptom | Cause | Solution |

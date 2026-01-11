@@ -140,6 +140,31 @@ When user provides indirect feedback (corrections, preferences expressed in pass
 - Log without interrupting
 - Continue tracking
 
+### Correction Signals as Guidance (Routing IMP-018)
+
+correction_signal patterns (84% friction correlation) often contain implicit rules.
+
+**Correction Signal Patterns**:
+- "wait, hold on" - User has expectation about pace/process
+- "sorry, actually I" - User clarifying preference
+- "you're skipping" - User expects step X to happen
+- "that's not what I" - User has specific expectation
+
+**Guidance Extraction from Corrections**:
+
+| Correction Signal | Implicit Guidance |
+|-------------------|-------------------|
+| "you're skipping the tests" | "Always run tests before [action]" |
+| "wait, I wanted to review first" | "Let me review before applying changes" |
+| "that's not what I meant by done" | "Done means [user's definition]" |
+| "we already discussed this" | Previous guidance wasn't captured |
+
+**Processing Correction Signals**:
+1. Capture correction as friction event (immediate acknowledgment)
+2. Extract implicit guidance from correction content
+3. Apply immediately in current session
+4. Offer to make extracted guidance standard for future
+
 ### User-Focused Language (Required)
 
 When discussing guidance capture with users, always use outcome-focused language:

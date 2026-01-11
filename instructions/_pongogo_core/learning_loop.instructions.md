@@ -40,6 +40,7 @@ This instruction triggers when:
 - User says "done", "finished", "completed", "shipped"
 - Before closing an issue or moving to next work
 - When patterns or insights emerged during work
+- **Friction events** - User corrections, frustration, or repeated issues (see below)
 
 ---
 
@@ -150,6 +151,50 @@ During the retrospective, watch for patterns:
 **If this is the 1st or 2nd occurrence**:
 - Note it for future reference
 - Track in pattern candidates if using PI system
+
+---
+
+## Friction-Triggered Learning (Routing IMP-018)
+
+Friction events are learning opportunities that shouldn't wait until task completion.
+
+### Friction Trigger Signals
+
+When you detect these signals, conduct a mini-retro immediately:
+
+- User expresses frustration ("yet another example of", "we already discussed")
+- Repeated corrections on same issue
+- "i thought we changed/fixed this"
+- "without going through process"
+
+### Mini-Retro for Friction (2 questions)
+
+Don't wait for task completion - capture friction learning while context is fresh:
+
+**1. What caused the friction?**
+- What did the user expect vs what happened?
+- Was this a misunderstanding, process gap, or repeated issue?
+
+**2. How can we prevent this category in the future?**
+- Is this a one-time issue or pattern?
+- What systematic change would prevent recurrence?
+
+### Why Capture Immediately
+
+- Friction context is freshest right after the event
+- Waiting until task completion may lose important details
+- Prevents same friction from recurring in current session
+- Friction often signals a systematic gap (valuable learning)
+
+### Example Friction Mini-Retro
+
+> **Friction**: User said "you're skipping the verification step again"
+>
+> **What caused it**: Completed work without showing user for approval before proceeding
+>
+> **Prevention**: Add verification checkpoint before significant actions. User prefers: "always show me before applying changes"
+>
+> **Pattern?**: 2nd occurrence. If happens again, make this standard process.
 
 ---
 

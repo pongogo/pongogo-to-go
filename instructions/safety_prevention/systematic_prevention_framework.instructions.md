@@ -91,6 +91,7 @@ After: "Why was documentation unclear? Add instruction file with machine-readabl
    - Analyze current problem: What specifically went wrong?
    - Pattern recognition: Is this a one-time issue or representative of a category?
    - Scope assessment: How many similar problems could exist?
+   - **Friction signal check**: Did this trigger user friction? (See below)
    - Expected outcome: Understanding whether this is instance or pattern
 
 ### 2. **Ask Mandatory Prevention Questions**
@@ -298,6 +299,60 @@ After implementing prevention framework:
 - **Why it happens**: Not considering agent discovery and automation
 - ✅ **Solution**: Integrate with routing service, use `applies_to` patterns, automatic triggers
 - **Example**: Manual instruction lookup → Automatic instruction routing based on context patterns
+
+## Friction Signals as Prevention Triggers (Routing IMP-018)
+
+**Principle**: Friction signals are real-time evidence that a problem category needs prevention.
+
+### Friction Detection Patterns
+
+When users express these signals, a systematic gap has been exposed:
+
+| Friction Signal | What It Reveals | Prevention Question |
+|-----------------|-----------------|---------------------|
+| "yet another example of" | Recurring issue (pattern!) | What framework prevents this category? |
+| "i thought we changed this" | Expectation not met | Why did expectation differ from reality? |
+| "without going through process" | Process being bypassed | How to make process automatic, not optional? |
+| "you're skipping" | Steps being missed | What gate ensures step cannot be skipped? |
+| "we already discussed this" | Previous guidance lost | How to capture guidance for automatic routing? |
+
+### Friction → Prevention Workflow
+
+1. **Detect friction signal** → PAUSE current work
+2. **Ask prevention questions**:
+   - Is this a one-time issue or pattern?
+   - What category does this represent?
+   - What framework prevents this category?
+3. **Capture learning** → Document for mini-retro
+4. **Design prevention** → If pattern, create framework
+5. **Resume work** → With corrected approach
+
+### Why Friction Signals Matter for Prevention
+
+- **Real-time evidence**: User friction = confirmed gap in current systems
+- **84% correlation**: Friction signals (correction_signal type) indicate preventable issues
+- **Two benefits**: (1) Fix immediate issue, (2) Prevent future category
+- **Learning source**: Each friction event should feed into meta-system improvement
+
+### Example: Friction → Prevention
+
+```markdown
+## Friction Event
+User: "yet another example of not checking the wiki first"
+
+## Prevention Analysis
+1. Pattern identified: Agents not checking wiki before decisions
+2. Category: Information source consultation gaps
+3. Root cause: No automatic wiki routing based on decision context
+
+## Prevention Framework
+- Add wiki pages to routing triggers based on decision domains
+- Create instruction: "wiki_consultation.instructions.md"
+- Automatic activation: Decision keywords → wiki pages surface
+
+## Result
+Category prevented: Future decisions in same domain automatically get wiki context
+```
 
 ## Edge Cases
 
