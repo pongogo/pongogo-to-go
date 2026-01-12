@@ -18,70 +18,79 @@ from pathlib import Path
 SRC_DIR = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(SRC_DIR))
 
+
 def diagnose():
     """Run diagnostics and output results."""
-    results = {
-        "diagnostics_version": "1.0.0",
-        "checks": {}
-    }
+    results = {"diagnostics_version": "1.0.0", "checks": {}}
 
     # Test message
-    test_message = sys.argv[1] if len(sys.argv) > 1 else "Here are some general guidelines to follow"
+    test_message = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else "Here are some general guidelines to follow"
+    )
     results["test_message"] = test_message
 
     # Check 1: Router version
     try:
         from mcp_server.pongogo_router import DURIAN_VERSION
+
         results["checks"]["router_version"] = {
             "status": "ok",
-            "version": DURIAN_VERSION
+            "version": DURIAN_VERSION,
         }
     except Exception as e:
-        results["checks"]["router_version"] = {
-            "status": "error",
-            "error": str(e)
-        }
+        results["checks"]["router_version"] = {"status": "error", "error": str(e)}
 
     # Check 2: Lexicon DB availability
     try:
-        from mcp_server.pongogo_router import LEXICON_DB_AVAILABLE, LEXICON_AVAILABLE, DEFAULT_DB_PATH
+        from mcp_server.pongogo_router import (
+            DEFAULT_DB_PATH,
+            LEXICON_AVAILABLE,
+            LEXICON_DB_AVAILABLE,
+        )
+
         results["checks"]["lexicon_availability"] = {
             "status": "ok",
             "LEXICON_DB_AVAILABLE": LEXICON_DB_AVAILABLE,
             "LEXICON_AVAILABLE": LEXICON_AVAILABLE,
             "DEFAULT_DB_PATH": str(DEFAULT_DB_PATH) if DEFAULT_DB_PATH else None,
-            "db_exists": DEFAULT_DB_PATH.exists() if DEFAULT_DB_PATH else False
+            "db_exists": DEFAULT_DB_PATH.exists() if DEFAULT_DB_PATH else False,
         }
     except Exception as e:
-        results["checks"]["lexicon_availability"] = {
-            "status": "error",
-            "error": str(e)
-        }
+        results["checks"]["lexicon_availability"] = {"status": "error", "error": str(e)}
 
     # Check 3: Context disambiguation availability
     try:
-        from mcp_server.pongogo_router import CONTEXT_DISAMBIGUATION_AVAILABLE, match_all_entries
+        from mcp_server.pongogo_router import (
+            CONTEXT_DISAMBIGUATION_AVAILABLE,
+            match_all_entries,
+        )
+
         results["checks"]["context_disambiguation"] = {
             "status": "ok",
             "CONTEXT_DISAMBIGUATION_AVAILABLE": CONTEXT_DISAMBIGUATION_AVAILABLE,
-            "match_all_entries_available": match_all_entries is not None
+            "match_all_entries_available": match_all_entries is not None,
         }
     except Exception as e:
         results["checks"]["context_disambiguation"] = {
             "status": "error",
-            "error": str(e)
+            "error": str(e),
         }
 
     # Check 4: Lexicon patterns for guidelines
     try:
-        from mcp_server.lexicon_db import LexiconDB, DEFAULT_DB_PATH
+        from mcp_server.lexicon_db import DEFAULT_DB_PATH, LexiconDB
+
         if DEFAULT_DB_PATH and DEFAULT_DB_PATH.exists():
             db = LexiconDB()
             # Get guidance entries
             guidance_entries = db.get_entries_by_type("guidance")
             guideline_patterns = [
-                e for e in guidance_entries
-                if "guideline" in str(e.pattern).lower() or "here" in str(e.pattern).lower()
+                e
+                for e in guidance_entries
+                if "guideline" in str(e.pattern).lower()
+                or "here" in str(e.pattern).lower()
             ]
             results["checks"]["lexicon_patterns"] = {
                 "status": "ok",
@@ -89,22 +98,20 @@ def diagnose():
                 "guideline_patterns": [
                     {"id": e.id, "pattern": str(e.pattern), "category": e.category}
                     for e in guideline_patterns[:10]  # Limit output
-                ]
+                ],
             }
         else:
             results["checks"]["lexicon_patterns"] = {
                 "status": "skip",
-                "reason": "Lexicon DB not found"
+                "reason": "Lexicon DB not found",
             }
     except Exception as e:
-        results["checks"]["lexicon_patterns"] = {
-            "status": "error",
-            "error": str(e)
-        }
+        results["checks"]["lexicon_patterns"] = {"status": "error", "error": str(e)}
 
     # Check 5: Hardcoded patterns
     try:
         from mcp_server.pongogo_router import EXPLICIT_GUIDANCE_TRIGGERS
+
         guideline_in_hardcoded = any(
             "guideline" in p.lower() or "here\\s+are" in p.lower()
             for p in EXPLICIT_GUIDANCE_TRIGGERS
@@ -113,30 +120,26 @@ def diagnose():
             "status": "ok",
             "total_patterns": len(EXPLICIT_GUIDANCE_TRIGGERS),
             "has_guideline_pattern": guideline_in_hardcoded,
-            "sample_patterns": list(EXPLICIT_GUIDANCE_TRIGGERS)[:5]
+            "sample_patterns": list(EXPLICIT_GUIDANCE_TRIGGERS)[:5],
         }
     except Exception as e:
-        results["checks"]["hardcoded_patterns"] = {
-            "status": "error",
-            "error": str(e)
-        }
+        results["checks"]["hardcoded_patterns"] = {"status": "error", "error": str(e)}
 
     # Check 6: Default features
     try:
         from mcp_server.pongogo_router import DEFAULT_FEATURES
+
         guidance_features = {
-            k: v for k, v in DEFAULT_FEATURES.items()
+            k: v
+            for k, v in DEFAULT_FEATURES.items()
             if "guidance" in k.lower() or "lexicon" in k.lower()
         }
         results["checks"]["feature_flags"] = {
             "status": "ok",
-            "guidance_related_features": guidance_features
+            "guidance_related_features": guidance_features,
         }
     except Exception as e:
-        results["checks"]["feature_flags"] = {
-            "status": "error",
-            "error": str(e)
-        }
+        results["checks"]["feature_flags"] = {"status": "error", "error": str(e)}
 
     # Check 7: Test actual routing
     try:
@@ -179,24 +182,30 @@ def diagnose():
         results["checks"]["routing_test"] = {
             "status": "ok",
             "instructions_loaded": count,
-            "lexicon_entries_loaded": len(router._lexicon_entries) if lexicon_loaded else 0,
+            "lexicon_entries_loaded": len(router._lexicon_entries)
+            if lexicon_loaded
+            else 0,
             "routing_engine_version": router.version,
             "guidance_action_present": result.get("guidance_action") is not None,
             "guidance_action": result.get("guidance_action"),
-            "routing_analysis_guidance_pre_check": result.get("routing_analysis", {}).get("guidance_pre_check"),
-            "instructions_routed": result.get("count", 0)
+            "routing_analysis_guidance_pre_check": result.get(
+                "routing_analysis", {}
+            ).get("guidance_pre_check"),
+            "instructions_routed": result.get("count", 0),
         }
     except Exception as e:
         import traceback
+
         results["checks"]["routing_test"] = {
             "status": "error",
             "error": str(e),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
         }
 
     # Check 8: Pattern matching test
     try:
         import re
+
         pattern = r"here\s+are\s+(?:some\s+)?(?:general\s+)?(?:guidelines|rules)"
         match = re.search(pattern, test_message, re.IGNORECASE)
         results["checks"]["pattern_match_test"] = {
@@ -204,13 +213,10 @@ def diagnose():
             "pattern": pattern,
             "message": test_message,
             "matches": match is not None,
-            "match_text": match.group() if match else None
+            "match_text": match.group() if match else None,
         }
     except Exception as e:
-        results["checks"]["pattern_match_test"] = {
-            "status": "error",
-            "error": str(e)
-        }
+        results["checks"]["pattern_match_test"] = {"status": "error", "error": str(e)}
 
     # Output results
     print(json.dumps(results, indent=2, default=str))
@@ -228,13 +234,15 @@ def diagnose():
         # Highlight key findings
         if check_name == "routing_test" and status == "ok":
             if check_result.get("guidance_action_present"):
-                print(f"   → guidance_action: PRESENT")
+                print("   → guidance_action: PRESENT")
             else:
-                print(f"   → guidance_action: MISSING ⚠️")
+                print("   → guidance_action: MISSING ⚠️")
 
     # Return exit code
     routing_check = results["checks"].get("routing_test", {})
-    if routing_check.get("status") == "ok" and routing_check.get("guidance_action_present"):
+    if routing_check.get("status") == "ok" and routing_check.get(
+        "guidance_action_present"
+    ):
         return 0
     return 1
 
