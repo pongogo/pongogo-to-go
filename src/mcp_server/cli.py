@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 import mcp_server.engines  # noqa: F401 - imported for side effect (engine registration)
+import mcp_server.pongogo_router  # noqa: F401 - imported for side effect (set_default_engine)
 from mcp_server.config import (
     get_core_instructions_path,
     get_knowledge_path,
