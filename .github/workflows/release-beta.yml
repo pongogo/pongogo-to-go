@@ -1,8 +1,11 @@
-# Beta Release workflow - Automated on push to main
+# Beta Release workflow - Automated AFTER CI passes on main
 name: Beta Release
 
 on:
-  push:
+  # Trigger after CI workflow completes successfully
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -10,6 +13,8 @@ jobs:
   beta-release:
     name: Create Beta Release
     runs-on: ubuntu-latest
+    # Only run if CI passed (workflow_run triggers on any completion)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: write
       packages: write
@@ -19,6 +24,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Use the commit from CI workflow when triggered by workflow_run
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Get version info
         id: version
