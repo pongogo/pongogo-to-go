@@ -114,15 +114,13 @@ class TestLexiconDBSchema:
         """All entries should be enabled (enabled=1)."""
         conn = sqlite3.connect(DEFAULT_DB_PATH)
         cursor = conn.cursor()
+
         cursor.execute("SELECT COUNT(*) FROM lexicon_entries WHERE enabled=0")
         disabled_count = cursor.fetchone()[0]
-        conn.close()
 
-        # We may have some disabled entries, but should have enabled ones
-        cursor = conn.cursor()
-        conn = sqlite3.connect(DEFAULT_DB_PATH)
         cursor.execute("SELECT COUNT(*) FROM lexicon_entries WHERE enabled=1")
         enabled_count = cursor.fetchone()[0]
+
         conn.close()
 
         assert enabled_count > 0, "No enabled entries in lexicon"
