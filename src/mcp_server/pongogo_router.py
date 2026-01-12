@@ -59,7 +59,7 @@ from datetime import datetime as _datetime
 from pathlib import Path
 from typing import Any
 
-from routing_engine import (
+from mcp_server.routing_engine import (
     FeatureSpec,
     RoutingEngine,
     register_engine,
