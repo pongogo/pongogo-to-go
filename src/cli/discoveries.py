@@ -44,8 +44,7 @@ def _ensure_discovery_system():
 
     if not pongogo_dir.exists():
         console.print(
-            "[red]Error:[/red] No .pongogo directory found. "
-            "Run 'pongogo init' first.",
+            "[red]Error:[/red] No .pongogo directory found. Run 'pongogo init' first.",
             style="bold",
         )
         raise typer.Exit(1)
@@ -217,8 +216,7 @@ def promote_discovery(
 
     if discovery.status == "ARCHIVED":
         console.print(
-            "[red]Error:[/red] Cannot promote archived discovery. "
-            "Unarchive it first."
+            "[red]Error:[/red] Cannot promote archived discovery. Unarchive it first."
         )
         raise typer.Exit(1)
 
@@ -279,8 +277,7 @@ def rescan_repository() -> None:
 
     if not pongogo_dir.exists():
         console.print(
-            "[red]Error:[/red] No .pongogo directory found. "
-            "Run 'pongogo init' first.",
+            "[red]Error:[/red] No .pongogo directory found. Run 'pongogo init' first.",
             style="bold",
         )
         raise typer.Exit(1)

@@ -86,15 +86,14 @@ class ContentMatcher:
             if isinstance(pattern, str):
                 check = pattern if self.case_sensitive else pattern.lower()
                 assert check in content, (
-                    f"Expected '{pattern}' in content. "
-                    f"Got: {response.content[:200]}..."
+                    f"Expected '{pattern}' in content. Got: {response.content[:200]}..."
                 )
             else:
                 # Compiled regex pattern
                 search_content = response.content if self.case_sensitive else content
-                assert pattern.search(
-                    search_content
-                ), f"Pattern {pattern.pattern} not found in content"
+                assert pattern.search(search_content), (
+                    f"Pattern {pattern.pattern} not found in content"
+                )
 
     def __and__(self, other: ContentMatcher) -> ContentMatcher:
         """Combine two matchers with AND logic.

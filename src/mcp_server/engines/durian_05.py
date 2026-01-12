@@ -906,7 +906,7 @@ class DurianRouter05(RoutingEngine):
                 ids_to_check.append(inst_id[: -len(".instructions")])
                 if categories:
                     ids_to_check.append(
-                        f"{categories[0]}/{inst_id[:-len('.instructions')]}"
+                        f"{categories[0]}/{inst_id[: -len('.instructions')]}"
                     )
 
             for id_format in ids_to_check:

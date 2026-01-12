@@ -1,9 +1,15 @@
 # Docker Build workflow - Build and push to GHCR and ACR
+# Runs ONLY after CI workflow completes successfully
 name: Docker Build
 
 on:
-  push:
+  # Trigger after CI workflow completes
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
+  # Still allow tag pushes to trigger directly
+  push:
     tags: ["v*"]
   workflow_dispatch:
 
@@ -16,6 +22,11 @@ jobs:
   build:
     name: Build & Push
     runs-on: ubuntu-latest
+    # Only run if CI succeeded (workflow_run) or if triggered by tag/dispatch
+    if: >
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     permissions:
       contents: read
       packages: write

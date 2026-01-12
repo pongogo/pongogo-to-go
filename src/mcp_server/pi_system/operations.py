@@ -636,17 +636,17 @@ domains:
   - "user_guidance"
 priority: "P2"
 pongogo_version: "{now}"
-source: "{pi.source_task or 'User guidance'}"
+source: "{pi.source_task or "User guidance"}"
 routing:
   priority: 2
   triggers:
     keywords: []
-    nlp: "{pi.summary[:100] if pi.summary else ''}"
+    nlp: "{pi.summary[:100] if pi.summary else ""}"
 ---
 
 # {pi.title}
 
-**Purpose**: {pi.summary or 'User-defined rule'}
+**Purpose**: {pi.summary or "User-defined rule"}
 
 **Origin**: Captured from user guidance ({guidance_type})
 **Occurrences**: {pi.occurrence_count}

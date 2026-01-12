@@ -320,7 +320,7 @@ def get_engine_features(version: str) -> list[FeatureSpec]:
     if version not in _ENGINE_REGISTRY:
         available = list(_ENGINE_REGISTRY.keys())
         raise ConfigurationError(
-            f"Unknown routing engine: '{version}'. " f"Available engines: {available}"
+            f"Unknown routing engine: '{version}'. Available engines: {available}"
         )
 
     engine_class = _ENGINE_REGISTRY[version]
