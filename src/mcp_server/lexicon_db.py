@@ -29,13 +29,13 @@ Usage:
     result = match_all_entries(entries, message)
 """
 
+import contextlib
 import json
 import logging
 import re
 import sqlite3
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from mcp_server.context_disambiguation import ContextRule, LexiconEntry
 
@@ -133,7 +133,7 @@ class LexiconDB:
     - Write operations should be serialized by caller
     """
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         """
         Initialize lexicon database.
 
@@ -233,7 +233,7 @@ class LexiconDB:
         finally:
             conn.close()
 
-    def get_entry_by_id(self, entry_id: str) -> Optional[LexiconEntry]:
+    def get_entry_by_id(self, entry_id: str) -> LexiconEntry | None:
         """Get a single entry by ID."""
         conn = self._get_connection()
         try:
@@ -251,16 +251,16 @@ class LexiconDB:
         pattern: str,
         lexicon_type: str,
         category: str,
-        sub_type: Optional[str] = None,
+        sub_type: str | None = None,
         base_confidence: float = 0.75,
-        positive_pattern: Optional[str] = None,
+        positive_pattern: str | None = None,
         positive_weight: float = 0.0,
-        negative_pattern: Optional[str] = None,
+        negative_pattern: str | None = None,
         negative_weight: float = 0.0,
         disambiguation_threshold: float = 0.5,
         fallback_type: str = "none",
         source: str = "system",
-        source_event_ids: Optional[list[int]] = None,
+        source_event_ids: list[int] | None = None,
         imp_feature: str = "IMP-013",
         notes: str = "",
         enabled: bool = True,
@@ -446,21 +446,17 @@ class LexiconDB:
         if row["positive_pattern"] or row["negative_pattern"]:
             positive_pattern = None
             if row["positive_pattern"]:
-                try:
+                with contextlib.suppress(re.error):
                     positive_pattern = re.compile(
                         row["positive_pattern"], re.IGNORECASE
                     )
-                except re.error:
-                    pass
 
             negative_pattern = None
             if row["negative_pattern"]:
-                try:
+                with contextlib.suppress(re.error):
                     negative_pattern = re.compile(
                         row["negative_pattern"], re.IGNORECASE
                     )
-                except re.error:
-                    pass
 
             context_rule = ContextRule(
                 positive_pattern=positive_pattern,
@@ -489,10 +485,10 @@ class LexiconDB:
 # CONVENIENCE FUNCTIONS
 # =============================================================================
 
-_default_db: Optional[LexiconDB] = None
+_default_db: LexiconDB | None = None
 
 
-def get_lexicon_db(db_path: Optional[Path] = None) -> LexiconDB:
+def get_lexicon_db(db_path: Path | None = None) -> LexiconDB:
     """Get the default lexicon database (singleton)."""
     global _default_db
     if _default_db is None or db_path is not None:
@@ -501,7 +497,7 @@ def get_lexicon_db(db_path: Optional[Path] = None) -> LexiconDB:
 
 
 def load_lexicon_from_db(
-    lexicon_type: Optional[str] = None, db_path: Optional[Path] = None
+    lexicon_type: str | None = None, db_path: Path | None = None
 ) -> list[LexiconEntry]:
     """
     Load lexicon entries from database.
@@ -526,8 +522,8 @@ def load_lexicon_from_db(
 
 def run_tests():
     """Run unit tests for lexicon database."""
-    import tempfile
     import os
+    import tempfile
 
     print("Running lexicon database tests...\n")
 

@@ -59,7 +59,6 @@ from datetime import datetime as _datetime
 from pathlib import Path
 from typing import Any
 
-from mcp_server.instruction_handler import InstructionHandler
 from routing_engine import (
     FeatureSpec,
     RoutingEngine,
@@ -67,9 +66,10 @@ from routing_engine import (
     set_default_engine,
 )
 
+from mcp_server.instruction_handler import InstructionHandler
 
 try:
-    from mcp_server.lexicon_db import LexiconDB, load_lexicon_from_db, DEFAULT_DB_PATH
+    from mcp_server.lexicon_db import DEFAULT_DB_PATH, LexiconDB
 
     LEXICON_DB_AVAILABLE = True
 except ImportError:
