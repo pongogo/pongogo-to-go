@@ -213,7 +213,8 @@ install_docker_based() {
     fi
 
     # Capture docker pull output to show friendlier message
-    pull_output=$(docker pull pongogo.azurecr.io/pongogo:stable 2>&1)
+    # Use --quiet to suppress Docker's live progress output
+    pull_output=$(docker pull --quiet pongogo.azurecr.io/pongogo:stable 2>&1)
     pull_exit_code=$?
 
     if [ $pull_exit_code -ne 0 ]; then

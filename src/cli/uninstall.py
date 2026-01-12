@@ -242,7 +242,7 @@ def remove_from_global_claude_json(debug: bool = False) -> bool:
         return False
 
 
-@app.command(name="cleanup")
+@app.callback(invoke_without_command=True)
 def cleanup_command(
     debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug output"),
 ) -> None:

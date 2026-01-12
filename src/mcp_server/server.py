@@ -1017,6 +1017,8 @@ async def log_user_guidance(
         - ready_for_promotion: True if ready to become standard practice
         - guidance_type: The type of guidance recorded
         - message: Human-friendly status message
+        - suggested_followup: (only if ready_for_promotion) Question to ask user about
+          formalizing guidance as permanent instruction file
 
     Behavior by guidance_type:
         - explicit: Direct user request - immediately ready for promotion
@@ -1069,7 +1071,8 @@ async def log_user_guidance(
         else:
             message = f"Noted. Seen {pi.occurrence_count} time(s)."
 
-        return {
+        # Build response
+        response = {
             "logged": True,
             "pi_id": pi.id,
             "occurrence_count": pi.occurrence_count,
@@ -1077,6 +1080,14 @@ async def log_user_guidance(
             "guidance_type": guidance_type,
             "message": message,
         }
+
+        # Add suggested followup for promotion-ready guidance
+        if is_ready:
+            response["suggested_followup"] = (
+                "Would you like me to save this as a permanent guideline for future sessions?"
+            )
+
+        return response
 
     except Exception as e:
         logger.error(f"Error logging user guidance: {e}", exc_info=True)

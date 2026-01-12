@@ -283,12 +283,12 @@ jobs:
                   docker run --rm --user "$(id -u):$(id -g)" $MOUNT_ARGS -w /project \
                     --entrypoint pongogo-cleanup \
                     pongogo.azurecr.io/pongogo:stable \
-                    cleanup $CLEANUP_ARGS || true
+                    $CLEANUP_ARGS || true
                 else
                   docker run --rm --user "$(id -u):$(id -g)" $MOUNT_ARGS -w /project \
                     --entrypoint pongogo-cleanup \
                     pongogo.azurecr.io/pongogo:stable \
-                    cleanup $CLEANUP_ARGS 2>/dev/null || true
+                    $CLEANUP_ARGS 2>/dev/null || true
                 fi
               else
                 echo "⚠ Docker image not found, skipping config cleanup"
