@@ -4,9 +4,9 @@ Related: Task #482, Sub-Task #487, Issue #517 (rubric-optimized formatter)
 """
 
 from mcp_server.formatter import (
+    _extract_evaluation_criteria,
     extract_content_without_frontmatter,
     format_routing_results,
-    _extract_evaluation_criteria,
 )
 
 
