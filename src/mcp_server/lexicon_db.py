@@ -29,13 +29,13 @@ Usage:
     result = match_all_entries(entries, message)
 """
 
+import contextlib
 import json
 import logging
 import re
 import sqlite3
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from mcp_server.context_disambiguation import ContextRule, LexiconEntry
 
@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 # DATABASE CLASS
 # =============================================================================
 
+
 class LexiconDB:
     """
     Database-backed lexicon storage and retrieval.
@@ -132,7 +133,7 @@ class LexiconDB:
     - Write operations should be serialized by caller
     """
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         """
         Initialize lexicon database.
 
@@ -161,8 +162,7 @@ class LexiconDB:
 
             if current_version < SCHEMA_VERSION:
                 conn.execute(
-                    "INSERT INTO schema_version (version) VALUES (?)",
-                    (SCHEMA_VERSION,)
+                    "INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,)
                 )
                 conn.commit()
                 logger.info(f"Lexicon DB schema initialized (version {SCHEMA_VERSION})")
@@ -192,9 +192,7 @@ class LexiconDB:
             conn.close()
 
     def get_entries_by_type(
-        self,
-        lexicon_type: str,
-        enabled_only: bool = True
+        self, lexicon_type: str, enabled_only: bool = True
     ) -> list[LexiconEntry]:
         """
         Get entries by lexicon type (guidance or friction).
@@ -220,9 +218,7 @@ class LexiconDB:
             conn.close()
 
     def get_entries_by_category(
-        self,
-        category: str,
-        enabled_only: bool = True
+        self, category: str, enabled_only: bool = True
     ) -> list[LexiconEntry]:
         """Get entries by category."""
         conn = self._get_connection()
@@ -237,13 +233,12 @@ class LexiconDB:
         finally:
             conn.close()
 
-    def get_entry_by_id(self, entry_id: str) -> Optional[LexiconEntry]:
+    def get_entry_by_id(self, entry_id: str) -> LexiconEntry | None:
         """Get a single entry by ID."""
         conn = self._get_connection()
         try:
             cursor = conn.execute(
-                "SELECT * FROM lexicon_entries WHERE entry_id = ?",
-                (entry_id,)
+                "SELECT * FROM lexicon_entries WHERE entry_id = ?", (entry_id,)
             )
             row = cursor.fetchone()
             return self._row_to_entry(row) if row else None
@@ -256,16 +251,16 @@ class LexiconDB:
         pattern: str,
         lexicon_type: str,
         category: str,
-        sub_type: Optional[str] = None,
+        sub_type: str | None = None,
         base_confidence: float = 0.75,
-        positive_pattern: Optional[str] = None,
+        positive_pattern: str | None = None,
         positive_weight: float = 0.0,
-        negative_pattern: Optional[str] = None,
+        negative_pattern: str | None = None,
         negative_weight: float = 0.0,
         disambiguation_threshold: float = 0.5,
         fallback_type: str = "none",
         source: str = "system",
-        source_event_ids: Optional[list[int]] = None,
+        source_event_ids: list[int] | None = None,
         imp_feature: str = "IMP-013",
         notes: str = "",
         enabled: bool = True,
@@ -288,13 +283,24 @@ class LexiconDB:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    entry_id, pattern, lexicon_type, category, sub_type,
-                    base_confidence, positive_pattern, positive_weight,
-                    negative_pattern, negative_weight, disambiguation_threshold,
-                    fallback_type, source,
+                    entry_id,
+                    pattern,
+                    lexicon_type,
+                    category,
+                    sub_type,
+                    base_confidence,
+                    positive_pattern,
+                    positive_weight,
+                    negative_pattern,
+                    negative_weight,
+                    disambiguation_threshold,
+                    fallback_type,
+                    source,
                     json.dumps(source_event_ids) if source_event_ids else None,
-                    imp_feature, notes, 1 if enabled else 0
-                )
+                    imp_feature,
+                    notes,
+                    1 if enabled else 0,
+                ),
             )
             conn.commit()
             logger.debug(f"Inserted lexicon entry: {entry_id}")
@@ -321,11 +327,22 @@ class LexiconDB:
 
         # Build SET clause
         allowed_fields = {
-            'pattern', 'lexicon_type', 'category', 'sub_type',
-            'base_confidence', 'positive_pattern', 'positive_weight',
-            'negative_pattern', 'negative_weight', 'disambiguation_threshold',
-            'fallback_type', 'source', 'source_event_ids', 'imp_feature',
-            'notes', 'enabled'
+            "pattern",
+            "lexicon_type",
+            "category",
+            "sub_type",
+            "base_confidence",
+            "positive_pattern",
+            "positive_weight",
+            "negative_pattern",
+            "negative_weight",
+            "disambiguation_threshold",
+            "fallback_type",
+            "source",
+            "source_event_ids",
+            "imp_feature",
+            "notes",
+            "enabled",
         }
 
         updates = []
@@ -333,9 +350,9 @@ class LexiconDB:
         for key, value in kwargs.items():
             if key in allowed_fields:
                 updates.append(f"{key} = ?")
-                if key == 'source_event_ids' and isinstance(value, list):
+                if key == "source_event_ids" and isinstance(value, list):
                     value = json.dumps(value)
-                elif key == 'enabled':
+                elif key == "enabled":
                     value = 1 if value else 0
                 values.append(value)
 
@@ -349,7 +366,7 @@ class LexiconDB:
         try:
             cursor = conn.execute(
                 f"UPDATE lexicon_entries SET {', '.join(updates)} WHERE entry_id = ?",
-                values
+                values,
             )
             conn.commit()
             return cursor.rowcount > 0
@@ -361,8 +378,7 @@ class LexiconDB:
         conn = self._get_connection()
         try:
             cursor = conn.execute(
-                "DELETE FROM lexicon_entries WHERE entry_id = ?",
-                (entry_id,)
+                "DELETE FROM lexicon_entries WHERE entry_id = ?", (entry_id,)
             )
             conn.commit()
             return cursor.rowcount > 0
@@ -390,16 +406,16 @@ class LexiconDB:
                 GROUP BY lexicon_type, category
                 """
             )
-            stats['categories'] = {}
+            stats["categories"] = {}
             for row in cursor.fetchall():
                 key = f"{row[0]}:{row[1]}"
-                stats['categories'][key] = row[2]
+                stats["categories"][key] = row[2]
 
             # Source breakdown
             cursor = conn.execute(
                 "SELECT source, COUNT(*) FROM lexicon_entries WHERE enabled = 1 GROUP BY source"
             )
-            stats['sources'] = {row[0]: row[1] for row in cursor.fetchall()}
+            stats["sources"] = {row[0]: row[1] for row in cursor.fetchall()}
 
             # Entries with context rules
             cursor = conn.execute(
@@ -408,7 +424,7 @@ class LexiconDB:
                 WHERE enabled = 1 AND (positive_pattern IS NOT NULL OR negative_pattern IS NOT NULL)
                 """
             )
-            stats['with_context_rules'] = cursor.fetchone()[0]
+            stats["with_context_rules"] = cursor.fetchone()[0]
 
             return stats
         finally:
@@ -417,50 +433,51 @@ class LexiconDB:
     def _row_to_entry(self, row: sqlite3.Row) -> LexiconEntry:
         """Convert database row to LexiconEntry object."""
         # Compile pattern
-        pattern_flags = row['pattern_flags'] or re.IGNORECASE
+        pattern_flags = row["pattern_flags"] or re.IGNORECASE
         try:
-            pattern = re.compile(row['pattern'], pattern_flags)
+            pattern = re.compile(row["pattern"], pattern_flags)
         except re.error as e:
             logger.error(f"Invalid pattern in {row['entry_id']}: {e}")
             # Return a pattern that never matches
-            pattern = re.compile(r'(?!)')
+            pattern = re.compile(r"(?!)")
 
         # Build context rule if present
         context_rule = None
-        if row['positive_pattern'] or row['negative_pattern']:
+        if row["positive_pattern"] or row["negative_pattern"]:
             positive_pattern = None
-            if row['positive_pattern']:
-                try:
-                    positive_pattern = re.compile(row['positive_pattern'], re.IGNORECASE)
-                except re.error:
-                    pass
+            if row["positive_pattern"]:
+                with contextlib.suppress(re.error):
+                    positive_pattern = re.compile(
+                        row["positive_pattern"], re.IGNORECASE
+                    )
 
             negative_pattern = None
-            if row['negative_pattern']:
-                try:
-                    negative_pattern = re.compile(row['negative_pattern'], re.IGNORECASE)
-                except re.error:
-                    pass
+            if row["negative_pattern"]:
+                with contextlib.suppress(re.error):
+                    negative_pattern = re.compile(
+                        row["negative_pattern"], re.IGNORECASE
+                    )
 
             context_rule = ContextRule(
                 positive_pattern=positive_pattern,
-                positive_weight=row['positive_weight'] or 0.0,
+                positive_weight=row["positive_weight"] or 0.0,
                 negative_pattern=negative_pattern,
-                negative_weight=row['negative_weight'] or 0.0,
-                disambiguation_threshold=row['disambiguation_threshold'] or 0.5,
-                fallback_type=row['fallback_type'] or 'none',
+                negative_weight=row["negative_weight"] or 0.0,
+                disambiguation_threshold=row["disambiguation_threshold"] or 0.5,
+                fallback_type=row["fallback_type"] or "none",
             )
 
         return LexiconEntry(
-            id=row['entry_id'],
+            id=row["entry_id"],
             pattern=pattern,
-            category=row['category'],
-            guidance_type=row['sub_type'] or row['category'],  # sub_type for guidance, category for friction
-            confidence=row['base_confidence'],
+            category=row["category"],
+            guidance_type=row["sub_type"]
+            or row["category"],  # sub_type for guidance, category for friction
+            confidence=row["base_confidence"],
             context_rule=context_rule,
-            imp_feature=row['imp_feature'] or 'IMP-013',
-            source=row['source'] or 'system',
-            notes=row['notes'] or '',
+            imp_feature=row["imp_feature"] or "IMP-013",
+            source=row["source"] or "system",
+            notes=row["notes"] or "",
         )
 
 
@@ -468,10 +485,10 @@ class LexiconDB:
 # CONVENIENCE FUNCTIONS
 # =============================================================================
 
-_default_db: Optional[LexiconDB] = None
+_default_db: LexiconDB | None = None
 
 
-def get_lexicon_db(db_path: Optional[Path] = None) -> LexiconDB:
+def get_lexicon_db(db_path: Path | None = None) -> LexiconDB:
     """Get the default lexicon database (singleton)."""
     global _default_db
     if _default_db is None or db_path is not None:
@@ -480,8 +497,7 @@ def get_lexicon_db(db_path: Optional[Path] = None) -> LexiconDB:
 
 
 def load_lexicon_from_db(
-    lexicon_type: Optional[str] = None,
-    db_path: Optional[Path] = None
+    lexicon_type: str | None = None, db_path: Path | None = None
 ) -> list[LexiconEntry]:
     """
     Load lexicon entries from database.
@@ -503,15 +519,16 @@ def load_lexicon_from_db(
 # UNIT TESTS
 # =============================================================================
 
+
 def run_tests():
     """Run unit tests for lexicon database."""
-    import tempfile
     import os
+    import tempfile
 
     print("Running lexicon database tests...\n")
 
     # Create temp database
-    with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
         test_db_path = Path(f.name)
 
     try:
@@ -617,9 +634,9 @@ def run_tests():
 
         # Test stats
         stats = db.get_stats()
-        assert stats.get('guidance_count') == 2
-        assert stats.get('friction_count') == 1
-        assert stats.get('with_context_rules') == 2
+        assert stats.get("guidance_count") == 2
+        assert stats.get("friction_count") == 1
+        assert stats.get("with_context_rules") == 2
         print(f"PASS: Stats ({stats})")
 
         # Test update

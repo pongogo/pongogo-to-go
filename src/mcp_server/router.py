@@ -25,13 +25,13 @@ warnings.warn(
 
 # Re-export everything from pongogo_router for backwards compatibility
 from mcp_server.pongogo_router import (  # noqa: F401, E402
-    DURIAN_VERSION,
-    RuleBasedRouter,
-    InstructionRouter,
-    FRICTION_PATTERNS,
-    MISTAKE_PATTERNS,
     APPROVAL_PATTERNS,
     BOUNDARY_PATTERNS,
-    LIFECYCLE_KEYWORDS,
     DEFAULT_FEATURES,
+    DURIAN_VERSION,
+    FRICTION_PATTERNS,
+    LIFECYCLE_KEYWORDS,
+    MISTAKE_PATTERNS,
+    InstructionRouter,
+    RuleBasedRouter,
 )

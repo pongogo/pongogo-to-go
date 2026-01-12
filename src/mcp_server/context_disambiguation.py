@@ -15,10 +15,11 @@ Examples of disambiguation:
 - "can you explain why?" → not guidance (negative: "explain")
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Pattern, Match, Tuple
-import re
 import logging
+import re
+from dataclasses import dataclass, field
+from re import Match, Pattern
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -27,16 +28,17 @@ logger = logging.getLogger(__name__)
 # DATA STRUCTURES
 # =============================================================================
 
+
 @dataclass
 class ContextRule:
     """Context disambiguation rule for a lexicon entry."""
 
     # Positive context (increases confidence)
-    positive_pattern: Optional[Pattern] = None
+    positive_pattern: Pattern | None = None
     positive_weight: float = 0.0
 
     # Negative context (decreases confidence)
-    negative_pattern: Optional[Pattern] = None
+    negative_pattern: Pattern | None = None
     negative_weight: float = 0.0  # Should be negative value
 
     # Thresholds
@@ -46,7 +48,7 @@ class ContextRule:
     fallback_type: str = "none"  # "none" | "implicit"
 
     @classmethod
-    def from_dict(cls, data: Optional[Dict]) -> Optional["ContextRule"]:
+    def from_dict(cls, data: dict | None) -> Optional["ContextRule"]:
         """Create ContextRule from YAML dict format."""
         if not data:
             return None
@@ -84,13 +86,13 @@ class LexiconEntry:
     category: str
     guidance_type: str  # "explicit" | "implicit"
     confidence: float
-    context_rule: Optional[ContextRule] = None
+    context_rule: ContextRule | None = None
     imp_feature: str = "IMP-013"
     source: str = "system"
     notes: str = ""
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "LexiconEntry":
+    def from_dict(cls, data: dict) -> "LexiconEntry":
         """Create LexiconEntry from YAML dict format."""
         return cls(
             id=data["id"],
@@ -113,10 +115,10 @@ class DisambiguationResult:
     pattern_matched: bool
 
     # The regex match object (if matched)
-    match: Optional[Match] = None
+    match: Match | None = None
 
     # Entry that matched
-    entry: Optional[LexiconEntry] = None
+    entry: LexiconEntry | None = None
 
     # Confidence scores
     base_confidence: float = 0.0
@@ -138,6 +140,7 @@ class DisambiguationResult:
 # =============================================================================
 # CORE DISAMBIGUATION LOGIC
 # =============================================================================
+
 
 def apply_context_disambiguation(
     entry: LexiconEntry,
@@ -232,9 +235,7 @@ def apply_context_disambiguation(
 
         if result.negative_triggered:
             result.disambiguation_reason = "negative_context_excluded"
-            logger.debug(
-                f"[{entry.id}] Negative context triggered, not triggering"
-            )
+            logger.debug(f"[{entry.id}] Negative context triggered, not triggering")
         else:
             result.disambiguation_reason = "below_threshold"
             logger.debug(
@@ -277,19 +278,20 @@ def match_with_disambiguation(
 # BATCH MATCHING
 # =============================================================================
 
+
 @dataclass
 class MatchResult:
     """Result of matching all entries against a message."""
 
     # All matches (including those that didn't trigger)
-    all_results: List[DisambiguationResult] = field(default_factory=list)
+    all_results: list[DisambiguationResult] = field(default_factory=list)
 
     # Only matches that should trigger
-    triggered: List[DisambiguationResult] = field(default_factory=list)
+    triggered: list[DisambiguationResult] = field(default_factory=list)
 
     # Categorized by guidance type
-    explicit_matches: List[DisambiguationResult] = field(default_factory=list)
-    implicit_matches: List[DisambiguationResult] = field(default_factory=list)
+    explicit_matches: list[DisambiguationResult] = field(default_factory=list)
+    implicit_matches: list[DisambiguationResult] = field(default_factory=list)
 
     @property
     def has_guidance(self) -> bool:
@@ -306,7 +308,7 @@ class MatchResult:
         return "none"
 
     @property
-    def highest_confidence_match(self) -> Optional[DisambiguationResult]:
+    def highest_confidence_match(self) -> DisambiguationResult | None:
         """Get the match with highest confidence."""
         if not self.triggered:
             return None
@@ -314,7 +316,7 @@ class MatchResult:
 
 
 def match_all_entries(
-    entries: List[LexiconEntry],
+    entries: list[LexiconEntry],
     message: str,
 ) -> MatchResult:
     """
@@ -355,6 +357,7 @@ def match_all_entries(
 # OBSERVABILITY / LOGGING
 # =============================================================================
 
+
 def format_disambiguation_log(result: DisambiguationResult) -> str:
     """Format a disambiguation result for logging."""
     if not result.pattern_matched:
@@ -392,7 +395,7 @@ def log_match_result(result: MatchResult, message: str, level: int = logging.DEB
         f"Guidance detection: {len(result.triggered)} triggered, "
         f"{len(result.explicit_matches)} explicit, "
         f"{len(result.implicit_matches)} implicit | "
-        f"message='{preview}'"
+        f"message='{preview}'",
     )
 
     for r in result.all_results:
@@ -402,6 +405,7 @@ def log_match_result(result: MatchResult, message: str, level: int = logging.DEB
 # =============================================================================
 # UNIT TESTS
 # =============================================================================
+
 
 def run_tests():
     """Run unit tests for disambiguation logic."""
@@ -417,7 +421,6 @@ def run_tests():
             guidance_type="explicit",
             confidence=0.95,
         ),
-
         # Entry with context rule (needs disambiguation)
         # Base 0.55 + positive 0.15 = 0.70 (above 0.60 threshold)
         # Base 0.55 + negative -0.30 = 0.25 (below threshold)
@@ -429,7 +432,9 @@ def run_tests():
             guidance_type="explicit",
             confidence=0.55,  # Below threshold, needs positive context
             context_rule=ContextRule(
-                positive_pattern=re.compile(r"\b(tests?|evals?|builds?)\b", re.IGNORECASE),
+                positive_pattern=re.compile(
+                    r"\b(tests?|evals?|builds?)\b", re.IGNORECASE
+                ),
                 positive_weight=0.15,
                 negative_pattern=re.compile(r"\b(see|away|late)\b", re.IGNORECASE),
                 negative_weight=-0.30,
@@ -437,7 +442,6 @@ def run_tests():
                 fallback_type="none",
             ),
         ),
-
         # Entry with fallback to implicit
         # Base 0.55 + positive 0.15 = 0.70 (above 0.60 threshold, explicit)
         # Base 0.55 alone = 0.55 (below threshold, falls back to implicit)
@@ -449,7 +453,9 @@ def run_tests():
             guidance_type="explicit",
             confidence=0.55,  # Below threshold, needs context
             context_rule=ContextRule(
-                positive_pattern=re.compile(r"\b(please|feature|test)\b", re.IGNORECASE),
+                positive_pattern=re.compile(
+                    r"\b(please|feature|test)\b", re.IGNORECASE
+                ),
                 positive_weight=0.15,
                 negative_pattern=re.compile(r"\b(explain|why)\b", re.IGNORECASE),
                 negative_weight=-0.35,
@@ -468,7 +474,12 @@ def run_tests():
         ("Let's run", False, False, "Let's without context (below threshold)"),
         ("Can you add a feature please?", True, False, "Question + positive context"),
         ("Can you add something", False, True, "Question falls back to implicit"),
-        ("Can you explain why this fails?", False, False, "Question + negative context"),
+        (
+            "Can you explain why this fails?",
+            False,
+            False,
+            "Question + negative context",
+        ),
         ("Just a regular message", False, False, "No patterns match"),
     ]
 
@@ -489,7 +500,9 @@ def run_tests():
         else:
             print(f"❌ FAIL: {description}")
             print(f"   Message: '{message}'")
-            print(f"   Expected: explicit={expect_explicit}, implicit={expect_implicit}")
+            print(
+                f"   Expected: explicit={expect_explicit}, implicit={expect_implicit}"
+            )
             print(f"   Got: explicit={has_explicit}, implicit={has_implicit}")
             for r in result.all_results:
                 print(f"   {format_disambiguation_log(r)}")

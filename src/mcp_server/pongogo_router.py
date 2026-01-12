@@ -10,19 +10,19 @@ Feature: Unified Router Architecture
     All new development should use this file.
 
 Features (through extended friction patterns):
-    - Violation detection 
-    - Approval suppression 
-    - Instruction bundles 
-    - Semantic flags 
-    - Commencement lookback 
-    - Procedural warnings 
-    - Friction detection 
-    - Mistake type detection 
-    - Guidance detection 
-    - Lifecycle keywords 
-    - Additional friction 
-    - Violation checklist 
-    - Boundary detection 
+    - Violation detection
+    - Approval suppression
+    - Instruction bundles
+    - Semantic flags
+    - Commencement lookback
+    - Procedural warnings
+    - Friction detection
+    - Mistake type detection
+    - Guidance detection
+    - Lifecycle keywords
+    - Additional friction
+    - Violation checklist
+    - Boundary detection
     - Lexicon-based guidance (Feature)
     - Extended friction patterns (+10.9% F1)
 
@@ -69,7 +69,8 @@ from mcp_server.routing_engine import (
 # Feature: Lexicon-based guidance detection
 # DB-based lexicon system
 try:
-    from mcp_server.lexicon_db import LexiconDB, load_lexicon_from_db, DEFAULT_DB_PATH
+    from mcp_server.lexicon_db import DEFAULT_DB_PATH, LexiconDB
+
     LEXICON_DB_AVAILABLE = True
 except ImportError:
     LEXICON_DB_AVAILABLE = False
@@ -79,6 +80,7 @@ except ImportError:
 # Context disambiguation for DB-based matching
 try:
     from mcp_server.context_disambiguation import match_all_entries
+
     CONTEXT_DISAMBIGUATION_AVAILABLE = True
 except ImportError:
     CONTEXT_DISAMBIGUATION_AVAILABLE = False
@@ -531,18 +533,25 @@ FRICTION_BOOST_CATEGORIES = [
 # Boundary detection patterns (conversation start vs continuation)
 # Based on GT v4 analysis of 56 BOUNDARY vs 444 CONTINUATION events
 BOUNDARY_PATTERNS = {
-    'new_work': [
+    "new_work": [
         # Explicit new work initiation
-        r"^let'?s\s+start\s+with", r"^let'?s\s+work\s+on", r"^let'?s\s+begin",
-        r"^let'?s\s+tackle", r"^let'?s\s+focus\s+on",
+        r"^let'?s\s+start\s+with",
+        r"^let'?s\s+work\s+on",
+        r"^let'?s\s+begin",
+        r"^let'?s\s+tackle",
+        r"^let'?s\s+focus\s+on",
         r"please\s+take\s+(the\s+)?(task|issue|epic)\s+through",
         r"take\s+it\s+through\s+(closure|commencement)",
-        r"^we\s+should\s+explore", r"^i\s+want\s+to\s+explore",
+        r"^we\s+should\s+explore",
+        r"^i\s+want\s+to\s+explore",
         # Task-specific initiation (from GT v4 analysis)
         r"^let'?s\s+make\s+a\s+task",
-        r"^let'?s\s+move\s+it\s+into", r"^let'?s\s+do\s+the\s+manual",
-        r"^let'?s\s+now\s+return\s+to", r"^let'?s\s+take\s+a\s+look",
-        r"^let'?s\s+take\s+(issue|task)", r"^let'?s\s+get\s+back\s+to",
+        r"^let'?s\s+move\s+it\s+into",
+        r"^let'?s\s+do\s+the\s+manual",
+        r"^let'?s\s+now\s+return\s+to",
+        r"^let'?s\s+take\s+a\s+look",
+        r"^let'?s\s+take\s+(issue|task)",
+        r"^let'?s\s+get\s+back\s+to",
         r"^proceed\s+with\s+(scoping|implementing)",
         r"^we\s+need\s+to\s+tackle",
         r"please\s+finish\s+taking\s+(issue|task)",
@@ -550,9 +559,10 @@ BOUNDARY_PATTERNS = {
         # Task/issue references at conversation start
         r"^(task|issue|epic|spike)\s*#?\d+",
     ],
-    'context_switch': [
+    "context_switch": [
         # Explicit context switches (more specific patterns)
-        r"^switching\s+gears", r"^one\s+unrelated\s+question",
+        r"^switching\s+gears",
+        r"^one\s+unrelated\s+question",
         r"^now\s+that\s+all\s+of\s+our\s+work",
         r"^next,?\s+please\s+investigate",
         r"^we\s+next\s+need\s+to\s+outline",
@@ -560,32 +570,42 @@ BOUNDARY_PATTERNS = {
         r"^with\s+pongogo,?\s+we\s+should",
         r"^as\s+a\s+task\s+for",
     ],
-    'question_topic': [
+    "question_topic": [
         # Questions that start new topics (more specific)
-        r"^where\s+in\s+the\s+wiki", r"^has\s+the\s+wiki\s+on",
-        r"^what\s+is\s+the\s+manifest", r"^what\s+is\s+our\s+current",
+        r"^where\s+in\s+the\s+wiki",
+        r"^has\s+the\s+wiki\s+on",
+        r"^what\s+is\s+the\s+manifest",
+        r"^what\s+is\s+our\s+current",
         r"^can\s+you\s+(list\s+the\s+remaining|define\s+what)",
         r"^is\s+there\s+(a\s+way\s+to\s+streamline|other\s+work\s+from)",
-        r"^what\s+tasks\s+remain", r"^do\s+we\s+currently\s+have",
-        r"^how\s+is\s+our\s+support", r"^is\s+our\s+.*set\s+up\s+correctly",
+        r"^what\s+tasks\s+remain",
+        r"^do\s+we\s+currently\s+have",
+        r"^how\s+is\s+our\s+support",
+        r"^is\s+our\s+.*set\s+up\s+correctly",
         r"^it\s+looks\s+like\s+\d+\s+and\s+\d+\s+may",  # issue comparison
     ],
-    'context_import': [
+    "context_import": [
         # Importing external context
-        r"^i\s+saved\s+(all\s+)?(the\s+)?.*info", r"^below\s+is",
-        r"from\s+our\s+last\s+conversation", r"from\s+the\s+last\s+session",
+        r"^i\s+saved\s+(all\s+)?(the\s+)?.*info",
+        r"^below\s+is",
+        r"from\s+our\s+last\s+conversation",
+        r"from\s+the\s+last\s+session",
         r"let'?s\s+use\s+this\s+to\s+start",
-        r"^here'?s?\s+(the\s+)?context", r"^here\s+is\s+the\s+context",
+        r"^here'?s?\s+(the\s+)?context",
+        r"^here\s+is\s+the\s+context",
     ],
-    'fresh_start': [
+    "fresh_start": [
         # Explicit fresh start / error reports
-        r"fresh\s+start", r"new\s+session", r"new\s+conversation",
+        r"fresh\s+start",
+        r"new\s+session",
+        r"new\s+conversation",
         r"^let'?s\s+ignore\s+this\s+resumption",
-        r"starting\s+fresh", r"clean\s+slate",
+        r"starting\s+fresh",
+        r"clean\s+slate",
         r"^i\s+got\s+this\s+error.*direnv",  # Context reset after env reload
         r"^i\s+just\s+did\s+a\s+fresh\s+install",
     ],
-    'urgent': [
+    "urgent": [
         # Urgent new topic
         r"^we\s+need\s+to\s+solve\s+this\s+now",
         r"^i\s+want\s+to\s+do\s+proactive\s+detection\s+now",
@@ -593,7 +613,7 @@ BOUNDARY_PATTERNS = {
     ],
 }
 COMPILED_BOUNDARY_PATTERNS = {
-    boundary_type: _re.compile('|'.join(patterns), _re.IGNORECASE | _re.MULTILINE)
+    boundary_type: _re.compile("|".join(patterns), _re.IGNORECASE | _re.MULTILINE)
     for boundary_type, patterns in BOUNDARY_PATTERNS.items()
 }
 
@@ -1724,9 +1744,9 @@ class RuleBasedRouter(RoutingEngine):
 
             if entries:
                 stats = self._lexicon_db.get_stats()
-                guidance_count = stats.get('guidance_count', 0)
-                friction_count = stats.get('friction_count', 0)
-                categories = len(stats.get('categories', {}))
+                guidance_count = stats.get("guidance_count", 0)
+                friction_count = stats.get("friction_count", 0)
+                categories = len(stats.get("categories", {}))
 
                 # Store entries for matching
                 self._lexicon_entries = entries
@@ -1915,7 +1935,6 @@ class RuleBasedRouter(RoutingEngine):
             - routing_analysis: Breakdown of routing decision
         """
         try:
-          
             # Prevents over-routing on conversational continuations
             # Refinement: Commencement patterns override suppression (work intent detected)
             if self.features.get("approval_suppression", True):
@@ -1955,13 +1974,11 @@ class RuleBasedRouter(RoutingEngine):
             keywords = self._extract_keywords(message)
             intent = self._extract_intent(message)
 
-          
             if self.features.get("violation_detection", True):
                 violation_info = self._detect_violations(message)
             else:
                 violation_info = {"detected": False, "signals": [], "boost_amount": 0}
 
-          
             if self.features.get("semantic_flags", True):
                 semantic_flags_info = self._detect_semantic_flags(message)
             else:
@@ -1971,7 +1988,6 @@ class RuleBasedRouter(RoutingEngine):
                     "category_boosts": {},
                 }
 
-          
             if self.features.get("iteration_aware", True):
                 friction_info = self._detect_friction(message)
             else:
@@ -1982,7 +1998,6 @@ class RuleBasedRouter(RoutingEngine):
                     "category_boosts": {},
                 }
 
-          
             if self.features.get("outcome_aware", True):
                 mistake_info = self._detect_mistake_type(message)
             else:
@@ -1993,7 +2008,6 @@ class RuleBasedRouter(RoutingEngine):
                     "instruction_boosts": [],
                 }
 
-          
             if self.features.get("guidance_detection", True):
                 guidance_info = self._detect_user_guidance(message)
             else:
@@ -2004,7 +2018,6 @@ class RuleBasedRouter(RoutingEngine):
                     "content": None,
                 }
 
-          
             if self.features.get("boundary_detection", True):
                 boundary_info = self._detect_boundary(message)
             else:
@@ -2015,7 +2028,6 @@ class RuleBasedRouter(RoutingEngine):
                     "confidence": "low",
                 }
 
-          
             if self.features.get("lifecycle_keywords", True):
                 lifecycle_info = self._detect_lifecycle_keywords(message)
             else:
@@ -2026,7 +2038,6 @@ class RuleBasedRouter(RoutingEngine):
                     "boost": 0,
                 }
 
-          
             # These extend friction detection with more patterns
             if (
                 self.features.get("additional_friction", True)
@@ -2039,7 +2050,6 @@ class RuleBasedRouter(RoutingEngine):
                         f"Additional friction detected: {additional_friction_info['friction_type']}"
                     )
 
-          
             # Evidence: +10.9% F1, +20% recall from systematic pattern testing
             if (
                 self.features.get("extended_friction", True)
@@ -2058,7 +2068,6 @@ class RuleBasedRouter(RoutingEngine):
             branch = context.get("branch", "")
             language = context.get("language", "")
 
-          
             previous_routing_ids = set()
             lookback_info = None
             if commencement_detected and self.features.get(
@@ -2093,22 +2102,20 @@ class RuleBasedRouter(RoutingEngine):
                 else None,
                 "semantic_flags": semantic_flags_info
                 if semantic_flags_info["detected"]
-                else None,  
+                else None,
                 "friction_detection": friction_info
                 if friction_info["detected"]
-                else None,  
-                "mistake_detection": mistake_info
-                if mistake_info["detected"]
-                else None,  
+                else None,
+                "mistake_detection": mistake_info if mistake_info["detected"] else None,
                 "guidance_detection": guidance_info
                 if guidance_info["detected"]
-                else None,  
+                else None,
                 "lifecycle_detection": lifecycle_info
                 if lifecycle_info["detected"]
-                else None,  
+                else None,
                 "boundary_detection": boundary_info
                 if boundary_info["is_boundary"]
-                else None,  
+                else None,
                 "commencement_override": commencement_override,
                 "commencement_lookback": lookback_info,
                 "scoring_breakdown": [],
@@ -2124,11 +2131,10 @@ class RuleBasedRouter(RoutingEngine):
                     directories=directories,
                     branch=branch,
                     language=language,
-                    violation_info=violation_info,  
-                    semantic_flags_info=semantic_flags_info,  
+                    violation_info=violation_info,
+                    semantic_flags_info=semantic_flags_info,
                 )
 
-              
                 # Normalize instruction ID for comparison (handle category/name and name.instructions formats)
                 if previous_routing_ids:
                     inst_id_normalized = self._normalize_instruction_id(instruction)
@@ -2141,7 +2147,6 @@ class RuleBasedRouter(RoutingEngine):
                             f"Boosted {instruction.id} (normalized: {inst_id_normalized}) by {COMMENCEMENT_LOOKBACK_BOOST}"
                         )
 
-              
                 if friction_info["detected"] and self.features.get(
                     "friction_boost", True
                 ):
@@ -2158,7 +2163,6 @@ class RuleBasedRouter(RoutingEngine):
                             )
                             break  # Only apply once per instruction
 
-              
                 if mistake_info["detected"] and self.features.get(
                     "outcome_boost", True
                 ):
@@ -2184,7 +2188,6 @@ class RuleBasedRouter(RoutingEngine):
                             )
                             break  # Only apply once per instruction
 
-              
                 if lifecycle_info["detected"] and self.features.get(
                     "lifecycle_keywords", True
                 ):
@@ -2207,7 +2210,6 @@ class RuleBasedRouter(RoutingEngine):
                             )
                             break  # Only apply once per instruction
 
-              
                 if violation_info["detected"] and self.features.get(
                     "violation_checklist", True
                 ):
@@ -2251,7 +2253,6 @@ class RuleBasedRouter(RoutingEngine):
                         }
                     )
 
-          
             bundle_boost_info = None
             if self.features.get("instruction_bundles", True):
                 bundle_boost_info = self._apply_bundle_boost(scored_instructions)
@@ -2290,7 +2291,6 @@ class RuleBasedRouter(RoutingEngine):
                 analysis["foundational_disabled"] = True
                 analysis["query_specific_count"] = len(combined)
 
-          
             procedural_warning = None
             if self.features.get("procedural_warning", True):
                 procedural_instructions = []
@@ -2345,7 +2345,6 @@ class RuleBasedRouter(RoutingEngine):
                         f"Procedural warning generated for {len(procedural_instructions)} instruction(s)"
                     )
 
-          
             guidance_action = None
             guidance_echo = None
             if guidance_info["detected"] and self.features.get("guidance_action", True):
@@ -2535,9 +2534,7 @@ class RuleBasedRouter(RoutingEngine):
 
         # Check 1: Exact match with approval patterns
         if message_normalized in APPROVAL_PATTERNS:
-            logger.debug(
-                f"Suppressing routing for approval pattern: {message_clean}"
-            )
+            logger.debug(f"Suppressing routing for approval pattern: {message_clean}")
             return (True, "exact_approval_match", False)
 
         # Check 2: Very short message (≤3 words) - likely approval
@@ -2545,9 +2542,7 @@ class RuleBasedRouter(RoutingEngine):
         if len(words) <= 3:
             # Check if any word is an approval word
             if any(word.rstrip(".,!?") in APPROVAL_WORDS for word in words):
-                logger.debug(
-                    f"Suppressing routing for short approval: {message_clean}"
-                )
+                logger.debug(f"Suppressing routing for short approval: {message_clean}")
                 return (True, "short_approval_message", False)
 
         # Check 3: Short message (≤5 words) dominated by approval words
@@ -2755,7 +2750,6 @@ class RuleBasedRouter(RoutingEngine):
 
         keywords = [w for w in words if w not in stop_words and len(w) > 2]
 
-      
         # This enables metadata keywords like "time_free" to match query "time free"
         # without false positives from partial word matching
         ngram_keywords = []
@@ -2808,8 +2802,8 @@ class RuleBasedRouter(RoutingEngine):
         directories: list[str],
         branch: str,
         language: str,
-        violation_info: dict | None = None,  
-        semantic_flags_info: dict | None = None,  
+        violation_info: dict | None = None,
+        semantic_flags_info: dict | None = None,
     ) -> tuple[int, dict]:
         """
         Score instruction relevance using multiple signals.
@@ -2820,7 +2814,6 @@ class RuleBasedRouter(RoutingEngine):
         score = 0
         breakdown = {}
 
-      
         if violation_info and violation_info.get("detected"):
             for category in instruction.categories:
                 if category in VIOLATION_BOOST_CATEGORIES:
@@ -2832,7 +2825,6 @@ class RuleBasedRouter(RoutingEngine):
                     }
                     break  # Only apply once per instruction
 
-      
         if semantic_flags_info and semantic_flags_info.get("detected"):
             category_boosts = semantic_flags_info.get("category_boosts", {})
             for category in instruction.categories:
@@ -2869,7 +2861,7 @@ class RuleBasedRouter(RoutingEngine):
                     keyword_matches.append(f"tag:{tag}")
 
             # Check in metadata keywords
-          
+
             routing = instruction.routing or {}
             triggers = routing.get("triggers", {})
             meta_keywords = triggers.get("keywords", [])
@@ -3035,10 +3027,12 @@ class RuleBasedRouter(RoutingEngine):
             - signals: List of matched patterns
             - category_boosts: Dict of category -> boost amount
         """
-      
-        if (self.features.get("use_lexicon") and
-            hasattr(self, '_lexicon_db') and
-            self._lexicon_db is not None):
+
+        if (
+            self.features.get("use_lexicon")
+            and hasattr(self, "_lexicon_db")
+            and self._lexicon_db is not None
+        ):
             friction_entries = self._lexicon_db.get_entries_by_type("friction")
             if friction_entries:
                 return self._detect_friction_db(message, friction_entries)
@@ -3053,7 +3047,9 @@ class RuleBasedRouter(RoutingEngine):
         Feature: Uses database lexicon for friction detection.
         """
         if not CONTEXT_DISAMBIGUATION_AVAILABLE or match_all_entries is None:
-            logger.warning("Feature: context_disambiguation not available, falling back")
+            logger.warning(
+                "Feature: context_disambiguation not available, falling back"
+            )
             return self._detect_friction_patterns(message)
 
         # Match against friction entries
@@ -3064,7 +3060,12 @@ class RuleBasedRouter(RoutingEngine):
 
         if result.triggered:
             # Priority order: rejection > retry > refinement > correction
-            type_priority = {"rejection": 0, "retry": 1, "refinement": 2, "correction": 3}
+            type_priority = {
+                "rejection": 0,
+                "retry": 1,
+                "refinement": 2,
+                "correction": 3,
+            }
 
             for match in result.triggered:
                 entry_id = match.entry.id if match.entry else "?"
@@ -3075,9 +3076,13 @@ class RuleBasedRouter(RoutingEngine):
             # Get highest priority friction type
             sorted_matches = sorted(
                 result.triggered,
-                key=lambda m: type_priority.get(m.entry.category if m.entry else "correction", 3)
+                key=lambda m: type_priority.get(
+                    m.entry.category if m.entry else "correction", 3
+                ),
             )
-            friction_type = sorted_matches[0].entry.category if sorted_matches[0].entry else None
+            friction_type = (
+                sorted_matches[0].entry.category if sorted_matches[0].entry else None
+            )
 
             logger.info(
                 f"Feature: DB friction detected: type={friction_type}, signals={len(signals)}"
@@ -3115,9 +3120,7 @@ class RuleBasedRouter(RoutingEngine):
                     friction_type = ftype  # First match wins (priority order)
 
         if signals:
-            logger.debug(
-                f"Friction detected: type={friction_type}, signals={signals}"
-            )
+            logger.debug(f"Friction detected: type={friction_type}, signals={signals}")
 
         # Build category boosts (only used if friction_boost feature enabled)
         category_boosts = {}
@@ -3222,7 +3225,11 @@ class RuleBasedRouter(RoutingEngine):
             - lexicon_match: (Feature/511) Details of lexicon match if used
         """
         # Use DB-based lexicon if enabled and available
-        if self.features.get("use_lexicon") and hasattr(self, '_lexicon_entries') and self._lexicon_entries:
+        if (
+            self.features.get("use_lexicon")
+            and hasattr(self, "_lexicon_entries")
+            and self._lexicon_entries
+        ):
             return self._detect_user_guidance_db(message)
 
         # Fall back to hardcoded pattern-based detection
@@ -3235,7 +3242,9 @@ class RuleBasedRouter(RoutingEngine):
         Feature: Uses database lexicon with confidence scoring.
         """
         if not CONTEXT_DISAMBIGUATION_AVAILABLE or match_all_entries is None:
-            logger.warning("Feature: context_disambiguation not available, falling back")
+            logger.warning(
+                "Feature: context_disambiguation not available, falling back"
+            )
             return self._detect_user_guidance_patterns(message)
 
         # Match against all DB entries
@@ -3261,10 +3270,14 @@ class RuleBasedRouter(RoutingEngine):
             signals.append(f"{match.final_guidance_type}:{entry_id}:{match_text[:20]}")
 
         # Determine primary guidance type (explicit takes precedence)
-        has_explicit = any(m.final_guidance_type == "explicit" for m in result.triggered)
+        has_explicit = any(
+            m.final_guidance_type == "explicit" for m in result.triggered
+        )
         guidance_type = "explicit" if has_explicit else "implicit"
 
-        matched_content = best_match.match.group() if best_match and best_match.match else None
+        matched_content = (
+            best_match.match.group() if best_match and best_match.match else None
+        )
 
         logger.info(
             f"Feature: DB lexicon guidance detected: "
@@ -3278,11 +3291,19 @@ class RuleBasedRouter(RoutingEngine):
             "signals": signals,
             "content": matched_content,
             "lexicon_match": {
-                "entry_id": best_match.entry.id if best_match and best_match.entry else None,
-                "category": best_match.entry.category if best_match and best_match.entry else None,
+                "entry_id": best_match.entry.id
+                if best_match and best_match.entry
+                else None,
+                "category": best_match.entry.category
+                if best_match and best_match.entry
+                else None,
                 "confidence": best_match.final_confidence if best_match else 0.0,
-                "context_adjustment": best_match.context_adjustment if best_match else 0.0,
-                "disambiguation_reason": best_match.disambiguation_reason if best_match else None,
+                "context_adjustment": best_match.context_adjustment
+                if best_match
+                else 0.0,
+                "disambiguation_reason": best_match.disambiguation_reason
+                if best_match
+                else None,
                 "source": "db",  # Indicate DB-based match
             },
         }
@@ -3321,9 +3342,7 @@ class RuleBasedRouter(RoutingEngine):
             if guidance_type is None:
                 guidance_type = "implicit"
                 matched_content = implicit_content
-            logger.debug(
-                f"Implicit guidance detected: {implicit_content[:50]}"
-            )
+            logger.debug(f"Implicit guidance detected: {implicit_content[:50]}")
 
         if signals:
             logger.info(
@@ -3362,16 +3381,18 @@ class RuleBasedRouter(RoutingEngine):
                 logger.debug(f"Boundary pattern matched: {btype}={matched_text[:50]}")
 
         is_boundary = len(signals) > 0
-        confidence = 'high' if is_boundary else 'low'
+        confidence = "high" if is_boundary else "low"
 
         if is_boundary:
-            logger.info(f"Conversation boundary detected: type={boundary_type}, signals={len(signals)}")
+            logger.info(
+                f"Conversation boundary detected: type={boundary_type}, signals={len(signals)}"
+            )
 
         return {
-            'is_boundary': is_boundary,
-            'boundary_type': boundary_type,
-            'signals': signals,
-            'confidence': confidence
+            "is_boundary": is_boundary,
+            "boundary_type": boundary_type,
+            "signals": signals,
+            "confidence": confidence,
         }
 
     def _detect_guidance_adherence(self, agent_response: str) -> dict[str, Any]:
@@ -3807,7 +3828,9 @@ class RuleBasedRouter(RoutingEngine):
         for ftype, patterns in EXTENDED_FRICTION_PATTERNS.items():
             for pattern in patterns:
                 try:
-                    if _re.search(pattern, message, _re.IGNORECASE | _re.MULTILINE | _re.DOTALL):
+                    if _re.search(
+                        pattern, message, _re.IGNORECASE | _re.MULTILINE | _re.DOTALL
+                    ):
                         signals.append(f"{ftype}:{pattern[:40]}")
                         if friction_type is None:
                             friction_type = ftype
