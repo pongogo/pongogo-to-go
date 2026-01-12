@@ -271,15 +271,15 @@ class TestRoutingAccuracy:
                 print(f"    Actual: {s.actual}")
 
         # Assert thresholds
-        assert aggregate.precision >= PRECISION_THRESHOLD, (
-            f"Precision {aggregate.precision:.2%} below threshold {PRECISION_THRESHOLD:.0%}"
-        )
-        assert aggregate.recall >= RECALL_THRESHOLD, (
-            f"Recall {aggregate.recall:.2%} below threshold {RECALL_THRESHOLD:.0%}"
-        )
-        assert aggregate.f1 >= F1_THRESHOLD, (
-            f"F1 {aggregate.f1:.2%} below threshold {F1_THRESHOLD:.0%}"
-        )
+        assert (
+            aggregate.precision >= PRECISION_THRESHOLD
+        ), f"Precision {aggregate.precision:.2%} below threshold {PRECISION_THRESHOLD:.0%}"
+        assert (
+            aggregate.recall >= RECALL_THRESHOLD
+        ), f"Recall {aggregate.recall:.2%} below threshold {RECALL_THRESHOLD:.0%}"
+        assert (
+            aggregate.f1 >= F1_THRESHOLD
+        ), f"F1 {aggregate.f1:.2%} below threshold {F1_THRESHOLD:.0%}"
 
     @pytest.mark.parametrize("event_id", CRITICAL_EVENT_IDS)
     async def test_critical_events(
@@ -314,9 +314,9 @@ class TestGroundTruthDataset:
         self, ground_truth_events: list[dict[str, Any]]
     ) -> None:
         """Verify dataset contains events."""
-        assert len(ground_truth_events) >= 50, (
-            f"Expected at least 50 events, got {len(ground_truth_events)}"
-        )
+        assert (
+            len(ground_truth_events) >= 50
+        ), f"Expected at least 50 events, got {len(ground_truth_events)}"
 
     def test_event_ids_unique(self, ground_truth_events: list[dict[str, Any]]) -> None:
         """Verify all event IDs are unique."""
@@ -328,9 +328,9 @@ class TestGroundTruthDataset:
     ) -> None:
         """Verify event IDs follow GT-NNN pattern."""
         for event in ground_truth_events:
-            assert re.match(r"^GT-\d{3}$", event["id"]), (
-                f"Invalid event ID format: {event['id']}"
-            )
+            assert re.match(
+                r"^GT-\d{3}$", event["id"]
+            ), f"Invalid event ID format: {event['id']}"
 
     def test_critical_events_exist(
         self, ground_truth_events: list[dict[str, Any]]
@@ -338,9 +338,9 @@ class TestGroundTruthDataset:
         """Verify all critical events exist in dataset."""
         event_ids = {e["id"] for e in ground_truth_events}
         for critical_id in CRITICAL_EVENT_IDS:
-            assert critical_id in event_ids, (
-                f"Critical event {critical_id} missing from dataset"
-            )
+            assert (
+                critical_id in event_ids
+            ), f"Critical event {critical_id} missing from dataset"
 
 
 class TestCategoryDistribution:
@@ -372,6 +372,6 @@ class TestCategoryDistribution:
         core_events = [
             e for e in ground_truth_events if e["category"] == "_pongogo_core"
         ]
-        assert len(core_events) >= 15, (
-            f"Expected at least 15 _pongogo_core events, got {len(core_events)}"
-        )
+        assert (
+            len(core_events) >= 15
+        ), f"Expected at least 15 _pongogo_core events, got {len(core_events)}"

@@ -125,9 +125,9 @@ class TestLargeDataset:
         elapsed = time.time() - start_time
 
         # Should complete in reasonable time (< 30 seconds for 500 events)
-        assert elapsed < 30, (
-            f"Bulk insert too slow: {elapsed:.2f}s for {num_events} events"
-        )
+        assert (
+            elapsed < 30
+        ), f"Bulk insert too slow: {elapsed:.2f}s for {num_events} events"
 
         # Verify count
         stats = get_event_stats()
