@@ -45,7 +45,9 @@ logger = logging.getLogger(__name__)
 DEFAULT_DB_PATH = Path(__file__).parent / "lexicon.db"
 
 # Schema version for migrations
-SCHEMA_VERSION = 1
+# v1: Initial schema (guidance, friction)
+# v2: Added 'hedging' lexicon_type (Issue #524)
+SCHEMA_VERSION = 2
 
 
 # =============================================================================
@@ -54,19 +56,19 @@ SCHEMA_VERSION = 1
 
 SCHEMA_SQL = """
 -- Unified lexicon entries table
--- Supports both guidance (IMP-013) and friction (IMP-011) patterns
+-- Supports guidance (IMP-013), friction (IMP-011), and hedging (Issue #524) patterns
 CREATE TABLE IF NOT EXISTS lexicon_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    entry_id TEXT UNIQUE NOT NULL,  -- e.g., "explicit_001", "friction_correction_042"
+    entry_id TEXT UNIQUE NOT NULL,  -- e.g., "explicit_001", "friction_correction_042", "hedging_001"
 
     -- Pattern matching
     pattern TEXT NOT NULL,
     pattern_flags INTEGER DEFAULT 2,  -- re.IGNORECASE = 2
 
     -- Classification
-    lexicon_type TEXT NOT NULL CHECK (lexicon_type IN ('guidance', 'friction')),
-    category TEXT NOT NULL,  -- e.g., "future_directive", "correction", "retry"
-    sub_type TEXT,  -- guidance: "explicit"/"implicit"; friction: "correction"/"retry"/"rejection"/"refinement"
+    lexicon_type TEXT NOT NULL CHECK (lexicon_type IN ('guidance', 'friction', 'hedging')),
+    category TEXT NOT NULL,  -- e.g., "future_directive", "correction", "retry", "uncertainty_modal"
+    sub_type TEXT,  -- guidance: "explicit"/"implicit"; friction: "correction"/"retry"/"rejection"/"refinement"; hedging: null
 
     -- Confidence scoring
     base_confidence REAL DEFAULT 0.75,
@@ -150,7 +152,7 @@ class LexiconDB:
         return conn
 
     def _ensure_schema(self) -> None:
-        """Create schema if it doesn't exist."""
+        """Create schema if it doesn't exist, run migrations if needed."""
         conn = self._get_connection()
         try:
             conn.executescript(SCHEMA_SQL)
@@ -160,6 +162,10 @@ class LexiconDB:
             row = cursor.fetchone()
             current_version = row[0] if row[0] else 0
 
+            # Run migrations
+            if current_version < 2:
+                self._migrate_v1_to_v2(conn)
+
             if current_version < SCHEMA_VERSION:
                 conn.execute(
                     "INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,)
@@ -168,6 +174,81 @@ class LexiconDB:
                 logger.info(f"Lexicon DB schema initialized (version {SCHEMA_VERSION})")
         finally:
             conn.close()
+
+    def _migrate_v1_to_v2(self, conn: sqlite3.Connection) -> None:
+        """
+        Migrate from v1 to v2: Add 'hedging' to lexicon_type CHECK constraint.
+
+        SQLite doesn't support ALTER TABLE for CHECK constraints, so we:
+        1. Create new table with updated constraint
+        2. Copy all data
+        3. Drop old table
+        4. Rename new table
+        """
+        logger.info("Migrating lexicon_entries from v1 to v2 (adding 'hedging' type)...")
+
+        # Check if old table exists and has data
+        cursor = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='lexicon_entries'"
+        )
+        if not cursor.fetchone():
+            logger.info("No existing lexicon_entries table, skipping migration")
+            return
+
+        try:
+            # Create new table with updated constraint
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS lexicon_entries_v2 (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    entry_id TEXT UNIQUE NOT NULL,
+                    pattern TEXT NOT NULL,
+                    pattern_flags INTEGER DEFAULT 2,
+                    lexicon_type TEXT NOT NULL CHECK (lexicon_type IN ('guidance', 'friction', 'hedging')),
+                    category TEXT NOT NULL,
+                    sub_type TEXT,
+                    base_confidence REAL DEFAULT 0.75,
+                    positive_pattern TEXT,
+                    positive_weight REAL DEFAULT 0.0,
+                    negative_pattern TEXT,
+                    negative_weight REAL DEFAULT 0.0,
+                    disambiguation_threshold REAL DEFAULT 0.5,
+                    fallback_type TEXT DEFAULT 'none' CHECK (fallback_type IN ('none', 'implicit')),
+                    source TEXT DEFAULT 'system' CHECK (source IN ('system', 'gt_v4', 'gt_v3', 'user', 'migration')),
+                    source_event_ids TEXT,
+                    imp_feature TEXT DEFAULT 'IMP-013',
+                    notes TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    enabled INTEGER DEFAULT 1
+                )
+            """)
+
+            # Copy data from old table
+            conn.execute("""
+                INSERT INTO lexicon_entries_v2
+                SELECT * FROM lexicon_entries
+            """)
+
+            # Drop old table
+            conn.execute("DROP TABLE lexicon_entries")
+
+            # Rename new table
+            conn.execute("ALTER TABLE lexicon_entries_v2 RENAME TO lexicon_entries")
+
+            # Recreate indexes
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_lexicon_type ON lexicon_entries(lexicon_type)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_lexicon_category ON lexicon_entries(category)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_lexicon_sub_type ON lexicon_entries(sub_type)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_lexicon_enabled ON lexicon_entries(enabled)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_lexicon_source ON lexicon_entries(source)")
+
+            conn.commit()
+            logger.info("Migration v1->v2 complete: 'hedging' type now supported")
+
+        except sqlite3.Error as e:
+            conn.rollback()
+            logger.error(f"Migration v1->v2 failed: {e}")
+            raise
 
     def get_all_entries(self, enabled_only: bool = True) -> list[LexiconEntry]:
         """
@@ -503,7 +584,7 @@ def load_lexicon_from_db(
     Load lexicon entries from database.
 
     Args:
-        lexicon_type: Optional filter ("guidance" or "friction")
+        lexicon_type: Optional filter ("guidance", "friction", or "hedging")
         db_path: Optional database path override
 
     Returns:
@@ -513,6 +594,187 @@ def load_lexicon_from_db(
     if lexicon_type:
         return db.get_entries_by_type(lexicon_type)
     return db.get_all_entries()
+
+
+# =============================================================================
+# HEDGING ENTRY SEEDING (Issue #524)
+# =============================================================================
+
+# Hedging entries with penalty values
+# These patterns suppress implicit guidance when present
+HEDGING_SEED_ENTRIES = [
+    # Strong hedging indicators - penalty -0.40
+    # These clearly indicate uncertainty/discussion, not rules
+    {
+        "entry_id": "hedging_001",
+        "pattern": r"\bmaybe\b",
+        "category": "uncertainty_modal",
+        "base_confidence": -0.40,
+        "notes": "Strong uncertainty indicator",
+    },
+    {
+        "entry_id": "hedging_002",
+        "pattern": r"\bpossibly\b",
+        "category": "uncertainty_modal",
+        "base_confidence": -0.40,
+        "notes": "Strong uncertainty indicator",
+    },
+    {
+        "entry_id": "hedging_003",
+        "pattern": r"\bperhaps\b",
+        "category": "uncertainty_modal",
+        "base_confidence": -0.40,
+        "notes": "Strong uncertainty indicator",
+    },
+    {
+        "entry_id": "hedging_004",
+        "pattern": r"\bshould\s+we\b",
+        "category": "question_suggestion",
+        "base_confidence": -0.40,
+        "notes": "Question framing indicates discussion, not directive",
+    },
+    {
+        "entry_id": "hedging_005",
+        "pattern": r"\bcould\s+we\b",
+        "category": "question_suggestion",
+        "base_confidence": -0.40,
+        "notes": "Question framing indicates discussion, not directive",
+    },
+    # Medium hedging indicators - penalty -0.35
+    {
+        "entry_id": "hedging_006",
+        "pattern": r"\bmight\b",
+        "category": "uncertainty_modal",
+        "base_confidence": -0.35,
+        "notes": "Medium uncertainty indicator",
+    },
+    {
+        "entry_id": "hedging_007",
+        "pattern": r"\bpotentially\b",
+        "category": "uncertainty_modal",
+        "base_confidence": -0.35,
+        "notes": "Medium uncertainty indicator",
+    },
+    {
+        "entry_id": "hedging_008",
+        "pattern": r"\bcould\s+be\b",
+        "category": "conditional_tentative",
+        "base_confidence": -0.35,
+        "notes": "Conditional language",
+    },
+    {
+        "entry_id": "hedging_009",
+        "pattern": r"\bmight\s+be\b",
+        "category": "conditional_tentative",
+        "base_confidence": -0.35,
+        "notes": "Conditional language",
+    },
+    {
+        "entry_id": "hedging_010",
+        "pattern": r"\bwhat\s+if\b",
+        "category": "conditional_tentative",
+        "base_confidence": -0.35,
+        "notes": "Hypothetical framing",
+    },
+    # Weak hedging indicators - penalty -0.30
+    {
+        "entry_id": "hedging_011",
+        "pattern": r"\bi\s+wonder\b",
+        "category": "conditional_tentative",
+        "base_confidence": -0.30,
+        "notes": "Weak uncertainty - musing aloud",
+    },
+    {
+        "entry_id": "hedging_012",
+        "pattern": r"\bwondering\s+if\b",
+        "category": "conditional_tentative",
+        "base_confidence": -0.30,
+        "notes": "Weak uncertainty - musing aloud",
+    },
+    {
+        "entry_id": "hedging_013",
+        "pattern": r"\bnot\s+sure\s+if\b",
+        "category": "conditional_tentative",
+        "base_confidence": -0.30,
+        "notes": "Explicit uncertainty acknowledgment",
+    },
+    {
+        "entry_id": "hedging_014",
+        "pattern": r"\bnot\s+certain\b",
+        "category": "conditional_tentative",
+        "base_confidence": -0.30,
+        "notes": "Explicit uncertainty acknowledgment",
+    },
+    {
+        "entry_id": "hedging_015",
+        "pattern": r"\bwhat\s+do\s+you\s+think\b",
+        "category": "question_suggestion",
+        "base_confidence": -0.30,
+        "notes": "Soliciting opinion, not giving directive",
+    },
+    {
+        "entry_id": "hedging_016",
+        "pattern": r"\bwould\s+it\s+make\s+sense\b",
+        "category": "question_suggestion",
+        "base_confidence": -0.30,
+        "notes": "Soliciting opinion, not giving directive",
+    },
+]
+
+
+def seed_hedging_entries(db: LexiconDB | None = None, force: bool = False) -> int:
+    """
+    Seed hedging entries into the lexicon database.
+
+    Args:
+        db: LexiconDB instance (uses default if None)
+        force: If True, update existing entries. If False, skip existing.
+
+    Returns:
+        Number of entries inserted or updated.
+    """
+    if db is None:
+        db = get_lexicon_db()
+
+    count = 0
+    for entry_data in HEDGING_SEED_ENTRIES:
+        # Check if entry exists
+        existing = db.get_entry_by_id(entry_data["entry_id"])
+
+        if existing and not force:
+            logger.debug(f"Skipping existing entry: {entry_data['entry_id']}")
+            continue
+
+        if existing and force:
+            # Update existing
+            success = db.update_entry(
+                entry_data["entry_id"],
+                pattern=entry_data["pattern"],
+                category=entry_data["category"],
+                base_confidence=entry_data["base_confidence"],
+                notes=entry_data["notes"],
+            )
+            if success:
+                count += 1
+                logger.debug(f"Updated hedging entry: {entry_data['entry_id']}")
+        else:
+            # Insert new
+            success = db.insert_entry(
+                entry_id=entry_data["entry_id"],
+                pattern=entry_data["pattern"],
+                lexicon_type="hedging",
+                category=entry_data["category"],
+                base_confidence=entry_data["base_confidence"],
+                source="system",
+                imp_feature="IMP-524",  # Issue #524
+                notes=entry_data["notes"],
+            )
+            if success:
+                count += 1
+                logger.debug(f"Inserted hedging entry: {entry_data['entry_id']}")
+
+    logger.info(f"Seeded {count} hedging entries")
+    return count
 
 
 # =============================================================================

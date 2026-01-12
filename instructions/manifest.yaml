@@ -363,8 +363,8 @@ categories:
 # Metadata for update checking
 compatibility:
   min_pongogo_version: "0.1.0"
-  routing_engine_version: "durian-0.6.1"
-  routing_engine_frozen_at: "2025-12-20"
+  routing_engine_version: "durian-0.6.5"
+  routing_engine_frozen_at: "2026-01-12"
 
 # Frontmatter schema for instruction files
 # All instruction files should include these fields

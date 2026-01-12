@@ -1,5 +1,5 @@
 """
-Pongogo Router (durian-0.6.4) - CANONICAL
+Pongogo Router (durian-0.6.5-dev) - CANONICAL
 
 Task #505: Unified Router Architecture
     This is the canonical router for Pongogo, unifying:
@@ -9,7 +9,7 @@ Task #505: Unified Router Architecture
 
     All new development should use this file.
 
-Features (IMP-002 through IMP-019):
+Features (IMP-002 through IMP-020):
     - Violation detection (IMP-002)
     - Approval suppression (IMP-003)
     - Instruction bundles (IMP-007)
@@ -26,6 +26,7 @@ Features (IMP-002 through IMP-019):
     - Lexicon-based guidance (IMP-017, Task #488)
     - Extended friction patterns (IMP-018, +10.9% F1)
     - Guidance pre-check (IMP-019, Task #519)
+    - Lexicon-based hedging suppression (IMP-020, Issue #524)
 
 Rule-based routing engine implementation using NLP + taxonomy + context + globs.
 Part of the RoutingEngine architecture (Spike #188, Task #214).
@@ -78,12 +79,16 @@ except ImportError:
 
 # Context disambiguation for DB-based matching
 try:
-    from mcp_server.context_disambiguation import match_all_entries
+    from mcp_server.context_disambiguation import (
+        match_all_entries,
+        should_suppress_implicit_guidance,
+    )
 
     CONTEXT_DISAMBIGUATION_AVAILABLE = True
 except ImportError:
     CONTEXT_DISAMBIGUATION_AVAILABLE = False
     match_all_entries = None  # type: ignore
+    should_suppress_implicit_guidance = None  # type: ignore
 
 # Lexicon availability (DB only - YAML deprecated in Task #504)
 LEXICON_AVAILABLE = LEXICON_DB_AVAILABLE
@@ -92,7 +97,7 @@ logger = logging.getLogger(__name__)
 
 # Single source of truth for this engine's version
 # Used by @register_engine decorator and version property
-DURIAN_VERSION = "durian-0.6.4"
+DURIAN_VERSION = "durian-0.6.5"
 
 #
 # These messages are typically conversational continuations, not queries
@@ -1153,47 +1158,6 @@ ADHERENCE_WEIGHTS = {
 
 
 # =============================================================================
-# Hedging/Uncertainty Indicators (suppress implicit guidance detection)
-# =============================================================================
-# When these words/phrases are present, suppress IMPLICIT guidance detection.
-# Rationale: "maybe we should..." is a suggestion for discussion, not a rule.
-# Explicit guidance (e.g., "always do X") is still detected even with hedging.
-
-HEDGING_INDICATORS = {
-    # Uncertainty modals
-    "maybe",
-    "might",
-    "possibly",
-    "perhaps",
-    "potentially",
-    # Conditional/tentative
-    "could be",
-    "might be",
-    "what if",
-    "i wonder",
-    "wondering if",
-    "not sure if",
-    "not certain",
-    # Questions as suggestions
-    "should we",
-    "could we",
-    "what do you think",
-    "would it make sense",
-}
-
-# Compile hedging pattern for efficient matching
-COMPILED_HEDGING_PATTERN = _re.compile(
-    "|".join(rf"\b{_re.escape(h)}\b" for h in HEDGING_INDICATORS),
-    _re.IGNORECASE,
-)
-
-
-def _contains_hedging(message: str) -> bool:
-    """Check if message contains hedging/uncertainty language."""
-    return bool(COMPILED_HEDGING_PATTERN.search(message))
-
-
-# =============================================================================
 # Phase 9: Action Request Patterns (Issue #390)
 # =============================================================================
 
@@ -1659,6 +1623,7 @@ DEFAULT_FEATURES = {
     "extended_friction": True,  #
     "guidance_pre_check": True,  # #519)
     "guidance_action": True,  #
+    "hedging_suppression": True,  # Issue #524 - suppress implicit guidance on hedging
 }
 
 
@@ -1789,15 +1754,22 @@ class RuleBasedRouter(RoutingEngine):
                 stats = self._lexicon_db.get_stats()
                 guidance_count = stats.get("guidance_count", 0)
                 friction_count = stats.get("friction_count", 0)
+                hedging_count = stats.get("hedging_count", 0)
                 categories = len(stats.get("categories", {}))
 
-                # Store entries for matching
-                self._lexicon_entries = entries
+                # Store guidance + friction entries for matching
+                # Use database methods to get correct types (not ID prefix filtering)
+                guidance_entries = self._lexicon_db.get_entries_by_type("guidance")
+                friction_entries = self._lexicon_db.get_entries_by_type("friction")
+                self._lexicon_entries = guidance_entries + friction_entries
+
+                # Store hedging entries separately (Issue #524)
+                self._hedging_entries = self._lexicon_db.get_entries_by_type("hedging")
 
                 logger.info(
                     f"Lexicon DB loaded: {len(entries)} entries "
                     f"({guidance_count} guidance, {friction_count} friction, "
-                    f"{categories} categories)"
+                    f"{hedging_count} hedging, {categories} categories)"
                 )
             else:
                 logger.warning("Lexicon DB exists but empty, using hardcoded patterns")
@@ -1967,6 +1939,12 @@ class RuleBasedRouter(RoutingEngine):
                 description="IMP-019: Emit guidance_action directive when guidance detected (cleanup)",
                 default=True,
                 category="routing",
+            ),
+            FeatureSpec(
+                name="hedging_suppression",
+                description="Issue #524: Suppress implicit guidance when hedging/uncertainty language detected",
+                default=True,
+                category="detection",
             ),
         ]
 
@@ -2185,8 +2163,8 @@ class RuleBasedRouter(RoutingEngine):
                 if mistake_info["detected"]
                 else None,  # IMP-012
                 "guidance_detection": guidance_info
-                if guidance_info["detected"]
-                else None,  # IMP-013
+                if guidance_info["detected"] or guidance_info.get("hedging_suppressed")
+                else None,  # IMP-013, IMP-020
                 "lifecycle_detection": lifecycle_info
                 if lifecycle_info["detected"]
                 else None,  # IMP-014
@@ -2438,6 +2416,13 @@ class RuleBasedRouter(RoutingEngine):
                 guidance_action = pre_check_result["guidance_action"]
                 analysis["guidance_action"] = guidance_action
                 analysis["guidance_pre_check"] = True  # Mark that pre-check was used
+            elif pre_check_result is not None and guidance_info.get("hedging_suppressed"):
+                # IMP-020: Record hedging suppression in analysis
+                analysis["guidance_pre_check"] = {
+                    "hedging_suppressed": True,
+                    "hedging_penalty": guidance_info.get("hedging_penalty"),
+                    "hedging_patterns": guidance_info.get("hedging_patterns"),
+                }
             elif guidance_info["detected"] and self.features.get(
                 "guidance_action", True
             ):
@@ -3382,24 +3367,30 @@ class RuleBasedRouter(RoutingEngine):
 
         guidance_info = self._detect_user_guidance(message)
 
-        # Suppress implicit guidance when hedging/uncertainty language detected
-        # "maybe we should..." is a suggestion for discussion, not a behavioral rule
+        # Check for hedging suppression (Issue #524)
+        # If implicit guidance detected, check for hedging patterns that suppress it
         if (
             guidance_info["detected"]
             and guidance_info["guidance_type"] == "implicit"
-            and _contains_hedging(message)
+            and self.features.get("hedging_suppression", True)
         ):
-            logger.info(
-                f"Hedging detected - suppressing implicit guidance: {message[:50]}..."
-            )
-            guidance_info = {
-                "detected": False,
-                "guidance_type": None,
-                "signals": guidance_info.get("signals", [])
-                + ["suppressed:hedging_detected"],
-                "content": None,
-                "hedging_suppressed": True,
-            }
+            hedging_result = self._check_hedging_suppression(message)
+            if hedging_result["should_suppress"]:
+                logger.info(
+                    f"Hedging suppression: implicit guidance suppressed "
+                    f"(penalty={hedging_result['compounded_penalty']:.3f}, "
+                    f"patterns={hedging_result['matched_patterns']})"
+                )
+                guidance_info = {
+                    "detected": False,
+                    "guidance_type": None,
+                    "signals": guidance_info.get("signals", [])
+                    + ["suppressed:hedging_detected"],
+                    "content": None,
+                    "hedging_suppressed": True,
+                    "hedging_penalty": hedging_result["compounded_penalty"],
+                    "hedging_patterns": hedging_result["matched_patterns"],
+                }
 
         # Generate guidance_action directive if guidance detected and feature enabled
         guidance_action = None
@@ -3427,6 +3418,76 @@ class RuleBasedRouter(RoutingEngine):
             "guidance_detected": guidance_info["detected"],
             "guidance_info": guidance_info,
             "guidance_action": guidance_action,
+        }
+
+    def _check_hedging_suppression(self, message: str) -> dict[str, Any]:
+        """
+        Check for hedging patterns that should suppress implicit guidance (Issue #524).
+
+        Uses lexicon-based hedging detection with damped probabilistic compounding.
+        Hedging patterns indicate uncertainty/discussion rather than rules.
+
+        Args:
+            message: User message to check for hedging
+
+        Returns:
+            Dictionary with:
+            - should_suppress: True if hedging penalty exceeds threshold
+            - compounded_penalty: Total penalty after damped probabilistic compounding
+            - matched_patterns: List of hedging pattern IDs that matched
+            - penalties: Individual penalties for each matched pattern
+        """
+        # Check if hedging entries are available
+        if not hasattr(self, "_hedging_entries") or not self._hedging_entries:
+            return {
+                "should_suppress": False,
+                "compounded_penalty": 0.0,
+                "matched_patterns": [],
+                "penalties": [],
+            }
+
+        # Check if should_suppress_implicit_guidance is available
+        if should_suppress_implicit_guidance is None:
+            logger.warning(
+                "Issue #524: should_suppress_implicit_guidance not available"
+            )
+            return {
+                "should_suppress": False,
+                "compounded_penalty": 0.0,
+                "matched_patterns": [],
+                "penalties": [],
+            }
+
+        # Match hedging patterns against message
+        matched_patterns = []
+        penalties = []
+
+        for entry in self._hedging_entries:
+            if entry.pattern.search(message):
+                matched_patterns.append(entry.id)
+                # base_confidence is stored as negative penalty
+                penalties.append(entry.confidence)
+                logger.debug(
+                    f"Hedging pattern matched: {entry.id} "
+                    f"(penalty={entry.confidence:.2f})"
+                )
+
+        if not matched_patterns:
+            return {
+                "should_suppress": False,
+                "compounded_penalty": 0.0,
+                "matched_patterns": [],
+                "penalties": [],
+            }
+
+        # Check if hedging should suppress implicit guidance
+        should_suppress, compounded = should_suppress_implicit_guidance(penalties)
+
+        return {
+            "should_suppress": should_suppress,
+            "compounded_penalty": compounded,
+            "matched_patterns": matched_patterns,
+            "penalties": penalties,
         }
 
     def _detect_user_guidance_db(self, message: str) -> dict[str, Any]:

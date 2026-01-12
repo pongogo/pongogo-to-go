@@ -11,8 +11,8 @@
 routing:
   # Engine version to use for routing
   # Available engines can be listed with /pongogo-switch-engine command
-  # Default: uses registered default engine (currently durian-0.6.1)
-  engine: "durian-0.6.1"
+  # Default: uses registered default from pongogo_router.py (single source of truth)
+  # Uncomment to override: engine: "durian-X.Y"
 
   # Default limit for routing results
   # Default: 5

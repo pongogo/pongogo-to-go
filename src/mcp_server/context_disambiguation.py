@@ -403,6 +403,97 @@ def log_match_result(result: MatchResult, message: str, level: int = logging.DEB
 
 
 # =============================================================================
+# HEDGING PENALTY COMPOUNDING (Issue #524)
+# =============================================================================
+
+# Default damping factor for hedging penalty compounding
+# Higher values = faster convergence toward -1.0
+# Lower values = more conservative compounding
+DEFAULT_HEDGING_DAMPING = 0.7
+
+# Suppression threshold: if compounded penalty exceeds this, suppress implicit guidance
+# Set to -0.25 so a single strong hedging word (e.g., "maybe" at -0.4 × 0.7 = -0.28) triggers suppression
+HEDGING_SUPPRESSION_THRESHOLD = -0.25
+
+
+def compute_hedging_penalty(
+    penalties: list[float],
+    damping: float = DEFAULT_HEDGING_DAMPING,
+) -> float:
+    """
+    Compute compounded hedging penalty using damped probabilistic formula.
+
+    This implements a conservative compounding approach where multiple hedging
+    signals compound but don't over-penalize. The formula ensures:
+    - Single hedging word applies damped penalty
+    - Multiple hedging words compound but never exceed -1.0
+    - Tunable via damping factor
+
+    Formula:
+        effective_penalty = |p| × d
+        total = -(1 - (1-|p1|×d) × (1-|p2|×d) × ...)
+
+    Examples with d=0.7:
+        Single -0.4 → -(1 - (1 - 0.28)) = -0.28
+        Two at -0.4 → -(1 - 0.72 × 0.72) = -0.48
+        -0.4 and -0.3 → -(1 - 0.72 × 0.79) = -0.43
+
+    Args:
+        penalties: List of penalty values (should be negative, e.g., [-0.4, -0.3])
+        damping: Damping factor (0-1). Higher = faster convergence. Default: 0.7
+
+    Returns:
+        Compounded penalty as negative float, never exceeds -1.0
+    """
+    if not penalties:
+        return 0.0
+
+    # Compute product of (1 - |p| × d) for each penalty
+    product = 1.0
+    for p in penalties:
+        effective = abs(p) * damping
+        # Clamp effective penalty to [0, 1] to prevent math errors
+        effective = min(1.0, max(0.0, effective))
+        product *= (1.0 - effective)
+
+    # Final penalty is -(1 - product)
+    return -(1.0 - product)
+
+
+def should_suppress_implicit_guidance(
+    hedging_penalties: list[float],
+    threshold: float = HEDGING_SUPPRESSION_THRESHOLD,
+    damping: float = DEFAULT_HEDGING_DAMPING,
+) -> tuple[bool, float]:
+    """
+    Determine if implicit guidance should be suppressed based on hedging penalties.
+
+    Args:
+        hedging_penalties: List of penalty values from matched hedging patterns
+        threshold: Suppression threshold (default: -0.30)
+        damping: Damping factor for compounding (default: 0.7)
+
+    Returns:
+        Tuple of (should_suppress: bool, compounded_penalty: float)
+    """
+    if not hedging_penalties:
+        return False, 0.0
+
+    compounded = compute_hedging_penalty(hedging_penalties, damping)
+
+    # Suppress if penalty exceeds threshold (both are negative, so use <)
+    should_suppress = compounded < threshold
+
+    logger.debug(
+        f"Hedging check: penalties={hedging_penalties}, "
+        f"compounded={compounded:.3f}, threshold={threshold}, "
+        f"suppress={should_suppress}"
+    )
+
+    return should_suppress, compounded
+
+
+# =============================================================================
 # UNIT TESTS
 # =============================================================================
 
