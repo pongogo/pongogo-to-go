@@ -15,6 +15,19 @@ related_instructions:
   - "project_management/work_logging.instructions.md"
   - "project_management/work_log_monthly_summary.instructions.md"
   - "mcp/mcp_time_server.instructions.md"
+evaluation:
+  success_signals:
+    - Weekly summary exists for all weeks with work
+    - Critical items escalated (blockers, incidents, decisions)
+    - Major work chunks summarized with status
+    - Trends and themes identified across days
+    - Summary fits 50-100 lines per week
+  failure_signals:
+    - Missing weekly summary for weeks with work
+    - Over-compression losing important context
+    - Missing cross-month week handling
+    - No gap notation for empty weeks
+    - Missing strategy notes (direction changes)
 routing:
   priority: 1
   triggers:

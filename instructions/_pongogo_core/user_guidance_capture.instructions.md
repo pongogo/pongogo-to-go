@@ -1,5 +1,18 @@
 ---
 id: core:user_guidance_capture
+evaluation:
+  success_signals:
+    - guidance_action directive triggers log_user_guidance call
+    - Explicit guidance acknowledged and ready for immediate action
+    - Implicit guidance tracked until 3-occurrence threshold
+    - User-focused language used (never mention instruction files)
+    - Guidance captured without interrupting user workflow
+  failure_signals:
+    - guidance_action directive ignored (compliance violation)
+    - Guidance captured with disruptive prompts mid-workflow
+    - Technical language exposed (mention instruction files to user)
+    - Missing context makes captured guidance unusable
+    - Over-capturing (every statement treated as guidance)
 routing:
   protected: true
   priority: 10

@@ -20,6 +20,19 @@ related_instructions:
   - "../development_standards/microservices_development.instructions.md"
   - "./docker_compose_patterns.instructions.md"
   - "../quality/environment_configuration.instructions.md"
+evaluation:
+  success_signals:
+    - All services expose /metrics endpoint
+    - Correlation IDs propagated via X-Correlation-ID header
+    - Logs in structured JSON format with correlation_id
+    - RED metrics implemented (rate, errors, duration)
+    - Alerts configured for high error rate and latency
+  failure_signals:
+    - Missing correlation IDs (can't trace cross-service)
+    - Unstructured logs (console.log, not JSON)
+    - No sampling for traces (100% = performance overhead)
+    - Alert fatigue (alerting on internals, not symptoms)
+    - No log retention policy
 routing:
   priority: 1
   triggers:

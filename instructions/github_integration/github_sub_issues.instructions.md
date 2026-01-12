@@ -19,6 +19,19 @@ related_instructions:
   - "../project_management/task_creation_workflow.instructions.md"
   - "../trust_execution/trust_based_task_execution.instructions.md"
   - "../project_management/glossary_maintenance.instructions.md"
+evaluation:
+  success_signals:
+    - Sub-issues used only for 10+ execution items
+    - Items can execute independently (parallel)
+    - Analysis embedded in sub-issue descriptions
+    - Automatic progress tracking via GitHub
+    - Checklists and sub-issues used complementarily
+  failure_signals:
+    - Sub-issues for fewer than 10 items (use checkboxes)
+    - Sub-issues for sequential stages (use checklist)
+    - Over-granular decomposition (5-minute tasks)
+    - Missing embedded context (4+ external sources needed)
+    - Using sub-issues when checkboxes sufficient
 routing:
   priority: 1
   triggers:

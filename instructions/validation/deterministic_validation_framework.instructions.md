@@ -18,6 +18,19 @@ related_instructions:
   - "../trust_execution/trust_based_task_execution.instructions.md"
   - "../trust_execution/feature_development.instructions.md"
   - "../agentic_workflows/agentic_decision_making.instructions.md"
+evaluation:
+  success_signals:
+    - Test suite passes 10+ consecutive runs with identical results
+    - No statistical assertions (no 95% success rate thresholds)
+    - All external dependencies mocked with deterministic responses
+    - Fixed test data used (no Date.now, Math.random in tests)
+    - Binary pass/fail results (unambiguous for agent decision-making)
+  failure_signals:
+    - Test accepts statistical success rate (passes 19/20 times)
+    - Time-dependent test logic without mocking Date.now
+    - Tests interfere with each other (shared state not reset)
+    - Flaky tests tolerated (re-running CI until tests pass)
+    - Missing error path tests (only happy path covered)
 routing:
   priority: 0
   triggers:

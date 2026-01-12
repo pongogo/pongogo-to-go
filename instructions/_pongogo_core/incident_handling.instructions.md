@@ -19,6 +19,17 @@ routing:
     nlp: "Investigate and resolve bugs, failures, or incidents"
   includes:
     - _pongogo_core/_pongogo_collaboration.instructions.md
+evaluation:
+  success_signals:
+    - Root cause identified (not just symptoms)
+    - Fix addresses root cause, not just symptom
+    - Prevention actions documented
+    - RCA template completed with real details
+  failure_signals:
+    - Fix applied without understanding cause
+    - RCA skipped for time pressure
+    - Same incident recurs without pattern tracking
+    - Prevention actions not actionable
 ---
 
 # Incident Handling
@@ -57,36 +68,52 @@ Follow the behavior mode per `_pongogo_collaboration.instructions.md`.
 
 ## Response Flow
 
-### 1. Acknowledge & Assess
+<incident-response-flow>
+<step number="1" action="acknowledge-assess">
+<description>Acknowledge issue and assess severity</description>
+<output>"I see there's an issue with [X]. Let me investigate."</output>
+<assessment>
+<dimension id="severity">Critical / High / Medium / Low</dimension>
+<dimension id="scope">Single user / Feature / System-wide</dimension>
+<dimension id="urgency">Blocking / Inconvenient / Minor</dimension>
+</assessment>
+<gate>For Critical severity, communicate urgency before deep investigation</gate>
+</step>
 
-```
-"I see there's an issue with [X]. Let me investigate."
-```
+<step number="2" action="investigate">
+<description>Find root cause, not just symptoms</description>
+<actions>
+<action required="true">Reproduce the issue if possible</action>
+<action required="true">Check recent changes (commits, deploys)</action>
+<action required="true">Review error logs/stack traces</action>
+<action required="true">Identify affected components</action>
+<action required="conditional">Use 5 Whys for complex issues</action>
+</actions>
+<gate>Do not skip to fix without understanding cause. "Fix first, understand later" creates repeat incidents.</gate>
+</step>
 
-Quick assessment:
-- **Severity**: Critical / High / Medium / Low
-- **Scope**: Single user / Feature / System-wide
-- **Urgency**: Blocking / Inconvenient / Minor
+<step number="3" action="fix">
+<description>Implement targeted fix addressing root cause</description>
+<actions>
+<action required="true">Implement fix that addresses root cause</action>
+<action required="true">Test the fix</action>
+<action required="true">Verify original issue resolved</action>
+<action required="true">Check for side effects</action>
+</actions>
+<gate>Verify fix addresses ROOT cause, not just symptom</gate>
+</step>
 
-### 2. Investigate
-
-- Reproduce the issue if possible
-- Check recent changes (commits, deploys)
-- Review error logs/stack traces
-- Identify affected components
-
-### 3. Fix
-
-- Implement targeted fix
-- Test the fix
-- Verify original issue resolved
-- Check for side effects
-
-### 4. Document
-
-- Brief RCA (see format below)
-- Work log entry
-- Update issue if applicable
+<step number="4" action="document">
+<description>Create RCA and capture learning</description>
+<actions>
+<action required="true">Complete RCA template (see below)</action>
+<action required="true">Add work log entry</action>
+<action required="conditional">Update issue if applicable</action>
+<action required="true">Document prevention actions</action>
+</actions>
+<gate>RCA is not optional. Every incident is a learning opportunity.</gate>
+</step>
+</incident-response-flow>
 
 ---
 
@@ -155,12 +182,35 @@ Fix: Add proper connection release in finally block
 
 ## Severity Guidelines
 
-| Severity | Impact | Examples |
-|----------|--------|----------|
-| **Critical** | System down, data loss | Production outage, data corruption |
-| **High** | Major feature broken | Login broken, payments failing |
-| **Medium** | Feature degraded | Slow performance, partial failure |
-| **Low** | Minor inconvenience | UI glitch, non-blocking error |
+<severity-definitions>
+<severity id="critical" priority="1">
+<impact>System down, data loss possible</impact>
+<examples>Production outage, data corruption, security breach</examples>
+<response-time>Immediate - drop everything</response-time>
+<escalation>Notify stakeholders immediately</escalation>
+</severity>
+
+<severity id="high" priority="2">
+<impact>Major feature broken</impact>
+<examples>Login broken, payments failing, core workflow blocked</examples>
+<response-time>Within hours</response-time>
+<escalation>Notify team lead if not resolved quickly</escalation>
+</severity>
+
+<severity id="medium" priority="3">
+<impact>Feature degraded but workaround exists</impact>
+<examples>Slow performance, partial failure, error messages</examples>
+<response-time>Within 24 hours</response-time>
+<escalation>Document and prioritize in next sprint</escalation>
+</severity>
+
+<severity id="low" priority="4">
+<impact>Minor inconvenience</impact>
+<examples>UI glitch, non-blocking error, cosmetic issue</examples>
+<response-time>When capacity available</response-time>
+<escalation>Add to backlog</escalation>
+</severity>
+</severity-definitions>
 
 ---
 
@@ -263,6 +313,50 @@ If configured for auto:
 ```
 "I've fixed the issue, documented the RCA, and added it to the work log."
 ```
+
+---
+
+## Handling Uncertainty
+
+<uncertainty-protocol>
+If root cause cannot be determined:
+
+1. **State explicitly** - "I cannot determine the root cause because [reason]"
+2. **Document what's known** - Symptoms, timeline, attempted investigations
+3. **Propose next steps** - What additional information or access is needed
+4. **Apply temporary mitigation** - If possible, mitigate while investigating
+
+<when-to-escalate>
+- Cannot reproduce issue
+- Logs/data insufficient for diagnosis
+- Outside area of expertise
+- Time-boxed investigation exceeded without progress
+</when-to-escalate>
+
+<acceptable-responses>
+- "I've investigated for [time] but cannot identify root cause. Here's what I know: [findings]. To continue, I need: [access/data/expertise]."
+- "I can apply a workaround to restore functionality while we investigate the underlying cause."
+- "This appears to be a [category] issue which may require [expertise]. Should I escalate?"
+</acceptable-responses>
+
+<unacceptable-responses>
+- Guessing at root cause without evidence
+- Applying fix without understanding what it fixes
+- Closing incident without RCA because "it works now"
+- Skipping documentation due to time pressure
+</unacceptable-responses>
+</uncertainty-protocol>
+
+---
+
+## Grounding Rules
+
+<grounding>
+<rule id="evidence-based">Root cause must be supported by evidence (logs, repro steps, code analysis). No guessing.</rule>
+<rule id="fix-matches-cause">Fix must address the identified root cause. Band-aids without understanding cause create repeat incidents.</rule>
+<rule id="prevention-is-required">Every RCA must include prevention actions. If we can't prevent recurrence, we haven't learned.</rule>
+<rule id="severity-from-impact">Assign severity based on actual impact, not perceived importance. System down = Critical, regardless of feature.</rule>
+</grounding>
 
 ---
 

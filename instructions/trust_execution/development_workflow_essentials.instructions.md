@@ -18,6 +18,19 @@ related_instructions:
   - "../project_management/task_creation_workflow.instructions.md"
   - "../validation/deterministic_validation_framework.instructions.md"
   - "../project_management/glossary_maintenance.instructions.md"
+evaluation:
+  success_signals:
+    - Complete files read (never head/tail/truncation during development)
+    - Previous phase outputs trusted without re-analysis
+    - Four-level completion followed (Phase -> Task -> Epic -> Milestone)
+    - Evidence summary with specific artifacts linked (commits, files, tests)
+    - All SC/AC/CV items checked before marking complete
+  failure_signals:
+    - Partial context reading (head -n 100 or content.slice)
+    - Re-analyzing completed phases instead of trusting outputs
+    - Marking complete before all criteria items checked
+    - Completion comment says "done" without linked evidence
+    - Missing work log entries at task/epic/milestone completion
 routing:
   priority: 0
   triggers:

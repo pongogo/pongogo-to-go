@@ -14,6 +14,17 @@ patterns:
 related_instructions:
   - "../trust_execution/trust_based_task_execution.instructions.md"
   - "./agent_environment_setup.instructions.md"
+evaluation:
+  success_signals:
+    - Decision rationale documented with context
+    - Inference used over automation for judgment calls
+    - Systematic prevention considered (category vs instance)
+    - Urgency signals trigger extra process, not bypass
+  failure_signals:
+    - Script-first thinking for judgment decisions
+    - Urgency causing process bypass
+    - Friction signals ignored
+    - Redundant verification despite efficiency protocols
 routing:
   priority: 1
   triggers:

@@ -16,6 +16,19 @@ related_instructions:
   - "./code_review_standards.instructions.md"
   - "../github_integration/github_essentials.instructions.md"
   - "../validation/deterministic_validation_framework.instructions.md"
+evaluation:
+  success_signals:
+    - PR uses template with complete description
+    - PR linked to GitHub issue
+    - CI gates passing before review requested
+    - PR size under 400 lines (focused change)
+    - Squash merge with clean commit message
+  failure_signals:
+    - PR created without template or description
+    - CI failing when review requested
+    - Large multi-purpose PR (2000+ lines)
+    - Force-push during active review
+    - PR not linked to issue
 routing:
   priority: 1
   triggers:

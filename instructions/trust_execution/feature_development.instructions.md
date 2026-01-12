@@ -14,6 +14,19 @@ patterns:
 related_instructions:
   - "./trust_based_task_execution.instructions.md"
   - "../project_management/time_free_project_management.instructions.md"
+evaluation:
+  success_signals:
+    - SC items completed with evidence before AC validation
+    - AC items verified after all SC complete
+    - CV requires all AC across entire task
+    - Phase completion includes checkbox + comment + work log
+    - Autonomy level matches complexity assessment
+  failure_signals:
+    - AC checked before all SC complete
+    - CV checked with pending AC items
+    - Evidence missing for checked items
+    - Phase marked complete without reporting deliverables
+    - Re-analyzing trusted previous phase outputs
 routing:
   priority: 0
   triggers:

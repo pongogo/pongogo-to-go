@@ -20,6 +20,19 @@ related_instructions:
   - "./agentic_decision_making.instructions.md"
   - "../documentation/instruction_file_creation.instructions.md"
   - "../validation/deterministic_validation_framework.instructions.md"
+evaluation:
+  success_signals:
+    - Zero-configuration bootstrap works (docker-compose up)
+    - All tools produce JSON output option
+    - Errors include actionable recovery steps
+    - Health check endpoints return structured status
+    - Diagnostic command available (npm run diagnose)
+  failure_signals:
+    - Manual configuration required before services start
+    - Tool output unstructured (human-readable only)
+    - Error messages lack recovery guidance
+    - Health checks missing or always failing
+    - No diagnostic capability available
 routing:
   priority: 1
   triggers:

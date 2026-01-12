@@ -15,6 +15,19 @@ patterns:
 related_instructions:
   - "../trust_execution/trust_based_task_execution.instructions.md"
   - "../agentic_workflows/agentic_decision_making.instructions.md"
+evaluation:
+  success_signals:
+    - Verification budget checked before any file read (max 3x same file)
+    - Cross-session trust applied (documented verifications not repeated)
+    - Summary includes explicit DO NOT verify directives with counts
+    - O(N) time complexity maintained (not O(N²) from re-verification)
+    - Trust decisions documented with rationale
+  failure_signals:
+    - Same file read 5+ times in one task (budget exceeded)
+    - New session triggers re-verification of everything
+    - Ambiguous summary statements without explicit directives
+    - State change paranoia (assuming files changed without evidence)
+    - Verification count not documented in session summaries
 routing:
   priority: 0
   triggers:

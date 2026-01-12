@@ -18,6 +18,19 @@ patterns:
 related_instructions:
   - "../safety_prevention/validation_first_execution.instructions.md"
   - "./bash_script_maintenance.instructions.md"
+evaluation:
+  success_signals:
+    - All functions have type hints (parameters and return types)
+    - argparse used with --help, --debug, --log-level, --dry-run flags
+    - Pathlib.Path used for all file operations (not string manipulation)
+    - Specific exceptions caught (not bare except clauses)
+    - Script structured for testability with main() and __name__ guard
+  failure_signals:
+    - Functions missing type annotations (mypy errors)
+    - sys.argv used directly instead of argparse
+    - String path manipulation breaking on Windows
+    - Bare except clauses catching KeyboardInterrupt/SystemExit
+    - Logic at module level executing on import (not testable)
 routing:
   priority: 1
   triggers:

@@ -20,6 +20,17 @@ related_instructions:
   - "./github_sub_issues.instructions.md"
   - "../project_management/glossary_maintenance.instructions.md"
   - "../project_management/work_logging.instructions.md"
+evaluation:
+  success_signals:
+    - Issues created with proper workflow and project assignment
+    - Completion tracking uses markdown checkboxes exclusively
+    - Multi-dimensional verification before closing (4 dimensions)
+    - PR vs direct-main decision follows decision matrix
+  failure_signals:
+    - Issues created without project assignment
+    - Emoji used for completion tracking
+    - Issues closed without verifying all 4 dimensions
+    - Workflow decision unclear or inconsistent
 routing:
   priority: 1
   triggers:

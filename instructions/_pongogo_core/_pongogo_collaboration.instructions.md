@@ -12,6 +12,17 @@ routing:
       - config
       - setting
       - behavior
+evaluation:
+  success_signals:
+    - Preferences checked before trigger-based actions
+    - Learning flow followed for new preferences
+    - Communication bundled when multiple auto actions fire
+    - Friendly language used instead of technical jargon
+  failure_signals:
+    - Preferences ignored, action taken without checking mode
+    - Over-prompting for preferences (>2 per session)
+    - Technical implementation details exposed to user
+    - Correction signals missed or not learned from
 ---
 
 # Pongogo Collaboration

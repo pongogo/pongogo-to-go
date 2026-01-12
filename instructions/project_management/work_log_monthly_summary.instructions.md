@@ -16,6 +16,19 @@ related_instructions:
   - "project_management/work_logging.instructions.md"
   - "project_management/work_log_weekly_summary.instructions.md"
   - "mcp/mcp_time_server.instructions.md"
+evaluation:
+  success_signals:
+    - Monthly summary exists for all months with work
+    - Highlights capture top 3-5 strategic achievements
+    - Strategic shifts documented with rationale
+    - Blockers and risks identified (forward-looking)
+    - Summary fits 50-75 lines per month
+  failure_signals:
+    - Missing monthly summary for months with work
+    - Listing everything instead of strategic significance
+    - No forward look (missing Blockers & Risks)
+    - Missing week at month boundaries
+    - Summary too long (loses strategic focus)
 routing:
   priority: 1
   triggers:

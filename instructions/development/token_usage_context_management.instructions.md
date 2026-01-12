@@ -17,6 +17,19 @@ patterns:
 related_instructions:
   - "complete_context_principle.instructions.md"
   - "../learning/retrospective_triggers.instructions.md"
+evaluation:
+  success_signals:
+    - Completeness never sacrificed for token cost
+    - Context window monitored at thresholds (150K+)
+    - Strategic compacting preserves high-value recent context
+    - Work log used for context offload
+    - Quality-driven verbosity decisions
+  failure_signals:
+    - Content truncated to save token costs
+    - Context window exhaustion mid-session
+    - Premature compacting (before 100K tokens)
+    - Arbitrary context removal (oldest N%)
+    - Ignoring context window entirely
 routing:
   priority: 1
   triggers:

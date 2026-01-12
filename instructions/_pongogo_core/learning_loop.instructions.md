@@ -22,6 +22,17 @@ routing:
     nlp: "Conduct retrospective to capture learnings from completed work"
   includes:
     - _pongogo_core/_pongogo_collaboration.instructions.md
+evaluation:
+  success_signals:
+    - All 4 questions answered with specific details
+    - Learnings are actionable (not vague)
+    - Patterns tracked when recurring
+    - Retrospective depth matches work complexity
+  failure_signals:
+    - Generic answers without specifics
+    - Skipped retrospective due to time pressure
+    - Learnings not captured before moving on
+    - Same issues recur without pattern recognition
 ---
 
 # Learning Loop
@@ -58,37 +69,77 @@ Follow the behavior mode per `_pongogo_collaboration.instructions.md`.
 
 ---
 
+## Learning Loop Workflow
+
+<learning-workflow>
+<step number="1" action="assess-depth">
+Determine retrospective depth: quick (routine task), standard (significant feature), deep (milestone/incident).
+</step>
+
+<step number="2" action="answer-questions">
+Work through the 4 questions below. Be specific, not generic.
+</step>
+
+<step number="3" action="check-patterns">
+Is this insight recurring? Track if 1st/2nd occurrence; promote if 3rd+.
+</step>
+
+<step number="4" action="document">
+Record in appropriate location (work log, issue comment, or dedicated doc).
+</step>
+
+<gate>Do not skip retrospective. Every completed work has learnings. Capture before moving on.</gate>
+</learning-workflow>
+
+---
+
 ## The 4 Questions
 
-Ask these questions about the completed work:
+<retrospective-questions>
+<question id="accomplished" sequence="1">
+<prompt>What was accomplished?</prompt>
+<guidance>Brief summary of deliverables</guidance>
+<sub-prompts>
+<item>What was built, fixed, or changed?</item>
+<item>What's the user-visible outcome?</item>
+<item>What files/components were affected?</item>
+</sub-prompts>
+<quality-check>Answer should be specific enough that someone else could verify the work was done</quality-check>
+</question>
 
-### 1. What was accomplished?
+<question id="worked-well" sequence="2">
+<prompt>What worked well?</prompt>
+<guidance>Identify successful approaches worth repeating</guidance>
+<sub-prompts>
+<item>What techniques were effective?</item>
+<item>What decisions paid off?</item>
+<item>What would you do again?</item>
+</sub-prompts>
+<quality-check>Answers should be reusable insights, not just "it worked"</quality-check>
+</question>
 
-Brief summary of deliverables:
-- What was built, fixed, or changed?
-- What's the user-visible outcome?
-- What files/components were affected?
+<question id="challenging" sequence="3">
+<prompt>What was challenging?</prompt>
+<guidance>Capture obstacles and how they were overcome</guidance>
+<sub-prompts>
+<item>What blockers were encountered?</item>
+<item>What took longer than expected?</item>
+<item>What required iteration?</item>
+</sub-prompts>
+<quality-check>Include how challenges were resolved, not just what was hard</quality-check>
+</question>
 
-### 2. What worked well?
-
-Identify successful approaches:
-- What techniques were effective?
-- What decisions paid off?
-- What would you do again?
-
-### 3. What was challenging?
-
-Capture obstacles and how they were overcome:
-- What blockers were encountered?
-- What took longer than expected?
-- What required iteration?
-
-### 4. What would you do differently?
-
-Extract actionable learnings:
-- What insight emerged?
-- What approach would be better next time?
-- What pattern should be remembered?
+<question id="differently" sequence="4">
+<prompt>What would you do differently?</prompt>
+<guidance>Extract actionable learnings for future work</guidance>
+<sub-prompts>
+<item>What insight emerged?</item>
+<item>What approach would be better next time?</item>
+<item>What pattern should be remembered?</item>
+</sub-prompts>
+<quality-check>Learnings should be actionable, not vague ("plan better" is too vague)</quality-check>
+</question>
+</retrospective-questions>
 
 ---
 
@@ -230,6 +281,47 @@ If `work_log_on_task_completion` preference is `auto`:
 - Bundle retrospective with work log entry
 - Include retrospective summary in work log
 - Single communication: "I've logged what we accomplished and captured the learnings."
+
+---
+
+## Handling Uncertainty
+
+<uncertainty-protocol>
+If unable to answer a question:
+
+1. **State what's unclear** - "I don't have visibility into [X] to answer this question"
+2. **Ask user** - "What challenges did you encounter that I might have missed?"
+3. **Don't fabricate** - Better to have incomplete retrospective than invented learnings
+
+<when-answers-unclear>
+- "What worked well?" - If I only executed steps, I may not know what was innovative. Ask user.
+- "What was challenging?" - User may have struggled with aspects I didn't see.
+- "What would you do differently?" - User perspective is essential for this question.
+</when-answers-unclear>
+
+<acceptable-responses>
+- "From my perspective, [X] worked well. Did you find other approaches effective?"
+- "I observed challenges with [X]. Were there other obstacles I might have missed?"
+- "I'm not sure what would be done differently. What's your take on that?"
+</acceptable-responses>
+
+<unacceptable-responses>
+- Inventing learnings not supported by actual work
+- Generic platitudes ("communication is important")
+- Skipping questions because answers are hard
+</unacceptable-responses>
+</uncertainty-protocol>
+
+---
+
+## Grounding Rules
+
+<grounding>
+<rule id="specific-not-generic">Every answer must reference specific work done. "Testing helped" is bad; "Testing the auth flow in isolation caught the token refresh bug" is good.</rule>
+<rule id="verify-accomplishments">Only list accomplishments that can be verified (commits, files changed, issues closed). Don't claim work not done.</rule>
+<rule id="actionable-learnings">Learnings must be actionable. If you can't describe how to apply it next time, it's not actionable.</rule>
+<rule id="pattern-tracking-honest">Track patterns honestly. If you're unsure if something is recurring, check history first.</rule>
+</grounding>
 
 ---
 
