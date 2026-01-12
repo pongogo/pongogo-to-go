@@ -41,9 +41,9 @@ def assert_contains_instruction(
     """
     assert response.success, f"Request failed: {response.error_message}"
     assert response.content, "No content in response"
-    assert instruction_name in response.content, (
-        f"Expected '{instruction_name}' in response. Got: {response.content[:200]}..."
-    )
+    assert (
+        instruction_name in response.content
+    ), f"Expected '{instruction_name}' in response. Got: {response.content[:200]}..."
 
 
 def assert_error_code(
@@ -60,9 +60,9 @@ def assert_error_code(
         AssertionError: If response is success or has different error code
     """
     assert not response.success, "Expected error response, got success"
-    assert response.error_code == expected_code, (
-        f"Expected error code {expected_code}, got {response.error_code}"
-    )
+    assert (
+        response.error_code == expected_code
+    ), f"Expected error code {expected_code}, got {response.error_code}"
 
 
 def assert_tool_exists(tools: list[dict], tool_name: str) -> None:
@@ -76,9 +76,9 @@ def assert_tool_exists(tools: list[dict], tool_name: str) -> None:
         AssertionError: If tool not found
     """
     tool_names = [t.get("name", "") for t in tools]
-    assert tool_name in tool_names, (
-        f"Tool '{tool_name}' not found. Available: {tool_names}"
-    )
+    assert (
+        tool_name in tool_names
+    ), f"Tool '{tool_name}' not found. Available: {tool_names}"
 
 
 def assert_response_contains(
@@ -103,9 +103,9 @@ def assert_response_contains(
 
     for substring in substrings:
         check = substring if case_sensitive else substring.lower()
-        assert check in content, (
-            f"Expected '{substring}' in content. Got: {response.content[:200]}..."
-        )
+        assert (
+            check in content
+        ), f"Expected '{substring}' in content. Got: {response.content[:200]}..."
 
 
 def assert_response_not_contains(
