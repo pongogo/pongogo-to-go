@@ -16,6 +16,19 @@ related_instructions:
   - "../agentic_workflows/agentic_decision_making.instructions.md"
   - "../safety_prevention/validation_first_execution.instructions.md"
   - "../documentation/instruction_file_creation.instructions.md"
+evaluation:
+  success_signals:
+    - Every problem triggers prevention analysis before solving
+    - Solution eliminates problem category (not just instance)
+    - Prevention framework activates automatically without manual memory
+    - Friction signals trigger PAUSE and prevention question analysis
+    - Root cause addressed (not surface symptoms)
+  failure_signals:
+    - Fixing specific bug without asking what category it represents
+    - Creating manual processes that rely on remembering to check
+    - Point solution solves this instance but problem recurs
+    - Prevention framework requires manual activation or consultation
+    - Building new tools when decision pattern should be documented
 ---
 
 # Systematic Prevention Framework

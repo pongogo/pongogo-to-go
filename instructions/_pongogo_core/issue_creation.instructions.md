@@ -18,6 +18,17 @@ routing:
     - _pongogo_core/_pongogo_collaboration.instructions.md
   conditional:
     requires: github_pm  # Only active if GitHub PM detected
+evaluation:
+  success_signals:
+    - Issue follows appropriate template for type
+    - Title matches format [Type]-brief_description
+    - Acceptance criteria are specific and verifiable
+    - All template sections filled with real content (no placeholders)
+  failure_signals:
+    - Missing acceptance criteria
+    - Vague descriptions like "improve X" without specifics
+    - Template sections left as placeholders
+    - Wrong issue type for the work
 ---
 
 # Issue Creation
@@ -42,12 +53,27 @@ This instruction triggers when:
 
 ## Issue Types
 
-| Type | Use For | Label |
-|------|---------|-------|
-| **Task** | Single unit of work | `task` |
-| **Epic** | Multi-task initiative | `epic` |
-| **Bug** | Defect to fix | `bug` |
-| **Spike** | Research/investigation | `spike` |
+<issue-types>
+<type id="task" label="task">
+<use-for>Single unit of work with clear deliverables</use-for>
+<indicators>Concrete outcome, can be completed in one session to a few days</indicators>
+</type>
+
+<type id="epic" label="epic">
+<use-for>Multi-task initiative requiring breakdown</use-for>
+<indicators>Multiple deliverables, requires sub-issues, spans multiple work sessions</indicators>
+</type>
+
+<type id="bug" label="bug">
+<use-for>Defect requiring fix</use-for>
+<indicators>Something broken, unexpected behavior, regression</indicators>
+</type>
+
+<type id="spike" label="spike">
+<use-for>Research or investigation with time-box</use-for>
+<indicators>Unknown solution, needs exploration, learning-focused</indicators>
+</type>
+</issue-types>
 
 ---
 
@@ -183,6 +209,81 @@ Leave unassigned if:
 
 ---
 
+## Creation Flow
+
+<creation-flow>
+<step number="1" action="determine-type">
+Identify issue type based on indicators above. If unclear, ask user.
+</step>
+
+<step number="2" action="gather-requirements">
+Collect: goal, context, deliverables, acceptance criteria.
+If any are missing, ask user before proceeding.
+</step>
+
+<step number="3" action="draft-issue">
+Apply appropriate template. Fill ALL sections with real content.
+</step>
+
+<step number="4" action="validate-quality">
+Check against quality criteria below. Fix any issues before creating.
+</step>
+
+<step number="5" action="create-issue">
+Create issue via GitHub. Apply labels. Assign milestone if applicable.
+</step>
+
+<gate>Do not skip steps. If step 2 reveals missing information, pause and ask.</gate>
+</creation-flow>
+
+---
+
+## Issue Quality Criteria
+
+<quality-criteria>
+<criterion id="specific-goal">Goal states concrete outcome, not vague direction</criterion>
+<criterion id="verifiable-criteria">Each acceptance criterion can be objectively verified</criterion>
+<criterion id="no-placeholders">All template sections contain real content, no TBD/TODO</criterion>
+<criterion id="appropriate-scope">Task is single unit; Epic is broken down; Spike has time-box</criterion>
+<criterion id="context-provided">Reader can understand why this work matters</criterion>
+</quality-criteria>
+
+---
+
+## Handling Uncertainty
+
+<uncertainty-protocol>
+If user request lacks sufficient detail:
+
+1. **Do not assume** - Ask for clarification rather than inferring requirements
+2. **Identify gaps** - State specifically what information is missing
+3. **Propose options** - If type is ambiguous, present options with reasoning
+
+<acceptable-responses>
+- "To create this issue, I need: [specific missing info]. Can you provide that?"
+- "This could be a Task or Spike. Task if solution is known, Spike if we need to research first. Which fits?"
+- "The acceptance criteria are vague. Can you specify what 'improved' means concretely?"
+</acceptable-responses>
+
+<unacceptable-responses>
+- Creating issue with placeholder content
+- Assuming acceptance criteria not stated by user
+- Guessing issue type without confirming
+</unacceptable-responses>
+</uncertainty-protocol>
+
+---
+
+## Grounding Rules
+
+<grounding>
+<rule id="user-stated-only">Only include requirements explicitly stated by user. Do not infer or add requirements.</rule>
+<rule id="no-placeholders">Never create issues with TBD, TODO, or placeholder text. Get real content first.</rule>
+<rule id="verify-type">Confirm issue type matches the work. A research question is a Spike, not a Task.</rule>
+</grounding>
+
+---
+
 ## Examples
 
 ### Example 1: Task Issue
@@ -240,6 +341,35 @@ Infinite redirect between /login and /callback.
 - OS: macOS 14
 - Browser: Chrome 120
 - Version: 2.1.0
+```
+
+### Example 3: Spike Issue
+
+**Title**: `[Spike]-evaluate_auth_providers`
+
+```markdown
+## Research Question
+
+Which authentication provider best fits our requirements for SSO and MFA support?
+
+## Context
+
+Current auth is custom-built and lacks SSO. Enterprise customers requesting SSO.
+
+## Scope
+
+- Include: Auth0, Okta, Firebase Auth, Clerk
+- Exclude: Self-hosted solutions, custom SAML implementation
+
+## Expected Deliverables
+
+- [ ] Comparison matrix (features, pricing, integration effort)
+- [ ] Recommendation with rationale
+- [ ] Next steps for implementation
+
+## Time Box
+
+4 hours maximum. Report findings even if incomplete.
 ```
 
 ---

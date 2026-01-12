@@ -16,6 +16,19 @@ patterns:
 related_instructions:
   - "validation_essentials.instructions.md"
   - "deterministic_validation_framework.instructions.md"
+evaluation:
+  success_signals:
+    - All 5 validation tests pass (standard, testing, learning, backward compat, invalid)
+    - Logs isolated correctly with no cross-contamination between modes
+    - Data format verified (JSONL parseable by standard tools)
+    - Database rebuildable from JSONL source of truth
+    - Tests run sequentially to verify isolation from previous tests
+  failure_signals:
+    - Tests run in parallel losing isolation verification
+    - Cross-contamination detected between production and testing logs
+    - Missing backward compatibility testing (legacy state files)
+    - JSONL format validation skipped (trusting without verification)
+    - Silent failures on invalid configuration values
 routing:
   priority: 1
   triggers:

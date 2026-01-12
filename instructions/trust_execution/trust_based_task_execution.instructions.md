@@ -14,6 +14,17 @@ patterns:
 related_instructions:
   - "./feature_development.instructions.md"
   - "../agentic_workflows/agentic_decision_making.instructions.md"
+evaluation:
+  success_signals:
+    - Prerequisite work trusted without re-analysis
+    - Verification checklist completed before proceeding
+    - Implementation follows recommendations directly
+    - Learnings captured for meta-system improvement
+  failure_signals:
+    - Re-analyzing completed work unnecessarily
+    - Starting dependent work with incomplete prerequisites
+    - Proposing alternative approaches instead of implementing recommendations
+    - Questioning past work instead of improving forward
 routing:
   priority: 0
   triggers:

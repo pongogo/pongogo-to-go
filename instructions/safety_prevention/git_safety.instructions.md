@@ -15,6 +15,17 @@ related_instructions:
   - "../validation/deterministic_validation_framework.instructions.md"
   - "./systematic_prevention_framework.instructions.md"
   - "./validation_first_execution.instructions.md"
+evaluation:
+  success_signals:
+    - Backup branch created before destructive operations
+    - git diff --stat reviewed for large deletions
+    - --force-with-lease used instead of --force
+    - Zero unintended data loss
+  failure_signals:
+    - Destructive operation without backup
+    - Mass deletion committed without review
+    - Force push without --force-with-lease
+    - Pre-commit hooks bypassed without documented reason
 routing:
   priority: 1
   triggers:

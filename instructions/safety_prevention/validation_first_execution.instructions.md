@@ -20,6 +20,19 @@ related_instructions:
   - "../scripting/bash_script_maintenance.instructions.md"
   - "../scripting/python_script_development.instructions.md"
   - "../agentic_workflows/agentic_decision_making.instructions.md"
+evaluation:
+  success_signals:
+    - Script supports --help, --dry-run, --debug, --verbose flags
+    - Dry-run executed before first real execution of any script
+    - Current state queried before making modifications (targeted changes)
+    - Debug output shows variable values and decision points
+    - Post-execution validation confirms intended changes occurred
+  failure_signals:
+    - Script executes immediately without dry-run validation option
+    - Dry-run shows all items as targets (not checking current state)
+    - First execution skips dry-run due to confidence or time pressure
+    - Debug flag enabled but doesn't show decision logic
+    - No --help documentation for script flags and usage
 routing:
   priority: 0
   triggers:

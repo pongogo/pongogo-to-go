@@ -13,6 +13,19 @@ patterns:
   - "safety_prevention"
   - "systematic_prevention"
   - "validation_first_execution"
+evaluation:
+  success_signals:
+    - Backup branch created before any destructive operation
+    - git stash used instead of git reset --hard
+    - git diff --stat reviewed before commits with large deletions
+    - Force push uses --force-with-lease (not --force)
+    - Pre-commit hook validates large deletions with user confirmation
+  failure_signals:
+    - git reset --hard executed without backup
+    - Force push to main branch without backup and documentation
+    - Commits with >1000 line deletions without explicit review
+    - Pre-commit hooks bypassed with --no-verify without rationale
+    - Critical files (templates, workflows, instructions) emptied accidentally
 routing:
   priority: 1
   triggers:

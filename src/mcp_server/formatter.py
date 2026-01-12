@@ -64,14 +64,19 @@ def format_routing_results(
     # =========================================================================
     guidance_action = routing_result.get("guidance_action")
     if guidance_action:
-        output_parts.append("## ACTION REQUIRED: User Guidance Detected\n")
+        output_parts.append("## ⚠️ MANDATORY: User Guidance Detected\n")
+        output_parts.append(
+            "**BLOCKING REQUIREMENT**: You MUST call the `log_user_guidance()` MCP tool "
+            "BEFORE responding to the user. This captures user preferences for future work.\n\n"
+        )
         output_parts.append(f"{guidance_action.get('directive', '')}\n\n")
-        output_parts.append("**Parameters**:\n")
+        output_parts.append("**Call with these parameters**:\n")
         output_parts.append(
             f"```json\n{json.dumps(guidance_action.get('parameters', {}), indent=2)}\n```\n\n"
         )
         output_parts.append(
-            f"**Rationale**: {guidance_action.get('rationale', 'User guidance should be captured')}\n\n"
+            "**Why this matters**: User guidance that isn't captured is lost. "
+            "The user will have to repeat themselves, causing friction.\n\n"
         )
 
     # =========================================================================

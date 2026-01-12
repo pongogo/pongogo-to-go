@@ -14,6 +14,19 @@ patterns:
 related_instructions:
   - "naming_and_organization.md"
   - "project_organization_standards.md"
+evaluation:
+  success_signals:
+    - Root directory under 15 items (excluding hidden)
+    - Related directories grouped under parent
+    - Nested + prefixed pattern applied
+    - Self-documenting names (full words, not abbreviations)
+    - "@" autocomplete works for prefixed directories
+  failure_signals:
+    - Root pollution (many related items at root)
+    - Pure nesting without prefixes (ambiguous autocomplete)
+    - Cryptic abbreviations in directory names
+    - Inconsistent depth across parallel categories
+    - Code breaks due to hardcoded paths after refactoring
 routing:
   priority: 1
   triggers:

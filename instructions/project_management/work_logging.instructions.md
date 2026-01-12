@@ -15,6 +15,19 @@ patterns:
   - "project_management"
   - "documentation"
   - "continuous_improvement_loop"
+evaluation:
+  success_signals:
+    - Wiki repository validated before adding entry
+    - Entry at TOP of date section (reverse chronological)
+    - Bidirectional links created (wiki <-> GitHub)
+    - Two-level learning captured (content + process)
+    - Changes committed and pushed immediately
+  failure_signals:
+    - Skipping wiki validation before entry
+    - Entry appended to bottom (chronological order)
+    - One-way linking (wiki -> GitHub only)
+    - Missing sidebar update on first entry of day
+    - Forgetting to push after commit
 routing:
   priority: 1
   triggers:

@@ -19,6 +19,17 @@ related_instructions:
   - "validation/verification_efficiency.instructions.md"
   - "validation/epic_validation_standards.instructions.md"
   - "project_management/glossary_maintenance.instructions.md"
+evaluation:
+  success_signals:
+    - Controlled environment tests achieve 100% pass rate
+    - Production workflows maintain 95%+ success rate
+    - Verification efficiency protocol followed (max 2-3 checks)
+    - Quality gates enforced before completion
+  failure_signals:
+    - Tests pass at less than 100% in controlled environment
+    - Flaky tests accepted instead of fixed
+    - Endless re-verification exceeding budget
+    - Friction signals ignored during execution
 routing:
   priority: 1
   triggers:

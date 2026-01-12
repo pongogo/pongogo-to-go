@@ -16,6 +16,19 @@ patterns:
 related_instructions:
   - "../project_management/issue_closure.instructions.md"
   - "../learning/retrospective_triggers.instructions.md"
+evaluation:
+  success_signals:
+    - All items in scope enumerated (inventory pass)
+    - N-to-N cross-referencing performed
+    - Running notes file created before analysis starts
+    - Evidence annotation for each classification decision
+    - Actions executed immediately after category approval
+  failure_signals:
+    - Items missed in inventory
+    - Cross-reference pass skipped
+    - No tracking file (context loss unrecoverable)
+    - Classification without evidence
+    - Actions batched at end instead of immediate execution
 routing:
   priority: 1
   triggers:

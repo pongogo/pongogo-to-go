@@ -15,6 +15,19 @@ related_instructions:
   - "project_management/task_epic_basics.instructions.md"
   - "project_management/milestone_governance.instructions.md"
   - "safety_prevention/systematic_prevention_framework.instructions.md"
+evaluation:
+  success_signals:
+    - Scope boundaries identified before work begins
+    - Danger phrases recognized and halted immediately
+    - Scope change protocol applied when expansion detected
+    - Simple tasks stay simple (audit only audits, fix only fixes)
+    - Task completion matches original objective
+  failure_signals:
+    - Scope expanded without explicit approval
+    - Danger phrases ignored ("while we're at it...")
+    - Multiple objectives combined in single task
+    - Strategic work in tactical task
+    - Improvements added without scope change protocol
 routing:
   priority: 1
   triggers:

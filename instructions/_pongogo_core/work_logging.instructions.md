@@ -19,6 +19,17 @@ routing:
     nlp: "Create work log entry to track progress, decisions, and friction events"
   includes:
     - _pongogo_core/_pongogo_collaboration.instructions.md
+evaluation:
+  success_signals:
+    - Entry follows format with TIME, TYPE, and description
+    - Key decisions captured with rationale
+    - Friction events logged immediately while context fresh
+    - Entries specific enough to be useful later
+  failure_signals:
+    - Generic entries without specifics
+    - Missing timestamp or type classification
+    - Friction events not captured (lost learning opportunity)
+    - Entries too verbose or too sparse
 ---
 
 # Work Logging
@@ -82,14 +93,66 @@ Description of what was done.
 
 ### Entry Types
 
-| Type | Use For |
-|------|--------|
-| `task` | Completing a task or feature |
-| `decision` | Key architectural or design choice |
-| `blocker` | Obstacle encountered or resolved |
-| `learning` | Insight or pattern discovered |
-| `friction` | User correction signal (IMP-018) - capture immediately |
-| `session` | End-of-session summary |
+<entry-types>
+<type id="task" urgency="normal">
+<use-for>Completing a task or feature</use-for>
+<required-fields>What was done, key decision (if any), next step</required-fields>
+</type>
+
+<type id="decision" urgency="normal">
+<use-for>Key architectural or design choice</use-for>
+<required-fields>Context, options considered, choice made, rationale</required-fields>
+</type>
+
+<type id="blocker" urgency="high">
+<use-for>Obstacle encountered or resolved</use-for>
+<required-fields>Issue, root cause, resolution, time impact, prevention</required-fields>
+</type>
+
+<type id="learning" urgency="normal">
+<use-for>Insight or pattern discovered</use-for>
+<required-fields>Pattern, where it applies, evidence</required-fields>
+</type>
+
+<type id="friction" urgency="immediate">
+<use-for>User correction signal (IMP-018)</use-for>
+<required-fields>User signal, what I was doing, what user expected, prevention</required-fields>
+<note>Log immediately while context is fresh - do not wait for task completion</note>
+</type>
+
+<type id="session" urgency="normal">
+<use-for>End-of-session summary</use-for>
+<required-fields>Completed items, blocked items, next session plan</required-fields>
+</type>
+</entry-types>
+
+---
+
+## Logging Workflow
+
+<logging-workflow>
+<step number="1" action="identify-trigger">
+Determine what triggered logging need: task complete, decision made, friction signal, session end?
+</step>
+
+<step number="2" action="select-type">
+Choose appropriate entry type from above. Friction entries are IMMEDIATE - don't wait.
+</step>
+
+<step number="3" action="get-timestamp">
+Use current time. For friction, timestamp when event occurred, not when logged.
+</step>
+
+<step number="4" action="write-entry">
+Follow format for entry type. Include required fields.
+</step>
+
+<step number="5" action="append-to-file">
+Add to appropriate work log file (newest entries at top within each day).
+</step>
+
+<gate>Friction entries bypass normal workflow - log immediately when detected.</gate>
+</logging-workflow>
 
 ---
 
@@ -272,6 +335,46 @@ Description with context.
 **Next Step**: What comes next
 **Retrospective**: [If applicable]
 ```
+
+---
+
+## Handling Uncertainty
+
+<uncertainty-protocol>
+If unsure what to log or how:
+
+1. **When in doubt, log** - Better to have entry than miss important context
+2. **Ask for clarity** - "Should I log this as a decision or a task?"
+3. **State unknowns** - "Next step unclear - awaiting user input"
+
+<common-uncertainties>
+- Entry type unclear: Default to `task` if work was done, `decision` if choice was made
+- Multiple things happened: Log separate entries or combine with clear sections
+- Work log file doesn't exist: Create it following file organization pattern
+</common-uncertainties>
+
+<acceptable-responses>
+- "I'll log this as a [type] entry. Does that capture it correctly?"
+- "Several things happened this session. Should I create separate entries or combine them?"
+</acceptable-responses>
+
+<unacceptable-responses>
+- Skipping logging because unsure of format
+- Logging without timestamp
+- Creating vague entries that won't be useful later
+</unacceptable-responses>
+</uncertainty-protocol>
+
+---
+
+## Grounding Rules
+
+<grounding>
+<rule id="real-timestamps">Use actual current time, not guessed or approximate. Use MCP time server if available.</rule>
+<rule id="specific-descriptions">Descriptions must reference specific work (files, commits, features). "Made progress" is not acceptable.</rule>
+<rule id="friction-immediate">Friction entries MUST be logged immediately when detected. Context degrades rapidly.</rule>
+<rule id="evidence-verifiable">Evidence (commits, files) must be real and verifiable. Don't reference commits that don't exist.</rule>
+</grounding>
 
 ---
 

@@ -1,5 +1,18 @@
 ---
 id: core:pi_tracking
+evaluation:
+  success_signals:
+    - Third occurrence triggers threshold prompt for action
+    - Patterns tracked with count, dates, and context
+    - Resolved patterns documented with resolution details
+    - Pattern types categorized (process, technical, knowledge)
+    - Integration with retrospectives for pattern discovery
+  failure_signals:
+    - Third occurrence treated same as first (no threshold action)
+    - Patterns tracked without context or dates
+    - Resolved patterns not documented (lessons lost)
+    - Over-tracking (every issue treated as pattern)
+    - Missing connection to retrospective findings
 routing:
   protected: true
   priority: 10

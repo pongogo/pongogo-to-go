@@ -36,6 +36,17 @@ related_instructions:
   - "project_management/project_status_updates.instructions.md"
   - "project_management/project_operations_preflight.instructions.md"
   - "github_integration/issue_commencement.instructions.md"
+evaluation:
+  success_signals:
+    - All 6 pre-execution checklist questions answered before work
+    - Enforcement mechanisms followed with documented evidence
+    - Zero undisclosed shortcuts or substitutions
+    - User confirms satisfaction with compliance and transparency
+  failure_signals:
+    - Work started without pre-execution checklist
+    - Enforcement evidence missing from output
+    - Hidden shortcuts discovered after execution
+    - User correction signals ignored
 ---
 
 # Agent Compliance Framework

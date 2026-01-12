@@ -19,6 +19,19 @@ related_instructions:
   - "../safety_prevention/systematic_prevention_framework.instructions.md"
   - "../agentic_workflows/agent_environment_setup.instructions.md"
   - "./dependency_management.instructions.md"
+evaluation:
+  success_signals:
+    - Config validated at startup with Zod/Pydantic before any operations
+    - Service fails fast with clear error on missing required variables
+    - .env.example documents all variables with descriptions and examples
+    - .env files in .gitignore, secrets never committed to git
+    - Type-safe config module exports validated typed config object
+  failure_signals:
+    - Service runs with defaults for missing critical config (silent failure)
+    - Secrets committed to git history (DATABASE_URL with password)
+    - process.env accessed directly throughout codebase (not centralized)
+    - No .env.example file documenting required variables
+    - Config validation at runtime instead of startup (late failures)
 routing:
   priority: 1
   triggers:

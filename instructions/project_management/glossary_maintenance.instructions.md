@@ -17,6 +17,19 @@ related_instructions:
   - "documentation/wiki_workflow.instructions.md"
   - "documentation/knowledge_preservation_framework.instructions.md"
   - "project_management/work_logging.instructions.md"
+evaluation:
+  success_signals:
+    - Term includes Definition, Category, Relationships, Usage, Example
+    - Term added to both category section AND alphabetical index
+    - Bidirectional cross-references created (See also)
+    - Wiki submodule reference updated in main repo
+    - New PM terms added immediately when introduced
+  failure_signals:
+    - Term missing required sections (Definition, Category)
+    - One-location entry (category OR index, not both)
+    - Missing cross-references to related terms
+    - Forgot wiki submodule update in main repo
+    - Vague or circular definitions
 routing:
   priority: 1
   triggers:

@@ -14,6 +14,17 @@ patterns:
   - "context_rich_commits"
   - "model_attribution"
   - "archaeological_commit_messages"
+evaluation:
+  success_signals:
+    - Summary line 50-72 chars in imperative mood
+    - What Changed and Why sections present with specifics
+    - Model attribution and Co-Authored-By footer included
+    - Archaeological value preserved (future self can understand)
+  failure_signals:
+    - Vague summary like "update files" or "fix bug"
+    - Missing Why section (rationale not documented)
+    - Missing model attribution footer
+    - Placeholder text in commit message
 routing:
   priority: 1
   triggers:

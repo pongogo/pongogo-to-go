@@ -7,6 +7,19 @@ related_instructions:
   - "./devops/observability_patterns.instructions.md"
   - "./safety_prevention/systematic_prevention_framework.instructions.md"
   - "./microservices_development.instructions.md"
+evaluation:
+  success_signals:
+    - All AI decisions logged with reasoning and confidence
+    - Correlation IDs propagated across service calls
+    - Before/after states captured for changes
+    - Rollback strategy defined for reversible operations
+    - Alternatives considered documented for decisions
+  failure_signals:
+    - Decisions logged without reasoning or confidence
+    - Missing correlation IDs (can't trace across services)
+    - No before/after snapshots for state changes
+    - Rollback data insufficient for undo
+    - Unstructured log messages (not JSON)
 routing:
   priority: 1
   triggers:

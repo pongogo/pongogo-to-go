@@ -1,5 +1,18 @@
 ---
 id: core:user_guidance_capture
+evaluation:
+  success_signals:
+    - guidance_action directive triggers log_user_guidance call
+    - Explicit guidance acknowledged and ready for immediate action
+    - Implicit guidance tracked until 3-occurrence threshold
+    - User-focused language used (never mention instruction files)
+    - Guidance captured without interrupting user workflow
+  failure_signals:
+    - guidance_action directive ignored (compliance violation)
+    - Guidance captured with disruptive prompts mid-workflow
+    - Technical language exposed (mention instruction files to user)
+    - Missing context makes captured guidance unusable
+    - Over-capturing (every statement treated as guidance)
 routing:
   protected: true
   priority: 10
@@ -26,6 +39,21 @@ routing:
 **Purpose**: Automatically detect and capture user-expressed rules, preferences, and feedback for future routing.
 
 **Philosophy**: User guidance is implicit knowledge transfer. When captured systematically, it compounds into a personalized knowledge base.
+
+---
+
+## 🛑 STOP: COMPLIANCE GATE (BLOCKING - NOT ADVISORY)
+
+**BEFORE RESPONDING TO USER**, check if routing response includes `guidance_action`.
+
+If `guidance_action` is present:
+
+1. **MANDATORY**: Call `log_user_guidance()` MCP tool with the provided parameters
+2. **THEN**: Respond to the user's request
+
+**Why this is blocking**: User guidance that isn't captured is lost forever. The user will have to repeat themselves, causing friction and degraded trust.
+
+**Failure to comply**: Ignoring `guidance_action` directives is a compliance violation that causes measurable friction.
 
 ---
 

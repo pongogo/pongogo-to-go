@@ -15,6 +15,19 @@ patterns:
   - "project_management"
   - "systematic_prevention"
   - "agentic_workflows"
+evaluation:
+  success_signals:
+    - Complexity classification used (Simple/Moderate/Complex)
+    - No time estimates in issues (hours, days, weeks, deadlines)
+    - Scope boundaries clearly defined (deliverables, constraints)
+    - Autonomy level appropriate for complexity
+    - Quality criteria over velocity metrics
+  failure_signals:
+    - Time estimates in planning artifacts
+    - T-shirt sizing as proxy for time (S/M/L hours)
+    - Deadlines or target dates specified
+    - Velocity tracking (story points per week)
+    - Rushing execution to show progress (commit frequency)
 routing:
   priority: 1
   triggers:
