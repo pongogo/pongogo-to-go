@@ -29,6 +29,21 @@ routing:
 
 ---
 
+## 🛑 STOP: COMPLIANCE GATE (BLOCKING - NOT ADVISORY)
+
+**BEFORE RESPONDING TO USER**, check if routing response includes `guidance_action`.
+
+If `guidance_action` is present:
+
+1. **MANDATORY**: Call `log_user_guidance()` MCP tool with the provided parameters
+2. **THEN**: Respond to the user's request
+
+**Why this is blocking**: User guidance that isn't captured is lost forever. The user will have to repeat themselves, causing friction and degraded trust.
+
+**Failure to comply**: Ignoring `guidance_action` directives is a compliance violation that causes measurable friction.
+
+---
+
 ## When to Apply
 
 This instruction triggers when:
