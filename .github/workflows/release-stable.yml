@@ -214,8 +214,9 @@ jobs:
             pongogo.azurecr.io/pongogo:latest
           build-args: |
             PONGOGO_VERSION=${{ needs.validate.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # CRITICAL: Stable releases must NOT use cache to ensure exact source is built
+          # GHA cache caused stale files to be included (durian-0.6.2 instead of 0.6.4)
+          no-cache: true
 
       - name: Trigger deploy
         uses: actions/github-script@v7
