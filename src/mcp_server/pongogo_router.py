@@ -1,7 +1,7 @@
 """
-Pongogo Router (durian-0.6.3) - CANONICAL
+Pongogo Router (durian-0.6.4) - CANONICAL
 
-Feature: Unified Router Architecture
+Task #505: Unified Router Architecture
     This is the canonical router for Pongogo, unifying:
     - pongogo-to-go/src/mcp_server/router.py (base)
     - super_pongogo_router_and_eval.py (boundary detection)
@@ -9,25 +9,26 @@ Feature: Unified Router Architecture
 
     All new development should use this file.
 
-Features (through extended friction patterns):
-    - Violation detection
-    - Approval suppression
-    - Instruction bundles
-    - Semantic flags
-    - Commencement lookback
-    - Procedural warnings
-    - Friction detection
-    - Mistake type detection
-    - Guidance detection
-    - Lifecycle keywords
-    - Additional friction
-    - Violation checklist
-    - Boundary detection
-    - Lexicon-based guidance (Feature)
-    - Extended friction patterns (+10.9% F1)
+Features (IMP-002 through IMP-019):
+    - Violation detection (IMP-002)
+    - Approval suppression (IMP-003)
+    - Instruction bundles (IMP-007)
+    - Semantic flags (IMP-008)
+    - Commencement lookback (IMP-009)
+    - Procedural warnings (IMP-010)
+    - Friction detection (IMP-011)
+    - Mistake type detection (IMP-012)
+    - Guidance detection (IMP-013)
+    - Lifecycle keywords (IMP-014)
+    - Additional friction (IMP-015)
+    - Violation checklist (IMP-016)
+    - Boundary detection (IMP-016)
+    - Lexicon-based guidance (IMP-017, Task #488)
+    - Extended friction patterns (IMP-018, +10.9% F1)
+    - Guidance pre-check (IMP-019, Task #519)
 
 Rule-based routing engine implementation using NLP + taxonomy + context + globs.
-Part of the RoutingEngine architecture (Research, Feature).
+Part of the RoutingEngine architecture (Spike #188, Task #214).
 
 Routing Algorithm:
 1. Parse user message (extract keywords, intent)
@@ -45,8 +46,8 @@ Routing Algorithm:
 This is Pongogo's differentiator vs all 7 analyzed platforms (0/7 provide semantic routing).
 
 References:
-    - Research: Routing Engine Architecture
-    - Feature: Create RoutingEngine Abstract Interface
+    - Spike #188: Routing Engine Architecture
+    - Task #214: Create RoutingEngine Abstract Interface
     - docs/architecture/routing_engine_interface.md
 """
 
@@ -59,17 +60,16 @@ from pathlib import Path
 from typing import Any
 
 from mcp_server.instruction_handler import InstructionHandler
-from mcp_server.routing_engine import (
+from routing_engine import (
     FeatureSpec,
     RoutingEngine,
     register_engine,
     set_default_engine,
 )
 
-# Feature: Lexicon-based guidance detection
-# DB-based lexicon system
+
 try:
-    from mcp_server.lexicon_db import DEFAULT_DB_PATH, LexiconDB
+    from mcp_server.lexicon_db import LexiconDB, load_lexicon_from_db, DEFAULT_DB_PATH
 
     LEXICON_DB_AVAILABLE = True
 except ImportError:
@@ -86,16 +86,16 @@ except ImportError:
     CONTEXT_DISAMBIGUATION_AVAILABLE = False
     match_all_entries = None  # type: ignore
 
-# Lexicon availability (DB only - YAML deprecated)
+# Lexicon availability (DB only - YAML deprecated in Task #504)
 LEXICON_AVAILABLE = LEXICON_DB_AVAILABLE
 
 logger = logging.getLogger(__name__)
 
 # Single source of truth for this engine's version
 # Used by @register_engine decorator and version property
-DURIAN_VERSION = "durian-0.6.3"
+DURIAN_VERSION = "durian-0.6.4"
 
-# Simple approval patterns that should suppress routing
+#
 # These messages are typically conversational continuations, not queries
 APPROVAL_PATTERNS = {
     # Exact matches (case-insensitive)
@@ -178,7 +178,7 @@ APPROVAL_WORDS = {
     "yeah",
 }
 
-# refinement: Conservative commencement phrases (table-based, not regex)
+# IMP-003 refinement: Conservative commencement phrases (table-based, not regex)
 # These indicate continuation intent and should NOT suppress routing
 # Using exact/prefix phrases to avoid false positives like "please don't", "let's just consider this a failure"
 # Evidence: Regex patterns matched 129/497 events but only ~80% were true continuations
@@ -214,8 +214,8 @@ COMMENCEMENT_PHRASES = [
     "proceed with",
 ]
 
-# Violation words that should trigger compliance routing
-# Evidence: Events 32, 33, 43, 45, 47, 50, 53 from Feature missed violations
+#
+# Evidence: Events 32, 33, 43, 45, 47, 50, 53 from Task #130 missed violations
 # Note: Refined to avoid false positives on common technical terms
 VIOLATION_WORDS = {
     # Strong user frustration/correction indicators
@@ -251,9 +251,9 @@ VIOLATION_CATEGORY_BOOST = 20
 # Foundational instruction score (ensures they appear first when included)
 FOUNDATIONAL_SCORE = 1000
 
-# Procedural instruction detection (Feature)
+# #269)
 # When procedural instructions are routed, warn agent to READ before executing
-# This addresses the "Instruction Execution from Memory" anti-pattern (Feature RCA)
+# This addresses the "Instruction Execution from Memory" anti-pattern (Task #200 RCA)
 PROCEDURAL_CONTENT_PATTERNS = [
     r"compliance\s*gate",  # COMPLIANCE GATE sections
     r"step\s*\d+[:\s]",  # Step 1:, Step 2:, etc.
@@ -292,13 +292,13 @@ COMPILED_PROCEDURAL_PATTERNS = [
     for p in PROCEDURAL_CONTENT_PATTERNS
 ]
 
-# Commencement look-back boost amount
+#
 # When commencement detected, boost instructions from previous routing
 COMMENCEMENT_LOOKBACK_BOOST = 15
 
-# Co-occurring instruction bundles
+#
 # When one instruction is routed, boost co-occurring instructions
-# Evidence: Feature analysis of 497 ground truth events
+# Evidence: Task #204 analysis of 497 ground truth events
 # Format: instruction_id -> (co_occurring_id, boost_amount, co_occurrence_rate)
 INSTRUCTION_BUNDLES = {
     # Trust execution bundle (55% co-occurrence)
@@ -330,11 +330,11 @@ INSTRUCTION_BUNDLES = {
     ],
 }
 
-# Bundle boost amount
+#
 BUNDLE_BOOST_BASE = 10
 
-# Semantic flag patterns for category boosting
-# Evidence: Feature analysis of 497 ground truth events
+#
+# Evidence: Task #204 analysis of 497 ground truth events
 # Format: flag_name -> (patterns, boost_categories, boost_amount)
 import re as _re  # Needed for precompilation
 
@@ -433,7 +433,7 @@ COMPILED_SEMANTIC_FLAGS = {
     for flag_name, config in SEMANTIC_FLAG_PATTERNS.items()
 }
 
-# Friction patterns from Research iteration detection
+# #278 iteration detection
 # These are MORE SPECIFIC than semantic_flags "corrective" patterns
 # Evidence: 43 friction events (21.5%) in 200-event ground truth
 # Types: correction (35), retry (4), rejection (4)
@@ -521,7 +521,7 @@ COMPILED_FRICTION_PATTERNS = {
     for friction_type, patterns in FRICTION_PATTERNS.items()
 }
 
-# Friction boost configuration
+#
 FRICTION_BOOST_AMOUNT = 20  # Tuned: 20 optimal (8-30 tested)
 FRICTION_BOOST_CATEGORIES = [
     "trust_execution",
@@ -530,7 +530,7 @@ FRICTION_BOOST_CATEGORIES = [
     "development_standards",
 ]  # Tuned: 4 optimal
 
-# Boundary detection patterns (conversation start vs continuation)
+#
 # Based on GT v4 analysis of 56 BOUNDARY vs 444 CONTINUATION events
 BOUNDARY_PATTERNS = {
     "new_work": [
@@ -617,7 +617,7 @@ COMPILED_BOUNDARY_PATTERNS = {
     for boundary_type, patterns in BOUNDARY_PATTERNS.items()
 }
 
-# Mistake type patterns from Research outcome analysis
+# #284 outcome analysis
 # Maps user message patterns to mistake types that require specific preventive instructions
 MISTAKE_PATTERNS = {
     "incomplete_implementation": [
@@ -682,7 +682,7 @@ MISTAKE_PATTERNS = {
     ],
 }
 
-# Map mistake types to preventive instructions (from outcome ground truth)
+#
 MISTAKE_INSTRUCTION_MAP = {
     "incomplete_implementation": [
         "architecture_principles.instructions.md",
@@ -718,10 +718,10 @@ COMPILED_MISTAKE_PATTERNS = {
     for mistake_type, patterns in MISTAKE_PATTERNS.items()
 }
 
-# Outcome boost configuration
+#
 OUTCOME_BOOST_AMOUNT = 5  # Tuned: 5 optimal (3-20 tested, low values best)
 
-# Lifecycle keyword triggers (Feature)
+# #477)
 # Maps lifecycle keywords to specific checklist instructions
 # Evidence: outcome_based_evaluation.md found 1,561 routing gaps, 57% to closure, 43% to commencement
 LIFECYCLE_KEYWORDS = {
@@ -786,7 +786,7 @@ LIFECYCLE_KEYWORDS = {
     },
 }
 
-# Additional iteration patterns (Feature, Research)
+# #477, Spike #278)
 # Patterns not covered by existing FRICTION_PATTERNS
 # Evidence: iteration_detection_heuristics.md - key patterns for correction/refinement
 ADDITIONAL_FRICTION_PATTERNS = {
@@ -812,7 +812,7 @@ ADDITIONAL_FRICTION_PATTERNS = {
     ],
 }
 
-# Extended friction patterns from routing experiments (2026-01-11)
+#
 # Evidence: experiments/routing_improvement_experiments.md - systematic testing against GT v4
 # Impact: Friction F1 53.9% → 64.8% (+10.9%), Recall 43.6% → 63.6% (+20%)
 # Experiments: F1 (frustration), F2 (process), F3 (code errors), F4 (soft correction)
@@ -841,9 +841,9 @@ EXTENDED_FRICTION_PATTERNS = {
     ],
 }
 
-# Violation look-back to checklists (Feature)
+# #477)
 # When violations detected, boost checklist instructions to prevent recurrence
-# Evidence: routing_improvement_backlog.md - concept
+# Evidence: routing_improvement_backlog.md - IMP-010 concept (different from current IMP-010)
 VIOLATION_CHECKLIST_BOOST = {
     "instructions": [
         "issue_closure_checklist.md",
@@ -854,7 +854,7 @@ VIOLATION_CHECKLIST_BOOST = {
     "boost": 15,
 }
 
-# User guidance detection patterns (Feature)
+# #390)
 # Detects when users express rules, preferences, or feedback
 # Used to capture guidance for automatic knowledge accumulation
 #
@@ -1598,25 +1598,27 @@ def _compile_guidance_patterns(seeded: set, custom: set) -> _re.Pattern:
 
 # Default feature configuration (all improvements enabled)
 DEFAULT_FEATURES = {
-    "violation_detection": True,
-    "approval_suppression": True,
+    "violation_detection": True,  #
+    "approval_suppression": True,  #
     "foundational": True,  # Always-include foundational instructions
-    "commencement_lookback": True,
-    "instruction_bundles": True,
-    "semantic_flags": True,
-    "procedural_warning": True,
-    "iteration_aware": True,
-    "friction_boost": True,
-    "outcome_aware": True,
-    "outcome_boost": True,
-    "guidance_detection": True,
-    "lifecycle_keywords": True,
-    "additional_friction": False,
-    "violation_checklist": True,
-    "boundary_detection": True,
-    "use_lexicon": True,
-    "lexicon_disambiguation": True,
-    "extended_friction": True,
+    "commencement_lookback": True,  #
+    "instruction_bundles": True,  #
+    "semantic_flags": True,  #
+    "procedural_warning": True,  # #269)
+    "iteration_aware": True,  # #278 patterns
+    "friction_boost": True,  #
+    "outcome_aware": True,  # #284 patterns
+    "outcome_boost": True,  #
+    "guidance_detection": True,  # #390)
+    "lifecycle_keywords": True,  # #477)
+    "additional_friction": False,  # #512) - patterns cause FPs, moved to guidance-only
+    "violation_checklist": True,  # #477)
+    "boundary_detection": True,  #
+    "use_lexicon": True,  # #488, #511)
+    "lexicon_disambiguation": True,  # #488)
+    "extended_friction": True,  #
+    "guidance_pre_check": True,  # #519)
+    "guidance_action": True,  #
 }
 
 
@@ -1636,11 +1638,11 @@ class RuleBasedRouter(RoutingEngine):
         - NLP triggers: +8 per intent keyword overlap
         - Contextual: +5 per file/branch context match
 
-    Feature Flags (Feature Phase 00):
-        - violation_detection: Enable violation detection boost
-        - approval_suppression: Enable approval message suppression
+    Feature Flags (Task #204 Phase 00):
+        - violation_detection: Enable IMP-002 violation detection boost
+        - approval_suppression: Enable IMP-003 approval message suppression
         - foundational: Enable always-include foundational instructions
-        - commencement_lookback: Enable look-back routing on commencement
+        - commencement_lookback: Enable IMP-009 look-back routing on commencement
 
     This is the baseline routing implementation (durian-00) against which
     future versions (durian-01, durian-02, etc.) will be compared.
@@ -1654,23 +1656,22 @@ class RuleBasedRouter(RoutingEngine):
 
         Args:
             instruction_handler: InstructionHandler providing access to knowledge base
-            features: Optional dict of feature flags (Feature Phase 00):
-                - violation_detection: bool (default True)
-                - approval_suppression: bool (default True)
+            features: Optional dict of feature flags (Task #204 Phase 00):
+                - violation_detection: bool (default True) - IMP-002
+                - approval_suppression: bool (default True) - IMP-003
                 - foundational: bool (default True) - always-include foundational
-                - commencement_lookback: bool (default True)
+                - commencement_lookback: bool (default True) - IMP-009
         """
         super().__init__(instruction_handler)
         # Keep backward-compatible attribute name
         self.instruction_handler = instruction_handler
 
-        # Merge provided features with defaults (Feature Phase 00)
+        # Merge provided features with defaults (Task #204 Phase 00)
         self.features = {**DEFAULT_FEATURES, **(features or {})}
 
         # Phase 4 (Issue #390): Load custom guidance triggers
         self._load_custom_triggers()
 
-        # Load DB-based lexicon if enabled
         if self.features.get("use_lexicon") and LEXICON_AVAILABLE:
             self._load_lexicon()
 
@@ -1728,7 +1729,9 @@ class RuleBasedRouter(RoutingEngine):
         """
         Load guidance trigger lexicon from database.
 
-        Lexicon-based guidance and friction detection using SQLite DB.
+        Task #488: Lexicon-based guidance detection.
+        Task #511: DB-based lexicon storage.
+        Task #504: YAML fallback deprecated - DB only.
         """
         if not LEXICON_AVAILABLE:
             logger.warning("Lexicon DB not available, skipping lexicon load")
@@ -1801,13 +1804,13 @@ class RuleBasedRouter(RoutingEngine):
         return [
             FeatureSpec(
                 name="violation_detection",
-                description="Boost compliance routing on frustrated/corrective messages",
+                description="IMP-002: Boost compliance routing on frustrated/corrective messages",
                 default=True,
                 category="scoring",
             ),
             FeatureSpec(
                 name="approval_suppression",
-                description="Suppress routing for simple approval messages",
+                description="IMP-003: Suppress routing for simple approval messages",
                 default=True,
                 category="routing",
             ),
@@ -1819,99 +1822,111 @@ class RuleBasedRouter(RoutingEngine):
             ),
             FeatureSpec(
                 name="commencement_lookback",
-                description="Boost previous routing results on commencement messages",
+                description="IMP-009: Boost previous routing results on commencement messages",
                 default=True,
                 category="scoring",
             ),
             FeatureSpec(
                 name="instruction_bundles",
-                description="Boost co-occurring instruction pairs based on ground truth analysis",
+                description="IMP-007: Boost co-occurring instruction pairs based on ground truth analysis",
                 default=True,
                 category="scoring",
             ),
             FeatureSpec(
                 name="semantic_flags",
-                description="Boost categories based on message semantic flags (corrective, directive, etc.)",
+                description="IMP-008: Boost categories based on message semantic flags (corrective, directive, etc.)",
                 default=True,
                 category="scoring",
             ),
             FeatureSpec(
                 name="procedural_warning",
-                description="Warn when procedural instructions are routed (requires Read before execute)",
+                description="IMP-010: Warn when procedural instructions are routed (requires Read before execute)",
                 default=True,
                 category="compliance",
             ),
             FeatureSpec(
                 name="iteration_aware",
-                description="Detect friction (correction/retry/rejection) using Research patterns",
+                description="IMP-011: Detect friction (correction/retry/rejection) using Spike #278 patterns",
                 default=True,
                 category="scoring",
             ),
             FeatureSpec(
                 name="friction_boost",
-                description="Boost trust/learning/safety categories when friction detected",
+                description="IMP-011: Boost trust/learning/safety categories when friction detected",
                 default=True,
                 category="scoring",
             ),
             FeatureSpec(
                 name="outcome_aware",
-                description="Detect mistake types (incomplete_implementation, premature_action, etc.) using Research patterns",
+                description="IMP-012: Detect mistake types (incomplete_implementation, premature_action, etc.) using Spike #284 patterns",
                 default=True,
                 category="scoring",
             ),
             FeatureSpec(
                 name="outcome_boost",
-                description="Boost specific preventive instructions when mistake type detected",
+                description="IMP-012: Boost specific preventive instructions when mistake type detected",
                 default=True,
                 category="scoring",
             ),
             FeatureSpec(
                 name="guidance_detection",
-                description="Detect user guidance (rules, preferences, feedback) for knowledge capture (Feature)",
+                description="IMP-013: Detect user guidance (rules, preferences, feedback) for knowledge capture (cleanup)",
                 default=True,
                 category="detection",
             ),
             FeatureSpec(
                 name="lifecycle_keywords",
-                description="Boost closure/commencement checklists on lifecycle keywords (Feature)",
+                description="IMP-014: Boost closure/commencement checklists on lifecycle keywords (cleanup)",
                 default=True,
                 category="scoring",
             ),
             FeatureSpec(
                 name="additional_friction",
-                description="Extended friction patterns from Research (Feature)",
+                description="IMP-015: Extended friction patterns from Spike #278 (cleanup)",
                 default=True,
                 category="detection",
             ),
             FeatureSpec(
                 name="violation_checklist",
-                description="Boost checklists when violations detected (Feature)",
+                description="IMP-016: Boost checklists when violations detected (cleanup)",
                 default=True,
                 category="scoring",
             ),
             FeatureSpec(
                 name="boundary_detection",
-                description="Detect conversation boundaries (new topic vs continuation)",
+                description="IMP-016: Detect conversation boundaries (new topic vs continuation)",
                 default=True,
                 category="detection",
             ),
             FeatureSpec(
                 name="use_lexicon",
-                description="Use YAML lexicon for guidance detection instead of hardcoded patterns (Feature)",
+                description="IMP-017: Use YAML lexicon for guidance detection instead of hardcoded patterns (cleanup)",
                 default=False,
                 category="detection",
             ),
             FeatureSpec(
                 name="lexicon_disambiguation",
-                description="Apply context disambiguation to lexicon matches (Feature)",
+                description="IMP-017: Apply context disambiguation to lexicon matches (cleanup)",
                 default=True,
                 category="detection",
             ),
             FeatureSpec(
                 name="extended_friction",
-                description="Extended friction patterns from routing experiments (+10.9% F1)",
+                description="IMP-018: Extended friction patterns from routing experiments (+10.9% F1)",
                 default=True,
                 category="detection",
+            ),
+            FeatureSpec(
+                name="guidance_pre_check",
+                description="IMP-019: Run guidance detection as pre-check phase before main routing (cleanup)",
+                default=True,
+                category="routing",
+            ),
+            FeatureSpec(
+                name="guidance_action",
+                description="IMP-019: Emit guidance_action directive when guidance detected (cleanup)",
+                default=True,
+                category="routing",
             ),
         ]
 
@@ -1935,6 +1950,7 @@ class RuleBasedRouter(RoutingEngine):
             - routing_analysis: Breakdown of routing decision
         """
         try:
+            #
             # Prevents over-routing on conversational continuations
             # Refinement: Commencement patterns override suppression (work intent detected)
             if self.features.get("approval_suppression", True):
@@ -1947,7 +1963,7 @@ class RuleBasedRouter(RoutingEngine):
                         "count": 0,
                         "routing_analysis": {
                             "suppressed": True,
-                            "reason": f"{suppression_reason}",
+                            "reason": f"IMP-003: {suppression_reason}",
                             "commencement_detected": False,
                             "message_preview": message[:50]
                             if len(message) > 50
@@ -1957,7 +1973,7 @@ class RuleBasedRouter(RoutingEngine):
                 elif commencement_detected:
                     # Log that we detected commencement and did NOT suppress
                     logger.info(
-                        f"Commencement pattern overrode approval suppression: {message[:50]}"
+                        f"IMP-003: Commencement pattern overrode approval suppression: {message[:50]}"
                     )
             else:
                 # approval_suppression disabled, so no check performed
@@ -1970,15 +1986,23 @@ class RuleBasedRouter(RoutingEngine):
                 else None
             )
 
+            # #519)
+            # Run BEFORE main routing to emit guidance_action directive immediately
+            pre_check_result = None
+            if self.features.get("guidance_pre_check", True):
+                pre_check_result = self._pre_check_guidance(message)
+
             # Parse message and context
             keywords = self._extract_keywords(message)
             intent = self._extract_intent(message)
 
+            #
             if self.features.get("violation_detection", True):
                 violation_info = self._detect_violations(message)
             else:
                 violation_info = {"detected": False, "signals": [], "boost_amount": 0}
 
+            #
             if self.features.get("semantic_flags", True):
                 semantic_flags_info = self._detect_semantic_flags(message)
             else:
@@ -1988,6 +2012,7 @@ class RuleBasedRouter(RoutingEngine):
                     "category_boosts": {},
                 }
 
+            # #278 patterns (if enabled)
             if self.features.get("iteration_aware", True):
                 friction_info = self._detect_friction(message)
             else:
@@ -1998,6 +2023,7 @@ class RuleBasedRouter(RoutingEngine):
                     "category_boosts": {},
                 }
 
+            # #284 patterns (if enabled)
             if self.features.get("outcome_aware", True):
                 mistake_info = self._detect_mistake_type(message)
             else:
@@ -2008,7 +2034,11 @@ class RuleBasedRouter(RoutingEngine):
                     "instruction_boosts": [],
                 }
 
-            if self.features.get("guidance_detection", True):
+            # IMP-013/019: User guidance detection
+            # If pre-check was run (IMP-019), use that result to avoid redundant detection
+            if pre_check_result is not None:
+                guidance_info = pre_check_result["guidance_info"]
+            elif self.features.get("guidance_detection", True):
                 guidance_info = self._detect_user_guidance(message)
             else:
                 guidance_info = {
@@ -2018,6 +2048,7 @@ class RuleBasedRouter(RoutingEngine):
                     "content": None,
                 }
 
+            #
             if self.features.get("boundary_detection", True):
                 boundary_info = self._detect_boundary(message)
             else:
@@ -2028,6 +2059,7 @@ class RuleBasedRouter(RoutingEngine):
                     "confidence": "low",
                 }
 
+            #
             if self.features.get("lifecycle_keywords", True):
                 lifecycle_info = self._detect_lifecycle_keywords(message)
             else:
@@ -2038,7 +2070,8 @@ class RuleBasedRouter(RoutingEngine):
                     "boost": 0,
                 }
 
-            # These extend friction detection with more patterns
+            #
+            # These extend IMP-011 friction detection with more patterns
             if (
                 self.features.get("additional_friction", True)
                 and not friction_info["detected"]
@@ -2047,9 +2080,10 @@ class RuleBasedRouter(RoutingEngine):
                 if additional_friction_info["detected"]:
                     friction_info = additional_friction_info
                     logger.debug(
-                        f"Additional friction detected: {additional_friction_info['friction_type']}"
+                        f"IMP-015: Additional friction detected: {additional_friction_info['friction_type']}"
                     )
 
+            #
             # Evidence: +10.9% F1, +20% recall from systematic pattern testing
             if (
                 self.features.get("extended_friction", True)
@@ -2059,7 +2093,7 @@ class RuleBasedRouter(RoutingEngine):
                 if extended_friction_info["detected"]:
                     friction_info = extended_friction_info
                     logger.debug(
-                        f"Extended friction detected: {extended_friction_info['friction_type']}"
+                        f"IMP-018: Extended friction detected: {extended_friction_info['friction_type']}"
                     )
 
             context = context or {}
@@ -2068,6 +2102,7 @@ class RuleBasedRouter(RoutingEngine):
             branch = context.get("branch", "")
             language = context.get("language", "")
 
+            #
             previous_routing_ids = set()
             lookback_info = None
             if commencement_detected and self.features.get(
@@ -2083,7 +2118,7 @@ class RuleBasedRouter(RoutingEngine):
                         "boost_amount": COMMENCEMENT_LOOKBACK_BOOST,
                     }
                     logger.info(
-                        f"Will boost {len(previous_routing_ids)} instructions from previous routing"
+                        f"IMP-009: Will boost {len(previous_routing_ids)} instructions from previous routing"
                     )
                 else:
                     lookback_info = {"enabled": True, "found": False}
@@ -2102,22 +2137,24 @@ class RuleBasedRouter(RoutingEngine):
                 else None,
                 "semantic_flags": semantic_flags_info
                 if semantic_flags_info["detected"]
-                else None,
+                else None,  # IMP-008
                 "friction_detection": friction_info
                 if friction_info["detected"]
-                else None,
-                "mistake_detection": mistake_info if mistake_info["detected"] else None,
+                else None,  # IMP-011
+                "mistake_detection": mistake_info
+                if mistake_info["detected"]
+                else None,  # IMP-012
                 "guidance_detection": guidance_info
                 if guidance_info["detected"]
-                else None,
+                else None,  # IMP-013
                 "lifecycle_detection": lifecycle_info
                 if lifecycle_info["detected"]
-                else None,
+                else None,  # IMP-014
                 "boundary_detection": boundary_info
                 if boundary_info["is_boundary"]
-                else None,
-                "commencement_override": commencement_override,
-                "commencement_lookback": lookback_info,
+                else None,  # IMP-016
+                "commencement_override": commencement_override,  # IMP-003 refinement tracking
+                "commencement_lookback": lookback_info,  # IMP-009 look-back tracking
                 "scoring_breakdown": [],
             }
 
@@ -2131,10 +2168,11 @@ class RuleBasedRouter(RoutingEngine):
                     directories=directories,
                     branch=branch,
                     language=language,
-                    violation_info=violation_info,
-                    semantic_flags_info=semantic_flags_info,
+                    violation_info=violation_info,  # IMP-002
+                    semantic_flags_info=semantic_flags_info,  # IMP-008
                 )
 
+                #
                 # Normalize instruction ID for comparison (handle category/name and name.instructions formats)
                 if previous_routing_ids:
                     inst_id_normalized = self._normalize_instruction_id(instruction)
@@ -2144,9 +2182,10 @@ class RuleBasedRouter(RoutingEngine):
                             COMMENCEMENT_LOOKBACK_BOOST
                         )
                         logger.debug(
-                            f"Boosted {instruction.id} (normalized: {inst_id_normalized}) by {COMMENCEMENT_LOOKBACK_BOOST}"
+                            f"IMP-009: Boosted {instruction.id} (normalized: {inst_id_normalized}) by {COMMENCEMENT_LOOKBACK_BOOST}"
                         )
 
+                #
                 if friction_info["detected"] and self.features.get(
                     "friction_boost", True
                 ):
@@ -2159,10 +2198,11 @@ class RuleBasedRouter(RoutingEngine):
                                 "friction_type": friction_info.get("friction_type"),
                             }
                             logger.debug(
-                                f"Friction boost for {instruction.id} (category: {inst_category}) by {FRICTION_BOOST_AMOUNT}"
+                                f"IMP-011: Friction boost for {instruction.id} (category: {inst_category}) by {FRICTION_BOOST_AMOUNT}"
                             )
                             break  # Only apply once per instruction
 
+                #
                 if mistake_info["detected"] and self.features.get(
                     "outcome_boost", True
                 ):
@@ -2184,10 +2224,11 @@ class RuleBasedRouter(RoutingEngine):
                                 "mistake_type": mistake_info.get("mistake_type"),
                             }
                             logger.debug(
-                                f"Outcome boost for {instruction.id} (preventive: {preventive_inst}) by {OUTCOME_BOOST_AMOUNT}"
+                                f"IMP-012: Outcome boost for {instruction.id} (preventive: {preventive_inst}) by {OUTCOME_BOOST_AMOUNT}"
                             )
                             break  # Only apply once per instruction
 
+                #
                 if lifecycle_info["detected"] and self.features.get(
                     "lifecycle_keywords", True
                 ):
@@ -2206,10 +2247,11 @@ class RuleBasedRouter(RoutingEngine):
                                 "lifecycle_type": lifecycle_info.get("lifecycle_type"),
                             }
                             logger.debug(
-                                f"Lifecycle boost for {instruction.id} (target: {target_inst}) by {boost_amount}"
+                                f"IMP-014: Lifecycle boost for {instruction.id} (target: {target_inst}) by {boost_amount}"
                             )
                             break  # Only apply once per instruction
 
+                #
                 if violation_info["detected"] and self.features.get(
                     "violation_checklist", True
                 ):
@@ -2235,7 +2277,7 @@ class RuleBasedRouter(RoutingEngine):
                                 ],  # First 3 signals
                             }
                             logger.debug(
-                                f"Violation checklist boost for {instruction.id} (checklist: {checklist_inst}) by {boost_amount}"
+                                f"IMP-016: Violation checklist boost for {instruction.id} (checklist: {checklist_inst}) by {boost_amount}"
                             )
                             break  # Only apply once per instruction
 
@@ -2253,12 +2295,13 @@ class RuleBasedRouter(RoutingEngine):
                         }
                     )
 
+            #
             bundle_boost_info = None
             if self.features.get("instruction_bundles", True):
                 bundle_boost_info = self._apply_bundle_boost(scored_instructions)
                 if bundle_boost_info.get("applied"):
                     analysis["bundle_boost"] = bundle_boost_info
-                    logger.debug(f"Applied bundle boosts: {bundle_boost_info}")
+                    logger.debug(f"IMP-007: Applied bundle boosts: {bundle_boost_info}")
 
             # Sort by score descending
             scored_instructions.sort(key=lambda x: x["routing_score"], reverse=True)
@@ -2291,6 +2334,7 @@ class RuleBasedRouter(RoutingEngine):
                 analysis["foundational_disabled"] = True
                 analysis["query_specific_count"] = len(combined)
 
+            #
             procedural_warning = None
             if self.features.get("procedural_warning", True):
                 procedural_instructions = []
@@ -2338,16 +2382,26 @@ class RuleBasedRouter(RoutingEngine):
                         "warning": "\n".join(warning_parts),
                         "instructions": procedural_instructions,
                         "count": len(procedural_instructions),
-                        "enforcement": "Read tool call required before action (Feature RCA)",
+                        "enforcement": "Read tool call required before action (Task #200 RCA)",
                     }
                     analysis["procedural_warning"] = procedural_warning
                     logger.info(
-                        f"Procedural warning generated for {len(procedural_instructions)} instruction(s)"
+                        f"IMP-010: Procedural warning generated for {len(procedural_instructions)} instruction(s)"
                     )
 
+            # IMP-013/019: Generate guidance action directive when guidance detected
+            #
             guidance_action = None
             guidance_echo = None
-            if guidance_info["detected"] and self.features.get("guidance_action", True):
+            if pre_check_result is not None and pre_check_result.get("guidance_action"):
+                #
+                guidance_action = pre_check_result["guidance_action"]
+                analysis["guidance_action"] = guidance_action
+                analysis["guidance_pre_check"] = True  # Mark that pre-check was used
+            elif guidance_info["detected"] and self.features.get(
+                "guidance_action", True
+            ):
+                # Fallback: Generate inline (when pre-check disabled)
                 guidance_action = {
                     "action": "log_user_guidance",
                     "directive": "⚠️ USER GUIDANCE DETECTED - Call `log_user_guidance()` MCP tool",
@@ -2364,16 +2418,19 @@ class RuleBasedRouter(RoutingEngine):
                 }
                 analysis["guidance_action"] = guidance_action
                 logger.info(
-                    f"Guidance action generated: type={guidance_info['guidance_type']}, signals={guidance_info['signals']}"
+                    f"IMP-013: Guidance action generated (inline): type={guidance_info['guidance_type']}, signals={guidance_info['signals']}"
                 )
 
-                # Phase 8: Detect guidance echo (same guidance type repeated = frustration)
-                if self.features.get("guidance_echo_detection", True):
-                    guidance_echo = self._detect_guidance_echo(
-                        guidance_info["guidance_type"]
-                    )
-                    if guidance_echo["echo_detected"]:
-                        analysis["guidance_echo"] = guidance_echo
+            # Phase 8: Detect guidance echo (same guidance type repeated = frustration)
+            # Runs for both pre-check and inline guidance detection
+            if guidance_info["detected"] and self.features.get(
+                "guidance_echo_detection", True
+            ):
+                guidance_echo = self._detect_guidance_echo(
+                    guidance_info["guidance_type"]
+                )
+                if guidance_echo["echo_detected"]:
+                    analysis["guidance_echo"] = guidance_echo
 
             # Phase 8: Friction attribution - when friction detected, look for prior non-compliance
             friction_attribution = None
@@ -2430,8 +2487,8 @@ class RuleBasedRouter(RoutingEngine):
         """
         Detect violation signals in message that should boost compliance routing.
 
-        Violation detection to route frustrated/corrective messages to compliance files.
-        Evidence: Events 32, 33, 43, 45, 47, 50, 53 missed violations in Feature analysis.
+        IMP-002: Violation detection to route frustrated/corrective messages to compliance files.
+        Evidence: Events 32, 33, 43, 45, 47, 50, 53 missed violations in Task #130 analysis.
 
         Detection signals:
         1. Violation words (NO, stop, wrong, etc.)
@@ -2485,7 +2542,7 @@ class RuleBasedRouter(RoutingEngine):
         if signals:
             boost_amount = VIOLATION_CATEGORY_BOOST * len(signals)
             logger.debug(
-                f"Violation detected - signals: {signals}, boost: {boost_amount}"
+                f"IMP-002: Violation detected - signals: {signals}, boost: {boost_amount}"
             )
 
         return {
@@ -2498,10 +2555,10 @@ class RuleBasedRouter(RoutingEngine):
         """
         Detect if message is a simple approval that should suppress routing.
 
-        Over-routing on simple approvals wastes context.
-        Evidence: 89 events (17.9%) were over-routed in Feature analysis.
+        IMP-003: Over-routing on simple approvals wastes context.
+        Evidence: 89 events (17.9%) were over-routed in Task #130 analysis.
 
-        Refinement: Commencement patterns override approval suppression.
+        IMP-003 Refinement: Commencement patterns override approval suppression.
         Evidence: Events 351, 402, 445, 446, 457, 495 were false positives.
         Messages like "yes, let's continue" indicate work intent, not simple approval.
 
@@ -2528,13 +2585,15 @@ class RuleBasedRouter(RoutingEngine):
         for phrase in COMMENCEMENT_PHRASES:
             if message_clean.startswith(phrase) or f" {phrase}" in message_clean:
                 logger.debug(
-                    f"Commencement phrase detected, NOT suppressing: {message_clean}"
+                    f"IMP-003: Commencement phrase detected, NOT suppressing: {message_clean}"
                 )
                 return (False, "commencement_phrase_detected", True)
 
         # Check 1: Exact match with approval patterns
         if message_normalized in APPROVAL_PATTERNS:
-            logger.debug(f"Suppressing routing for approval pattern: {message_clean}")
+            logger.debug(
+                f"IMP-003: Suppressing routing for approval pattern: {message_clean}"
+            )
             return (True, "exact_approval_match", False)
 
         # Check 2: Very short message (≤3 words) - likely approval
@@ -2542,7 +2601,9 @@ class RuleBasedRouter(RoutingEngine):
         if len(words) <= 3:
             # Check if any word is an approval word
             if any(word.rstrip(".,!?") in APPROVAL_WORDS for word in words):
-                logger.debug(f"Suppressing routing for short approval: {message_clean}")
+                logger.debug(
+                    f"IMP-003: Suppressing routing for short approval: {message_clean}"
+                )
                 return (True, "short_approval_message", False)
 
         # Check 3: Short message (≤5 words) dominated by approval words
@@ -2552,7 +2613,7 @@ class RuleBasedRouter(RoutingEngine):
             )
             if approval_count >= len(words) / 2:  # Majority are approval words
                 logger.debug(
-                    f"Suppressing routing for approval-dominated message: {message_clean}"
+                    f"IMP-003: Suppressing routing for approval-dominated message: {message_clean}"
                 )
                 return (True, "approval_dominated_message", False)
 
@@ -2563,7 +2624,7 @@ class RuleBasedRouter(RoutingEngine):
         Return instructions marked as foundational (always-included).
 
         Foundational instructions provide core context for all agent work.
-        They are included with every routing result (except suppressions).
+        They are included with every routing result (except IMP-003 suppressions).
 
         Foundational status is determined by frontmatter:
             foundational: true
@@ -2588,7 +2649,7 @@ class RuleBasedRouter(RoutingEngine):
         """
         Get previous routing result for commencement look-back.
 
-        When commencement detected, boost instructions from previous routing.
+        IMP-009: When commencement detected, boost instructions from previous routing.
         This provides context continuity for messages like "yes, let's continue".
 
         Lookup order:
@@ -2603,7 +2664,7 @@ class RuleBasedRouter(RoutingEngine):
         """
         # Option 1: Explicit previous routing in context
         if context and "previous_routing" in context:
-            logger.debug("Using explicit previous_routing from context")
+            logger.debug("IMP-009: Using explicit previous_routing from context")
             return context["previous_routing"]
 
         # Option 2: Query pongogo DB (unified schema v3.0.0)
@@ -2640,22 +2701,22 @@ class RuleBasedRouter(RoutingEngine):
                         except json.JSONDecodeError:
                             instruction_ids = row[0].split(",") if row[0] else []
                         logger.debug(
-                            f"Found previous routing with {len(instruction_ids)} instructions"
+                            f"IMP-009: Found previous routing with {len(instruction_ids)} instructions"
                         )
                         return {"instructions": instruction_ids}
 
                 except Exception as e:
-                    logger.warning(f"Error querying pongogo DB: {e}")
+                    logger.warning(f"IMP-009: Error querying pongogo DB: {e}")
                     continue
 
-        logger.debug("No previous routing found")
+        logger.debug("IMP-009: No previous routing found")
         return None
 
     def _normalize_instruction_id(self, instruction) -> str:
         """
         Normalize instruction ID to category/name format for comparison.
 
-        Ensures consistent ID format between router output and ground truth.
+        IMP-009: Ensures consistent ID format between router output and ground truth.
 
         The eval harness uses category/name format (e.g., trust_execution/trust_based_task_execution).
         Instruction handler uses name.instructions format (e.g., trust_based_task_execution.instructions).
@@ -2750,6 +2811,7 @@ class RuleBasedRouter(RoutingEngine):
 
         keywords = [w for w in words if w not in stop_words and len(w) > 2]
 
+        #
         # This enables metadata keywords like "time_free" to match query "time free"
         # without false positives from partial word matching
         ngram_keywords = []
@@ -2802,8 +2864,8 @@ class RuleBasedRouter(RoutingEngine):
         directories: list[str],
         branch: str,
         language: str,
-        violation_info: dict | None = None,
-        semantic_flags_info: dict | None = None,
+        violation_info: dict | None = None,  # IMP-002
+        semantic_flags_info: dict | None = None,  # IMP-008
     ) -> tuple[int, dict]:
         """
         Score instruction relevance using multiple signals.
@@ -2814,6 +2876,7 @@ class RuleBasedRouter(RoutingEngine):
         score = 0
         breakdown = {}
 
+        #
         if violation_info and violation_info.get("detected"):
             for category in instruction.categories:
                 if category in VIOLATION_BOOST_CATEGORIES:
@@ -2825,6 +2888,7 @@ class RuleBasedRouter(RoutingEngine):
                     }
                     break  # Only apply once per instruction
 
+        #
         if semantic_flags_info and semantic_flags_info.get("detected"):
             category_boosts = semantic_flags_info.get("category_boosts", {})
             for category in instruction.categories:
@@ -2861,7 +2925,7 @@ class RuleBasedRouter(RoutingEngine):
                     keyword_matches.append(f"tag:{tag}")
 
             # Check in metadata keywords
-
+            #
             routing = instruction.routing or {}
             triggers = routing.get("triggers", {})
             meta_keywords = triggers.get("keywords", [])
@@ -2958,8 +3022,8 @@ class RuleBasedRouter(RoutingEngine):
         """
         Detect semantic flags in message for category boosting.
 
-        Semantic flag integration to boost categories based on message content.
-        Evidence: Feature analysis of 497 ground truth events.
+        IMP-008: Semantic flag integration to boost categories based on message content.
+        Evidence: Task #204 analysis of 497 ground truth events.
 
         Semantic flags:
         - corrective: User correction signals → boost trust_execution, learning
@@ -2991,7 +3055,7 @@ class RuleBasedRouter(RoutingEngine):
 
         if flags:
             logger.debug(
-                f"Semantic flags detected: {flags}, category boosts: {category_boosts}"
+                f"IMP-008: Semantic flags detected: {flags}, category boosts: {category_boosts}"
             )
 
         return {
@@ -3004,12 +3068,12 @@ class RuleBasedRouter(RoutingEngine):
         """
         Detect friction (correction/retry/rejection/refinement) in user messages.
 
-        Enhanced friction detection for routing boost.
-        Feature: DB-based friction detection with context disambiguation.
+        IMP-011: Enhanced friction detection for routing boost.
+        Task #510: DB-based friction detection with context disambiguation.
 
         Priority:
-        1. DB lexicon (Feature) - if enabled and friction entries loaded
-        2. Hardcoded patterns  - fallback
+        1. DB lexicon (cleanup) - if enabled and friction entries loaded
+        2. Hardcoded patterns (IMP-011) - fallback
 
         Friction types (all indicate user frustration/correction):
         - correction: Pointing out errors ("that's not right", "you did it wrong")
@@ -3044,11 +3108,11 @@ class RuleBasedRouter(RoutingEngine):
         """
         DB-based friction detection with context disambiguation.
 
-        Feature: Uses database lexicon for friction detection.
+        Task #510: Uses database lexicon for friction detection.
         """
         if not CONTEXT_DISAMBIGUATION_AVAILABLE or match_all_entries is None:
             logger.warning(
-                "Feature: context_disambiguation not available, falling back"
+                "Task #510: context_disambiguation not available, falling back"
             )
             return self._detect_friction_patterns(message)
 
@@ -3085,7 +3149,7 @@ class RuleBasedRouter(RoutingEngine):
             )
 
             logger.info(
-                f"Feature: DB friction detected: type={friction_type}, signals={len(signals)}"
+                f"IMP-011/Task#510: DB friction detected: type={friction_type}, signals={len(signals)}"
             )
 
         # Build category boosts
@@ -3120,7 +3184,9 @@ class RuleBasedRouter(RoutingEngine):
                     friction_type = ftype  # First match wins (priority order)
 
         if signals:
-            logger.debug(f"Friction detected: type={friction_type}, signals={signals}")
+            logger.debug(
+                f"IMP-011: Friction detected: type={friction_type}, signals={signals}"
+            )
 
         # Build category boosts (only used if friction_boost feature enabled)
         category_boosts = {}
@@ -3137,10 +3203,10 @@ class RuleBasedRouter(RoutingEngine):
 
     def _detect_mistake_type(self, message: str) -> dict[str, Any]:
         """
-        Detect mistake types using Research outcome patterns.
+        Detect mistake types using Spike #284 outcome patterns.
 
-        Mistake type detection for targeted instruction boosting.
-        Evidence: Research identified mistake types and their preventive instructions.
+        IMP-012: Mistake type detection for targeted instruction boosting.
+        Evidence: Spike #284 identified mistake types and their preventive instructions.
 
         Mistake types (indicate specific errors that have known preventive instructions):
         - incomplete_implementation: Cutting corners, not thorough enough
@@ -3178,7 +3244,7 @@ class RuleBasedRouter(RoutingEngine):
 
         if signals:
             logger.debug(
-                f"Mistake type detected: type={mistake_type}, signals={signals}, boosts={instruction_boosts}"
+                f"IMP-012: Mistake type detected: type={mistake_type}, signals={signals}, boosts={instruction_boosts}"
             )
 
         return {
@@ -3192,16 +3258,16 @@ class RuleBasedRouter(RoutingEngine):
         """
         Detect user guidance (rules, preferences, feedback) in message.
 
-        User guidance detection for automatic knowledge capture (Feature).
+        IMP-013: User guidance detection for automatic knowledge capture (cleanup).
         This enables Pongogo to detect when users express behavioral rules or preferences
         and capture them for future routing.
 
-        Feature: Lexicon-based detection with context disambiguation.
-        Feature: DB-based lexicon (preferred over YAML).
+        Task #488: Lexicon-based detection with context disambiguation.
+        Task #511: DB-based lexicon (preferred over YAML).
 
         Priority:
-        1. DB lexicon (Feature) - if enabled and entries loaded
-        2. YAML lexicon (Feature) - if enabled and loaded
+        1. DB lexicon (cleanup) - if enabled and entries loaded
+        2. YAML lexicon (cleanup) - if enabled and loaded
         3. Hardcoded patterns - fallback
 
         GT v4 Guidance dimension types:
@@ -3222,9 +3288,9 @@ class RuleBasedRouter(RoutingEngine):
             - guidance_type: 'explicit' | 'implicit' | None
             - signals: List of matched patterns (for debugging)
             - content: The portion of message that triggered detection
-            - lexicon_match: (Feature/511) Details of lexicon match if used
+            - lexicon_match: (Task #488/511) Details of lexicon match if used
         """
-        # Use DB-based lexicon if enabled and available
+
         if (
             self.features.get("use_lexicon")
             and hasattr(self, "_lexicon_entries")
@@ -3232,18 +3298,87 @@ class RuleBasedRouter(RoutingEngine):
         ):
             return self._detect_user_guidance_db(message)
 
-        # Fall back to hardcoded pattern-based detection
+        # Fall back to hardcoded pattern-based detection (Task #504: YAML removed)
         return self._detect_user_guidance_patterns(message)
+
+    def _pre_check_guidance(self, message: str) -> dict[str, Any]:
+        """
+        Pre-check phase for guidance detection (IMP-019).
+
+        Task #519: Run guidance detection as a pre-check phase BEFORE main routing.
+        This ensures guidance_action directives are emitted immediately and prominently
+        when user guidance is detected.
+
+        Pre-check architecture:
+        ```
+        User Message → Pre-Check Phase → Main Routing Phase → Post-Processing
+                            ↓
+                    Guidance Detection
+                            ↓
+                    guidance_action directive (if detected)
+        ```
+
+        Args:
+            message: User message to analyze
+
+        Returns:
+            Dictionary with:
+            - guidance_detected: True if guidance detected
+            - guidance_info: Full guidance detection result
+            - guidance_action: Action directive if detected, None otherwise
+        """
+        # Run guidance detection
+        if not self.features.get("guidance_detection", True):
+            return {
+                "guidance_detected": False,
+                "guidance_info": {
+                    "detected": False,
+                    "guidance_type": None,
+                    "signals": [],
+                    "content": None,
+                },
+                "guidance_action": None,
+            }
+
+        guidance_info = self._detect_user_guidance(message)
+
+        # Generate guidance_action directive if guidance detected and feature enabled
+        guidance_action = None
+        if guidance_info["detected"] and self.features.get("guidance_action", True):
+            guidance_action = {
+                "action": "log_user_guidance",
+                "directive": "⚠️ USER GUIDANCE DETECTED - Call `log_user_guidance()` MCP tool",
+                "parameters": {
+                    "content": message,
+                    "guidance_type": guidance_info["guidance_type"],
+                    "context": guidance_info.get("content", "")[:200]
+                    if guidance_info.get("content")
+                    else None,
+                },
+                "signals": guidance_info["signals"],
+                "promotion_threshold": getattr(self, "_promotion_threshold", 3),
+                "rationale": "User expressed behavioral rule/preference - capture for future routing",
+            }
+            logger.info(
+                f"IMP-019: Pre-check guidance detected: type={guidance_info['guidance_type']}, "
+                f"signals={guidance_info['signals']}"
+            )
+
+        return {
+            "guidance_detected": guidance_info["detected"],
+            "guidance_info": guidance_info,
+            "guidance_action": guidance_action,
+        }
 
     def _detect_user_guidance_db(self, message: str) -> dict[str, Any]:
         """
         DB-based user guidance detection with context disambiguation.
 
-        Feature: Uses database lexicon with confidence scoring.
+        Task #511: Uses database lexicon with confidence scoring.
         """
         if not CONTEXT_DISAMBIGUATION_AVAILABLE or match_all_entries is None:
             logger.warning(
-                "Feature: context_disambiguation not available, falling back"
+                "Task #511: context_disambiguation not available, falling back"
             )
             return self._detect_user_guidance_patterns(message)
 
@@ -3280,7 +3415,7 @@ class RuleBasedRouter(RoutingEngine):
         )
 
         logger.info(
-            f"Feature: DB lexicon guidance detected: "
+            f"IMP-013/Task#511: DB lexicon guidance detected: "
             f"type={guidance_type}, confidence={best_match.final_confidence:.2f}, "
             f"signals={len(signals)}"
         )
@@ -3332,7 +3467,7 @@ class RuleBasedRouter(RoutingEngine):
             matched_content = explicit_match.group()
             signals.append(f"explicit:{matched_content[:30]}")
             guidance_type = "explicit"
-            logger.debug(f"Explicit guidance detected: {matched_content[:50]}")
+            logger.debug(f"IMP-013: Explicit guidance detected: {matched_content[:50]}")
 
         # Check implicit guidance (only if no explicit found, or add as secondary signal)
         implicit_match = implicit_pattern.search(message)
@@ -3342,11 +3477,13 @@ class RuleBasedRouter(RoutingEngine):
             if guidance_type is None:
                 guidance_type = "implicit"
                 matched_content = implicit_content
-            logger.debug(f"Implicit guidance detected: {implicit_content[:50]}")
+            logger.debug(
+                f"IMP-013: Implicit guidance detected: {implicit_content[:50]}"
+            )
 
         if signals:
             logger.info(
-                f"User guidance detected: type={guidance_type}, signals={len(signals)}"
+                f"IMP-013: User guidance detected: type={guidance_type}, signals={len(signals)}"
             )
 
         return {
@@ -3359,7 +3496,7 @@ class RuleBasedRouter(RoutingEngine):
 
     def _detect_boundary(self, message: str) -> dict[str, Any]:
         """
-        Detect conversation boundary (new topic vs continuation).
+        IMP-016: Detect conversation boundary (new topic vs continuation).
 
         Returns:
             dict with:
@@ -3378,14 +3515,16 @@ class RuleBasedRouter(RoutingEngine):
                 signals.append(f"{btype}:{matched_text[:30]}")
                 if boundary_type is None:
                     boundary_type = btype
-                logger.debug(f"Boundary pattern matched: {btype}={matched_text[:50]}")
+                logger.debug(
+                    f"IMP-016: Boundary pattern matched: {btype}={matched_text[:50]}"
+                )
 
         is_boundary = len(signals) > 0
         confidence = "high" if is_boundary else "low"
 
         if is_boundary:
             logger.info(
-                f"Conversation boundary detected: type={boundary_type}, signals={len(signals)}"
+                f"IMP-016: Conversation boundary detected: type={boundary_type}, signals={len(signals)}"
             )
 
         return {
@@ -3717,7 +3856,7 @@ class RuleBasedRouter(RoutingEngine):
         """
         Detect lifecycle keywords for closure/commencement boosting.
 
-        Lifecycle keyword triggers (Feature)
+        IMP-014: Lifecycle keyword triggers (cleanup)
         Evidence: outcome_based_evaluation.md found 1,561 routing gaps
         - 890 (57%) to issue_closure_checklist.md
         - 671 (43%) to issue_commencement_checklist.md
@@ -3738,7 +3877,7 @@ class RuleBasedRouter(RoutingEngine):
             for trigger in config["triggers"]:
                 if trigger in message_lower:
                     logger.debug(
-                        f"Lifecycle keyword detected: '{trigger}' -> {lifecycle_type}"
+                        f"IMP-014: Lifecycle keyword detected: '{trigger}' -> {lifecycle_type}"
                     )
                     return {
                         "detected": True,
@@ -3757,9 +3896,9 @@ class RuleBasedRouter(RoutingEngine):
 
     def _detect_additional_friction(self, message: str) -> dict[str, Any]:
         """
-        Detect additional friction patterns not covered by base friction detection.
+        Detect additional friction patterns not covered by IMP-011.
 
-        Additional iteration patterns (Feature, Research)
+        IMP-015: Additional iteration patterns (Task #477, Spike #278)
         Extends friction detection with patterns discovered in iteration analysis.
 
         Args:
@@ -3783,12 +3922,12 @@ class RuleBasedRouter(RoutingEngine):
                         if friction_type is None:
                             friction_type = ftype
                 except _re.error:
-                    logger.warning(f"Invalid regex pattern: {pattern}")
+                    logger.warning(f"IMP-015: Invalid regex pattern: {pattern}")
                     continue
 
         if signals:
             logger.info(
-                f"Additional friction detected: type={friction_type}, signals={len(signals)}"
+                f"IMP-015: Additional friction detected: type={friction_type}, signals={len(signals)}"
             )
 
         return {
@@ -3802,7 +3941,7 @@ class RuleBasedRouter(RoutingEngine):
         """
         Detect extended friction patterns from routing experiments.
 
-        Extended friction patterns (2026-01-11)
+        IMP-018: Extended friction patterns (2026-01-11)
         Evidence: experiments/routing_improvement_experiments.md
         Impact: Friction F1 53.9% → 64.8% (+10.9%), Recall 43.6% → 63.6% (+20%)
 
@@ -3835,12 +3974,12 @@ class RuleBasedRouter(RoutingEngine):
                         if friction_type is None:
                             friction_type = ftype
                 except _re.error:
-                    logger.warning(f"Invalid regex pattern: {pattern}")
+                    logger.warning(f"IMP-018: Invalid regex pattern: {pattern}")
                     continue
 
         if signals:
             logger.info(
-                f"Extended friction detected: type={friction_type}, signals={len(signals)}"
+                f"IMP-018: Extended friction detected: type={friction_type}, signals={len(signals)}"
             )
 
         return {
@@ -3854,9 +3993,9 @@ class RuleBasedRouter(RoutingEngine):
         """
         Detect if an instruction is procedural (requires Read before execute).
 
-        Procedural instruction detection (Feature)
+        IMP-010: Procedural instruction detection (cleanup)
         When procedural instructions are routed, warn agent to READ before executing.
-        This addresses the "Instruction Execution from Memory" anti-pattern (Feature RCA).
+        This addresses the "Instruction Execution from Memory" anti-pattern (Task #200 RCA).
 
         Detection methods:
         1. Metadata field: procedural: true in frontmatter
@@ -3930,10 +4069,10 @@ class RuleBasedRouter(RoutingEngine):
         """
         Apply bundle boost for co-occurring instruction pairs.
 
-        When one instruction from a bundle is present in results,
+        IMP-007: When one instruction from a bundle is present in results,
         boost its co-occurring pair if also present.
 
-        Evidence: Feature analysis of 497 ground truth events found
+        Evidence: Task #204 analysis of 497 ground truth events found
         strong co-occurrence patterns (55-100%) in instruction pairs.
 
         Args:
@@ -3974,7 +4113,7 @@ class RuleBasedRouter(RoutingEngine):
                 ids_to_check.append(inst_id[: -len(".instructions")])
                 if categories:
                     ids_to_check.append(
-                        f"{categories[0]}/{inst_id[:-len('.instructions')]}"
+                        f"{categories[0]}/{inst_id[: -len('.instructions')]}"
                     )
 
             for id_format in ids_to_check:

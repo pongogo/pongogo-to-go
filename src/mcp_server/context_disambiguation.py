@@ -1,8 +1,8 @@
 """
 Context Disambiguation Module for Guidance Trigger Lexicon
 
-Feature: - Implement context disambiguation
-Parent: - Guidance Trigger Lexicon System
+Task: #492 - Implement context disambiguation
+Parent: #488 - Guidance Trigger Lexicon System
 
 This module implements context-aware disambiguation for ambiguous trigger patterns.
 It uses positive/negative context markers to adjust confidence scores and determine
@@ -15,11 +15,10 @@ Examples of disambiguation:
 - "can you explain why?" → not guidance (negative: "explain")
 """
 
-import logging
-import re
 from dataclasses import dataclass, field
-from re import Match, Pattern
-from typing import Optional
+from typing import Dict, List, Optional, Pattern, Match, Tuple
+import re
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +33,11 @@ class ContextRule:
     """Context disambiguation rule for a lexicon entry."""
 
     # Positive context (increases confidence)
-    positive_pattern: Pattern | None = None
+    positive_pattern: Optional[Pattern] = None
     positive_weight: float = 0.0
 
     # Negative context (decreases confidence)
-    negative_pattern: Pattern | None = None
+    negative_pattern: Optional[Pattern] = None
     negative_weight: float = 0.0  # Should be negative value
 
     # Thresholds
@@ -48,7 +47,7 @@ class ContextRule:
     fallback_type: str = "none"  # "none" | "implicit"
 
     @classmethod
-    def from_dict(cls, data: dict | None) -> Optional["ContextRule"]:
+    def from_dict(cls, data: Optional[Dict]) -> Optional["ContextRule"]:
         """Create ContextRule from YAML dict format."""
         if not data:
             return None
@@ -86,13 +85,13 @@ class LexiconEntry:
     category: str
     guidance_type: str  # "explicit" | "implicit"
     confidence: float
-    context_rule: ContextRule | None = None
+    context_rule: Optional[ContextRule] = None
     imp_feature: str = "IMP-013"
     source: str = "system"
     notes: str = ""
 
     @classmethod
-    def from_dict(cls, data: dict) -> "LexiconEntry":
+    def from_dict(cls, data: Dict) -> "LexiconEntry":
         """Create LexiconEntry from YAML dict format."""
         return cls(
             id=data["id"],
@@ -115,10 +114,10 @@ class DisambiguationResult:
     pattern_matched: bool
 
     # The regex match object (if matched)
-    match: Match | None = None
+    match: Optional[Match] = None
 
     # Entry that matched
-    entry: LexiconEntry | None = None
+    entry: Optional[LexiconEntry] = None
 
     # Confidence scores
     base_confidence: float = 0.0
@@ -284,14 +283,14 @@ class MatchResult:
     """Result of matching all entries against a message."""
 
     # All matches (including those that didn't trigger)
-    all_results: list[DisambiguationResult] = field(default_factory=list)
+    all_results: List[DisambiguationResult] = field(default_factory=list)
 
     # Only matches that should trigger
-    triggered: list[DisambiguationResult] = field(default_factory=list)
+    triggered: List[DisambiguationResult] = field(default_factory=list)
 
     # Categorized by guidance type
-    explicit_matches: list[DisambiguationResult] = field(default_factory=list)
-    implicit_matches: list[DisambiguationResult] = field(default_factory=list)
+    explicit_matches: List[DisambiguationResult] = field(default_factory=list)
+    implicit_matches: List[DisambiguationResult] = field(default_factory=list)
 
     @property
     def has_guidance(self) -> bool:
@@ -308,7 +307,7 @@ class MatchResult:
         return "none"
 
     @property
-    def highest_confidence_match(self) -> DisambiguationResult | None:
+    def highest_confidence_match(self) -> Optional[DisambiguationResult]:
         """Get the match with highest confidence."""
         if not self.triggered:
             return None
@@ -316,7 +315,7 @@ class MatchResult:
 
 
 def match_all_entries(
-    entries: list[LexiconEntry],
+    entries: List[LexiconEntry],
     message: str,
 ) -> MatchResult:
     """

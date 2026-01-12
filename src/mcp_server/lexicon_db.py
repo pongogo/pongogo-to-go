@@ -1,8 +1,8 @@
 """
 Unified Lexicon Database Module
 
-Feature: - Migrate Lexicon System to Database
-Parent: - Guidance Trigger Lexicon System
+Task: #511 - Migrate Lexicon System to Database
+Parent: #488 - Guidance Trigger Lexicon System
 
 This module provides database-backed storage for both guidance and friction
 lexicon entries, replacing the previous YAML-based system.
@@ -14,7 +14,7 @@ Architecture:
 - GT event provenance tracking for pattern analytics
 
 Usage:
-    from mcp_server.lexicon_db import LexiconDB, load_lexicon_from_db
+    from lexicon_db import LexiconDB, load_lexicon_from_db
 
     # Load all entries
     db = LexiconDB()
@@ -29,13 +29,13 @@ Usage:
     result = match_all_entries(entries, message)
 """
 
-import contextlib
 import json
 import logging
 import re
 import sqlite3
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from mcp_server.context_disambiguation import ContextRule, LexiconEntry
 
@@ -54,7 +54,7 @@ SCHEMA_VERSION = 1
 
 SCHEMA_SQL = """
 -- Unified lexicon entries table
--- Supports both guidance  and friction  patterns
+-- Supports both guidance (IMP-013) and friction (IMP-011) patterns
 CREATE TABLE IF NOT EXISTS lexicon_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     entry_id TEXT UNIQUE NOT NULL,  -- e.g., "explicit_001", "friction_correction_042"
@@ -133,7 +133,7 @@ class LexiconDB:
     - Write operations should be serialized by caller
     """
 
-    def __init__(self, db_path: Path | None = None):
+    def __init__(self, db_path: Optional[Path] = None):
         """
         Initialize lexicon database.
 
@@ -233,7 +233,7 @@ class LexiconDB:
         finally:
             conn.close()
 
-    def get_entry_by_id(self, entry_id: str) -> LexiconEntry | None:
+    def get_entry_by_id(self, entry_id: str) -> Optional[LexiconEntry]:
         """Get a single entry by ID."""
         conn = self._get_connection()
         try:
@@ -251,16 +251,16 @@ class LexiconDB:
         pattern: str,
         lexicon_type: str,
         category: str,
-        sub_type: str | None = None,
+        sub_type: Optional[str] = None,
         base_confidence: float = 0.75,
-        positive_pattern: str | None = None,
+        positive_pattern: Optional[str] = None,
         positive_weight: float = 0.0,
-        negative_pattern: str | None = None,
+        negative_pattern: Optional[str] = None,
         negative_weight: float = 0.0,
         disambiguation_threshold: float = 0.5,
         fallback_type: str = "none",
         source: str = "system",
-        source_event_ids: list[int] | None = None,
+        source_event_ids: Optional[list[int]] = None,
         imp_feature: str = "IMP-013",
         notes: str = "",
         enabled: bool = True,
@@ -446,17 +446,21 @@ class LexiconDB:
         if row["positive_pattern"] or row["negative_pattern"]:
             positive_pattern = None
             if row["positive_pattern"]:
-                with contextlib.suppress(re.error):
+                try:
                     positive_pattern = re.compile(
                         row["positive_pattern"], re.IGNORECASE
                     )
+                except re.error:
+                    pass
 
             negative_pattern = None
             if row["negative_pattern"]:
-                with contextlib.suppress(re.error):
+                try:
                     negative_pattern = re.compile(
                         row["negative_pattern"], re.IGNORECASE
                     )
+                except re.error:
+                    pass
 
             context_rule = ContextRule(
                 positive_pattern=positive_pattern,
@@ -485,10 +489,10 @@ class LexiconDB:
 # CONVENIENCE FUNCTIONS
 # =============================================================================
 
-_default_db: LexiconDB | None = None
+_default_db: Optional[LexiconDB] = None
 
 
-def get_lexicon_db(db_path: Path | None = None) -> LexiconDB:
+def get_lexicon_db(db_path: Optional[Path] = None) -> LexiconDB:
     """Get the default lexicon database (singleton)."""
     global _default_db
     if _default_db is None or db_path is not None:
@@ -497,7 +501,7 @@ def get_lexicon_db(db_path: Path | None = None) -> LexiconDB:
 
 
 def load_lexicon_from_db(
-    lexicon_type: str | None = None, db_path: Path | None = None
+    lexicon_type: Optional[str] = None, db_path: Optional[Path] = None
 ) -> list[LexiconEntry]:
     """
     Load lexicon entries from database.
@@ -522,8 +526,8 @@ def load_lexicon_from_db(
 
 def run_tests():
     """Run unit tests for lexicon database."""
-    import os
     import tempfile
+    import os
 
     print("Running lexicon database tests...\n")
 
