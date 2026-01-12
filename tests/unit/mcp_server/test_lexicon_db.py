@@ -5,13 +5,12 @@ expected data for guidance and friction pattern matching.
 """
 
 import sqlite3
-from pathlib import Path
 
 import pytest
 
 from mcp_server.lexicon_db import (
-    LexiconDB,
     DEFAULT_DB_PATH,
+    LexiconDB,
 )
 
 
@@ -55,29 +54,29 @@ class TestLexiconDBLoader:
         entry = entries[0]
 
         # Required fields for pattern matching
-        assert hasattr(entry, 'id') or 'id' in entry
-        assert hasattr(entry, 'pattern') or 'pattern' in entry
+        assert hasattr(entry, "id") or "id" in entry
+        assert hasattr(entry, "pattern") or "pattern" in entry
 
     def test_get_stats_returns_counts(self, lexicon_db):
         """get_stats should return entry counts."""
         stats = lexicon_db.get_stats()
 
         assert isinstance(stats, dict)
-        assert 'total_count' in stats or 'guidance_count' in stats
-        assert stats.get('guidance_count', 0) >= 0
-        assert stats.get('friction_count', 0) >= 0
+        assert "total_count" in stats or "guidance_count" in stats
+        assert stats.get("guidance_count", 0) >= 0
+        assert stats.get("friction_count", 0) >= 0
 
     def test_has_guidance_entries(self, lexicon_db):
         """Should have guidance entries loaded."""
         stats = lexicon_db.get_stats()
-        guidance_count = stats.get('guidance_count', 0)
+        guidance_count = stats.get("guidance_count", 0)
 
         assert guidance_count > 0, "No guidance entries in lexicon"
 
     def test_has_friction_entries(self, lexicon_db):
         """Should have friction entries loaded."""
         stats = lexicon_db.get_stats()
-        friction_count = stats.get('friction_count', 0)
+        friction_count = stats.get("friction_count", 0)
 
         assert friction_count > 0, "No friction entries in lexicon"
 
@@ -105,7 +104,7 @@ class TestLexiconDBSchema:
         columns = {row[1] for row in cursor.fetchall()}
         conn.close()
 
-        required = {'entry_id', 'pattern', 'lexicon_type', 'category'}
+        required = {"entry_id", "pattern", "lexicon_type", "category"}
         missing = required - columns
 
         assert not missing, f"Missing required columns: {missing}"
@@ -114,9 +113,6 @@ class TestLexiconDBSchema:
         """All entries should be enabled (enabled=1)."""
         conn = sqlite3.connect(DEFAULT_DB_PATH)
         cursor = conn.cursor()
-
-        cursor.execute("SELECT COUNT(*) FROM lexicon_entries WHERE enabled=0")
-        disabled_count = cursor.fetchone()[0]
 
         cursor.execute("SELECT COUNT(*) FROM lexicon_entries WHERE enabled=1")
         enabled_count = cursor.fetchone()[0]
