@@ -282,12 +282,14 @@ The MCP server's routing system uses a pluggable engine pattern:
 | File | Purpose | Description |
 |------|---------|-------------|
 | `routing_engine.py` | **Abstract Interface** | Defines `RoutingEngine` base class, engine registry, factory function. Engines are registered with `@register_engine("durian-X.Y")` decorator. |
-| `router.py` | **Concrete Implementation** | Contains `RuleBasedRouter` (the durian engine) that extends `RoutingEngine`. Implements rule-based routing with pattern matching, violation detection, friction awareness, and guidance capture. |
+| `pongogo_router.py` | **Concrete Implementation** | Contains `RuleBasedRouter` (the durian engine) that extends `RoutingEngine`. Implements rule-based routing with pattern matching, violation detection, friction awareness, guidance capture, and lexicon-based detection. |
+| `lexicon.db` | **Pattern Database** | SQLite database containing 189 lexicon entries (96 guidance + 93 friction patterns) with context disambiguation rules. |
 
 **Why this split?**
 - **Swappable engines**: Different routing algorithms (durian-0.5, durian-0.6, etc.) can be registered and selected at runtime
 - **Clean abstraction**: The interface defines the contract; implementations handle the complexity
 - **Feature flags**: Each engine declares available features; the factory validates configuration
+- **Database-backed patterns**: Lexicon patterns stored in SQLite for efficient querying and runtime updates
 
 **Key classes:**
 ```python
@@ -296,11 +298,11 @@ class RoutingEngine(ABC):
     @abstractmethod
     def route(self, message, context, limit) -> dict: ...
 
-# router.py - Implementation
+# pongogo_router.py - Implementation
 @register_engine("durian-0.6")
 class RuleBasedRouter(RoutingEngine):
     def route(self, message, context, limit) -> dict:
-        # ~2500 lines of rule-based routing logic
+        # ~3800 lines of rule-based routing logic with lexicon support
 ```
 
 ## Status

@@ -67,7 +67,7 @@ from mcp_server.routing_engine import (
 )
 
 # Feature: Lexicon-based guidance detection
-# Feature: DB-based lexicon (preferred) with YAML fallback
+# DB-based lexicon system
 try:
     from mcp_server.lexicon_db import LexiconDB, load_lexicon_from_db, DEFAULT_DB_PATH
     LEXICON_DB_AVAILABLE = True
@@ -75,13 +75,6 @@ except ImportError:
     LEXICON_DB_AVAILABLE = False
     LexiconDB = None  # type: ignore
     DEFAULT_DB_PATH = None
-
-try:
-    from mcp_server.lexicon_loader import LexiconLoader, load_default_lexicon
-    LEXICON_YAML_AVAILABLE = True
-except ImportError:
-    LEXICON_YAML_AVAILABLE = False
-    LexiconLoader = None  # type: ignore
 
 # Context disambiguation for DB-based matching
 try:
@@ -91,8 +84,8 @@ except ImportError:
     CONTEXT_DISAMBIGUATION_AVAILABLE = False
     match_all_entries = None  # type: ignore
 
-# Combined availability
-LEXICON_AVAILABLE = LEXICON_DB_AVAILABLE or LEXICON_YAML_AVAILABLE
+# Lexicon availability (DB only - YAML deprecated)
+LEXICON_AVAILABLE = LEXICON_DB_AVAILABLE
 
 logger = logging.getLogger(__name__)
 
@@ -1657,8 +1650,7 @@ class RuleBasedRouter(RoutingEngine):
         # Phase 4 (Issue #390): Load custom guidance triggers
         self._load_custom_triggers()
 
-      
-        self._lexicon = None
+        # Load DB-based lexicon if enabled
         if self.features.get("use_lexicon") and LEXICON_AVAILABLE:
             self._load_lexicon()
 
@@ -1714,72 +1706,46 @@ class RuleBasedRouter(RoutingEngine):
 
     def _load_lexicon(self):
         """
-        Load guidance trigger lexicon from database (preferred) or YAML.
+        Load guidance trigger lexicon from database.
 
-        Feature: Lexicon-based guidance detection.
-        Feature: DB-based lexicon storage.
-
-        Priority:
-        1. Database (lexicon.db) - if available and populated
-        2. YAML files (lexicon/*.yaml) - fallback
-        3. Hardcoded patterns - last resort
+        Lexicon-based guidance and friction detection using SQLite DB.
         """
         if not LEXICON_AVAILABLE:
-            logger.warning("Lexicon loader not available, skipping lexicon load")
+            logger.warning("Lexicon DB not available, skipping lexicon load")
             return
 
-        # Try DB first (Feature)
-        if LEXICON_DB_AVAILABLE and DEFAULT_DB_PATH and DEFAULT_DB_PATH.exists():
-            try:
-                self._lexicon_db = LexiconDB()
-                entries = self._lexicon_db.get_all_entries()
+        if not DEFAULT_DB_PATH or not DEFAULT_DB_PATH.exists():
+            logger.warning(f"Lexicon DB not found at {DEFAULT_DB_PATH}")
+            return
 
-                if entries:
-                    stats = self._lexicon_db.get_stats()
-                    guidance_count = stats.get('guidance_count', 0)
-                    friction_count = stats.get('friction_count', 0)
-                    categories = len(stats.get('categories', {}))
+        try:
+            self._lexicon_db = LexiconDB()
+            entries = self._lexicon_db.get_all_entries()
 
-                    # Store entries for matching
-                    self._lexicon_entries = entries
+            if entries:
+                stats = self._lexicon_db.get_stats()
+                guidance_count = stats.get('guidance_count', 0)
+                friction_count = stats.get('friction_count', 0)
+                categories = len(stats.get('categories', {}))
 
-                    logger.info(
-                        f"Feature: Lexicon DB loaded: {len(entries)} entries "
-                        f"({guidance_count} guidance, {friction_count} friction, "
-                        f"{categories} categories)"
-                    )
-                    return
-                else:
-                    logger.info("Feature: Lexicon DB exists but empty, trying YAML fallback")
-            except Exception as e:
-                logger.warning(f"Feature: Failed to load from DB: {e}, trying YAML fallback")
+                # Store entries for matching
+                self._lexicon_entries = entries
 
-        # Fallback to YAML (Feature)
-        if LEXICON_YAML_AVAILABLE:
-            try:
-                self._lexicon = LexiconLoader()
-                lexicon_dir = Path(__file__).parent / "lexicon"
-                count = self._lexicon.load_from_directory(lexicon_dir)
-
-                if count > 0:
-                    stats = self._lexicon.stats
-                    logger.info(
-                        f"Feature: Lexicon YAML loaded: {count} entries "
-                        f"({stats.explicit_entries} explicit, {stats.implicit_entries} implicit, "
-                        f"{stats.entries_with_context} with context rules)"
-                    )
-                else:
-                    logger.warning("Feature: No lexicon entries loaded, falling back to hardcoded patterns")
-                    self._lexicon = None
-            except Exception as e:
-                logger.error(f"Feature: Failed to load YAML lexicon: {e}")
-                self._lexicon = None
+                logger.info(
+                    f"Lexicon DB loaded: {len(entries)} entries "
+                    f"({guidance_count} guidance, {friction_count} friction, "
+                    f"{categories} categories)"
+                )
+            else:
+                logger.warning("Lexicon DB exists but empty, using hardcoded patterns")
+        except Exception as e:
+            logger.error(f"Failed to load lexicon DB: {e}")
 
     def reload_lexicon(self):
         """
-        Reload lexicon from disk.
+        Reload lexicon from database.
 
-        Call this method to pick up changes to lexicon/*.yaml files
+        Call this method to pick up changes to lexicon.db
         without restarting the server.
         """
         if self.features.get("use_lexicon"):
@@ -3255,13 +3221,9 @@ class RuleBasedRouter(RoutingEngine):
             - content: The portion of message that triggered detection
             - lexicon_match: (Feature/511) Details of lexicon match if used
         """
-      
+        # Use DB-based lexicon if enabled and available
         if self.features.get("use_lexicon") and hasattr(self, '_lexicon_entries') and self._lexicon_entries:
             return self._detect_user_guidance_db(message)
-
-      
-        if self.features.get("use_lexicon") and self._lexicon is not None:
-            return self._detect_user_guidance_lexicon(message)
 
         # Fall back to hardcoded pattern-based detection
         return self._detect_user_guidance_patterns(message)
@@ -3322,56 +3284,6 @@ class RuleBasedRouter(RoutingEngine):
                 "context_adjustment": best_match.context_adjustment if best_match else 0.0,
                 "disambiguation_reason": best_match.disambiguation_reason if best_match else None,
                 "source": "db",  # Indicate DB-based match
-            },
-        }
-
-    def _detect_user_guidance_lexicon(self, message: str) -> dict[str, Any]:
-        """
-        Lexicon-based user guidance detection with context disambiguation.
-
-        Feature: Uses YAML lexicon with confidence scoring.
-        """
-        result = self._lexicon.match(message)
-
-        if not result.has_guidance:
-            return {
-                "detected": False,
-                "guidance_type": None,
-                "signals": [],
-                "content": None,
-                "lexicon_match": None,
-            }
-
-        # Get the highest confidence match
-        best_match = result.highest_confidence_match
-        signals = []
-
-        # Build signals list from all triggered matches
-        for match in result.triggered:
-            entry_id = match.entry.id if match.entry else "?"
-            match_text = match.match.group() if match.match else ""
-            signals.append(f"{match.final_guidance_type}:{entry_id}:{match_text[:20]}")
-
-        guidance_type = result.primary_type
-        matched_content = best_match.match.group() if best_match and best_match.match else None
-
-        logger.info(
-            f"Feature: Lexicon guidance detected: "
-            f"type={guidance_type}, confidence={best_match.final_confidence:.2f}, "
-            f"signals={len(signals)}"
-        )
-
-        return {
-            "detected": True,
-            "guidance_type": guidance_type,
-            "signals": signals,
-            "content": matched_content,
-            "lexicon_match": {
-                "entry_id": best_match.entry.id if best_match and best_match.entry else None,
-                "category": best_match.entry.category if best_match and best_match.entry else None,
-                "confidence": best_match.final_confidence if best_match else 0.0,
-                "context_adjustment": best_match.context_adjustment if best_match else 0.0,
-                "disambiguation_reason": best_match.disambiguation_reason if best_match else None,
             },
         }
 
