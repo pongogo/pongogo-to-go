@@ -28,15 +28,18 @@ class PISystem:
     Provides CRUD operations, gardening queries, and file sync capabilities.
     """
 
-    def __init__(self, db_path: Path | None = None):
+    def __init__(self, db_path: Path | None = None, project_root: Path | None = None):
         """
         Initialize PI System.
 
         Args:
             db_path: Path to SQLite database. Defaults to docs/project_management/potential_improvements.db
+            project_root: Project root directory (for instruction file creation).
+                         Defaults to cwd if not provided.
         """
         self.db = PIDatabase(db_path)
         self.queries = PIQueries(self.db)
+        self.project_root = project_root or Path.cwd()
 
     # =========================================================================
     # PI CRUD Operations
@@ -593,7 +596,8 @@ class PISystem:
 
         # Determine instruction path
         # Use .pongogo/instructions for user-specific, knowledge/instructions for project-wide
-        base_path = Path(".pongogo/instructions") / category
+        # Use project_root for absolute path (critical for container deployments)
+        base_path = self.project_root / ".pongogo" / "instructions" / category
         base_path.mkdir(parents=True, exist_ok=True)
 
         filename = f"{instruction_filename}.instructions.md"

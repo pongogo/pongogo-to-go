@@ -126,7 +126,10 @@ def _get_pi_system() -> PISystem:
     """Get or initialize PI System singleton."""
     global _pi_system
     if _pi_system is None:
-        _pi_system = PISystem()
+        # Use project root for database path (critical for container deployments)
+        # Container mounts project at /project/, not /app/ where package lives
+        db_path = PROJECT_ROOT / ".pongogo" / "potential_improvements.db"
+        _pi_system = PISystem(db_path=db_path, project_root=PROJECT_ROOT)
     return _pi_system
 
 

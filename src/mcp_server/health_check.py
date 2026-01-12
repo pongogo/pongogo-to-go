@@ -287,6 +287,103 @@ def check_config_validity() -> dict[str, Any]:
         }
 
 
+def check_pi_system_storage() -> dict[str, Any]:
+    """
+    Check PI System storage access (potential_improvements.db).
+
+    This validates that user guidance capture will work correctly.
+    Critical for containers where /app/ is read-only but /project/ is writable.
+
+    Returns:
+        Dictionary with:
+        - status: "healthy" | "error" | "read_only"
+        - path: Expected database path
+        - reason: Explanation
+        - writable: Boolean if storage is writable
+    """
+    project_root = get_project_root()
+    pi_db_path = project_root / ".pongogo" / "potential_improvements.db"
+    pongogo_dir = project_root / ".pongogo"
+
+    # Check if .pongogo directory exists
+    if not pongogo_dir.exists():
+        # Try to create it (will fail if read-only)
+        try:
+            pongogo_dir.mkdir(parents=True, exist_ok=True)
+        except PermissionError as e:
+            return {
+                "status": "error",
+                "path": str(pi_db_path),
+                "reason": f"Cannot create .pongogo directory: {e}",
+                "writable": False,
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "path": str(pi_db_path),
+                "reason": str(e),
+                "writable": False,
+            }
+
+    # Test write capability with a temporary file
+    test_file = pongogo_dir / ".write_test"
+    try:
+        test_file.write_text("write_test")
+        test_file.unlink()  # Clean up
+
+        # If database exists, also check it's writable
+        if pi_db_path.exists():
+            try:
+                conn = sqlite3.connect(pi_db_path, timeout=1)
+                conn.execute("SELECT 1")
+                conn.execute("BEGIN IMMEDIATE")
+                conn.rollback()
+                conn.close()
+                return {
+                    "status": "healthy",
+                    "path": str(pi_db_path),
+                    "reason": "PI database exists and is writable",
+                    "writable": True,
+                }
+            except sqlite3.OperationalError as e:
+                if "locked" in str(e).lower():
+                    return {
+                        "status": "error",
+                        "path": str(pi_db_path),
+                        "reason": "PI database is locked",
+                        "writable": False,
+                    }
+                return {
+                    "status": "error",
+                    "path": str(pi_db_path),
+                    "reason": f"PI database error: {e}",
+                    "writable": False,
+                }
+
+        return {
+            "status": "healthy",
+            "path": str(pi_db_path),
+            "reason": "Storage writable, database will be created on first use",
+            "writable": True,
+        }
+
+    except PermissionError:
+        return {
+            "status": "read_only",
+            "path": str(pi_db_path),
+            "reason": "Storage directory is read-only (container issue?)",
+            "writable": False,
+        }
+    except Exception as e:
+        logger.error(f"Error checking PI system storage: {e}")
+        return {
+            "status": "error",
+            "path": str(pi_db_path),
+            "reason": str(e),
+            "writable": False,
+        }
+
+
 def get_health_status() -> dict[str, Any]:
     """
     Get comprehensive health status of Pongogo installation.
@@ -298,12 +395,14 @@ def get_health_status() -> dict[str, Any]:
         - database: Database health check
         - events: Event capture check
         - config: Config validity check
+        - pi_storage: PI System storage check
         - timestamp: Check timestamp (ISO format)
     """
     container = check_container_status()
     database = check_database_health()
     events = check_event_capture()
     config = check_config_validity()
+    pi_storage = check_pi_system_storage()
 
     # Determine overall status
     statuses = [
@@ -311,11 +410,14 @@ def get_health_status() -> dict[str, Any]:
         database.get("status"),
         events.get("status"),
         config.get("status"),
+        pi_storage.get("status"),
     ]
 
     if all(s in ("healthy", "active", "valid") for s in statuses):
         overall = "healthy"
-    elif any(s in ("error", "unhealthy", "invalid", "locked") for s in statuses):
+    elif any(
+        s in ("error", "unhealthy", "invalid", "locked", "read_only") for s in statuses
+    ):
         overall = "unhealthy"
     else:
         overall = "degraded"
@@ -326,5 +428,6 @@ def get_health_status() -> dict[str, Any]:
         "database": database,
         "events": events,
         "config": config,
+        "pi_storage": pi_storage,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

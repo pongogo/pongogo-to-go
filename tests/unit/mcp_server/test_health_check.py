@@ -202,12 +202,17 @@ class TestGetHealthStatus:
             "mcp_server.health_check.get_events_db_path",
             lambda: tmp_path / "events.db",
         )
+        monkeypatch.setattr(
+            "mcp_server.health_check.get_project_root",
+            lambda: tmp_path,
+        )
 
         result = get_health_status()
         assert "container" in result
         assert "database" in result
         assert "events" in result
         assert "config" in result
+        assert "pi_storage" in result
         assert "timestamp" in result
 
     def test_overall_degraded_when_missing_components(self, tmp_path, monkeypatch):
@@ -216,6 +221,10 @@ class TestGetHealthStatus:
         monkeypatch.setattr(
             "mcp_server.health_check.get_events_db_path",
             lambda: tmp_path / "events.db",
+        )
+        monkeypatch.setattr(
+            "mcp_server.health_check.get_project_root",
+            lambda: tmp_path,
         )
 
         result = get_health_status()
