@@ -66,7 +66,8 @@ class TestFormatRoutingResults:
         }
         result = format_routing_results(routing_result)
 
-        assert "ACTION REQUIRED" in result
+        assert "MANDATORY" in result
+        assert "User Guidance Detected" in result
         assert "log_user_guidance" in result
         assert "Always use TypeScript" in result
         assert "explicit" in result
@@ -200,5 +201,6 @@ class TestFormatRoutingResults:
         result = format_routing_results(routing_result)
 
         # Both should be present
-        assert "ACTION REQUIRED" in result
+        assert "MANDATORY" in result
+        assert "User Guidance Detected" in result
         assert "Relevant Pongogo Instructions" in result
