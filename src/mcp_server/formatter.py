@@ -51,7 +51,7 @@ def _extract_evaluation_criteria(content: str) -> dict[str, list[str]]:
     Returns:
         Dict with 'success' and 'failure' lists, empty if not found
     """
-    criteria = {"success": [], "failure": []}
+    criteria: dict[str, list[str]] = {"success": [], "failure": []}
 
     # Try to extract from YAML frontmatter
     frontmatter_match = re.match(r"^---\s*\n(.*?)\n---", content, re.DOTALL)
@@ -61,17 +61,13 @@ def _extract_evaluation_criteria(content: str) -> dict[str, list[str]]:
     frontmatter = frontmatter_match.group(1)
 
     # Extract success_signals
-    success_match = re.search(
-        r"success_signals:\s*\n((?:\s+-[^\n]+\n?)+)", frontmatter
-    )
+    success_match = re.search(r"success_signals:\s*\n((?:\s+-[^\n]+\n?)+)", frontmatter)
     if success_match:
         signals = re.findall(r"-\s*(.+)", success_match.group(1))
         criteria["success"] = [s.strip() for s in signals[:3]]  # Limit to 3
 
     # Extract failure_signals
-    failure_match = re.search(
-        r"failure_signals:\s*\n((?:\s+-[^\n]+\n?)+)", frontmatter
-    )
+    failure_match = re.search(r"failure_signals:\s*\n((?:\s+-[^\n]+\n?)+)", frontmatter)
     if failure_match:
         signals = re.findall(r"-\s*(.+)", failure_match.group(1))
         criteria["failure"] = [s.strip() for s in signals[:3]]  # Limit to 3
@@ -134,7 +130,9 @@ def format_routing_results(
             "MANDATORY: Call log_user_guidance() MCP tool BEFORE responding.\n"
         )
         output_parts.append("</requirement>\n")
-        output_parts.append(f"<directive>{guidance_action.get('directive', '')}</directive>\n")
+        output_parts.append(
+            f"<directive>{guidance_action.get('directive', '')}</directive>\n"
+        )
         output_parts.append("<parameters>\n")
         output_parts.append(
             f"{json.dumps(guidance_action.get('parameters', {}), indent=2)}\n"
@@ -152,7 +150,9 @@ def format_routing_results(
     # =========================================================================
     if procedural_warning:
         output_parts.append('<warning type="procedural">\n')
-        output_parts.append(f"<message>{procedural_warning.get('warning', '')}</message>\n")
+        output_parts.append(
+            f"<message>{procedural_warning.get('warning', '')}</message>\n"
+        )
         output_parts.append(
             f"<enforcement>{procedural_warning.get('enforcement', 'Read before executing')}</enforcement>\n"
         )
@@ -163,9 +163,15 @@ def format_routing_results(
     # =========================================================================
     if friction_risk and friction_risk.get("enabled"):
         output_parts.append('<monitoring type="friction_risk">\n')
-        output_parts.append(f"<guidance_type>{friction_risk.get('guidance_type', 'unknown')}</guidance_type>\n")
-        output_parts.append(f"<echo_detected>{friction_risk.get('echo_detected', False)}</echo_detected>\n")
-        output_parts.append(f"<frustration_level>{friction_risk.get('frustration_level', 'none')}</frustration_level>\n")
+        output_parts.append(
+            f"<guidance_type>{friction_risk.get('guidance_type', 'unknown')}</guidance_type>\n"
+        )
+        output_parts.append(
+            f"<echo_detected>{friction_risk.get('echo_detected', False)}</echo_detected>\n"
+        )
+        output_parts.append(
+            f"<frustration_level>{friction_risk.get('frustration_level', 'none')}</frustration_level>\n"
+        )
         output_parts.append("</monitoring>\n\n")
 
     # =========================================================================
@@ -174,7 +180,7 @@ def format_routing_results(
     if count > 0:
         output_parts.append(f'<instructions count="{count}">\n')
 
-        for idx, instruction in enumerate(instructions, 1):
+        for _idx, instruction in enumerate(instructions, 1):
             inst_id = instruction.get("id", "unknown")
             category = instruction.get("category", "unknown")
             description = instruction.get("description", "")
@@ -235,7 +241,9 @@ def format_routing_results(
     output_parts.append("2. READ the instruction content (not from memory)\n")
     output_parts.append("3. Follow step-by-step guidance if present\n")
     output_parts.append("4. Check compliance_criteria to verify correct execution\n")
-    output_parts.append("5. If unsure about requirements, ask the user rather than guessing\n")
+    output_parts.append(
+        "5. If unsure about requirements, ask the user rather than guessing\n"
+    )
     output_parts.append("</expected_behavior>\n\n")
 
     output_parts.append("</pongogo_routing>")
