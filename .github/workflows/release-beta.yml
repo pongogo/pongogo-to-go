@@ -58,7 +58,7 @@ jobs:
         if: steps.check-tag.outputs.exists == 'false'
         run: |
           git checkout beta
-          git merge main --no-edit -m "Merge main into beta for ${{ steps.version.outputs.tag }}"
+          git merge origin/main --no-edit -m "Merge main into beta for ${{ steps.version.outputs.tag }}"
           git push origin beta
 
       - name: Create beta tag
