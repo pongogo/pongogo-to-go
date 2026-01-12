@@ -3134,7 +3134,7 @@ class RuleBasedRouter(RoutingEngine):
                 entry_id = match.entry.id if match.entry else "?"
                 match_text = match.match.group() if match.match else ""
                 category = match.entry.category if match.entry else "unknown"
-                signals.append(f"{category}:{entry_id}:{match_text[:20]}")
+                signals.append(f"{category}:{entry_id}:{match_text[:30]}")
 
             # Get highest priority friction type
             sorted_matches = sorted(
@@ -3401,7 +3401,7 @@ class RuleBasedRouter(RoutingEngine):
         for match in result.triggered:
             entry_id = match.entry.id if match.entry else "?"
             match_text = match.match.group() if match.match else ""
-            signals.append(f"{match.final_guidance_type}:{entry_id}:{match_text[:20]}")
+            signals.append(f"{match.final_guidance_type}:{entry_id}:{match_text[:30]}")
 
         # Determine primary guidance type (explicit takes precedence)
         has_explicit = any(

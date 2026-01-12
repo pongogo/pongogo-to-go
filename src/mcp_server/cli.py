@@ -9,6 +9,7 @@ to route user messages and return formatted context.
 Related: Task #482, Sub-Task #483
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -28,20 +29,41 @@ def route_cli() -> None:
     """
     CLI entry point for hook-based routing.
 
-    Reads user message from command line args or stdin,
-    routes it through the knowledge base, and prints
-    formatted results to stdout.
+    Reads user message from stdin JSON (UserPromptSubmit hook format)
+    or from command line args, routes it through the knowledge base,
+    and prints formatted results to stdout.
+
+    UserPromptSubmit hook sends JSON:
+        {"prompt": "user message", "session_id": "...", "cwd": "..."}
 
     Usage:
+        # Via UserPromptSubmit hook (JSON on stdin)
+        echo '{"prompt": "message"}' | pongogo-route
+
+        # Direct CLI usage (args)
         pongogo-route "user message here"
-        echo "user message" | pongogo-route
 
     Exit codes:
         0: Success (output printed to stdout)
         1: Error during routing
     """
-    # Read message from args or stdin
-    message = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else sys.stdin.read().strip()
+    # Read message from args (direct CLI) or stdin JSON (hook)
+    if len(sys.argv) > 1:
+        # Direct CLI usage: pongogo-route "message"
+        message = " ".join(sys.argv[1:])
+    else:
+        # Hook usage: JSON on stdin from UserPromptSubmit
+        stdin_data = sys.stdin.read().strip()
+        if not stdin_data:
+            sys.exit(0)
+
+        try:
+            # Parse JSON from hook
+            input_data = json.loads(stdin_data)
+            message = input_data.get("prompt", "")
+        except json.JSONDecodeError:
+            # Fallback: treat stdin as plain text (backward compatibility)
+            message = stdin_data
 
     if not message:
         # No message, no output - exit cleanly

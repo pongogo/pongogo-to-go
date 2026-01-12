@@ -103,7 +103,28 @@ Test routing with known queries that should return results:
 | "git safety" | safety_prevention | |
 | "work log entry" | project_management | |
 
-#### 6. Network Connectivity (if MCP connection fails)
+#### 6. Guidance Detection
+
+Test that user guidance is properly detected and `guidance_action` is emitted.
+
+**Test query**: "Here are some general guidelines to follow"
+
+- [ ] Call `route_instructions` with the test query
+- [ ] Check if `guidance_action` is present in response
+- [ ] Check if `routing_analysis.guidance_pre_check` is `true`
+- [ ] Note the signals detected (should include `guideline_001`)
+
+**Expected result**:
+- `guidance_action.action` = "log_user_guidance"
+- `guidance_action.parameters.guidance_type` = "explicit"
+- `guidance_action.signals` contains pattern match
+
+**If guidance_action is missing**:
+- Check router version is `durian-0.6.4` or later
+- Check feature flags: `guidance_pre_check: true`, `guidance_action: true`
+- Check lexicon DB is loaded (look for "Lexicon DB loaded" in server logs)
+
+#### 7. Network Connectivity (if MCP connection fails)
 
 ```bash
 # Can reach container registry (run on HOST via Bash tool)
@@ -149,6 +170,12 @@ Generate a copyable diagnostic report:
 | git safety | ✅ 2 matches | 38ms |
 | work log | ✅ 1 match | 42ms |
 
+### Guidance Detection
+- **Test Query**: "Here are some general guidelines to follow"
+- **guidance_action**: ✅ Present / ❌ Missing
+- **Pre-check**: ✅ Enabled / ❌ Disabled
+- **Signals**: [list of detected signals, e.g., "guideline_001"]
+
 ### Overall Status
 [✅ All systems operational / ⚠️ Issues detected / ❌ Critical failure]
 
@@ -183,6 +210,8 @@ Issues detected. To get help:
 | Routing returns 0 | Check `.pongogo/instructions/` exists and has `.md` files |
 | Event history missing | Database auto-creates on first route call |
 | Event history empty | Normal for new installs; events captured on first route call |
+| guidance_action missing | Requires durian-0.6.4+; check `guidance_pre_check` feature is enabled |
+| Guidance not detected | Check lexicon.db is loaded; verify guideline patterns exist |
 
 **NOTE**: Pongogo-to-Go runs via Claude Code's MCP infrastructure. Do NOT suggest `docker-compose` commands - they don't apply here.
 

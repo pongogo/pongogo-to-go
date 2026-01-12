@@ -20,7 +20,7 @@ evaluation:
     - Related directories grouped under parent
     - Nested + prefixed pattern applied
     - Self-documenting names (full words, not abbreviations)
-    - "@" autocomplete works for prefixed directories
+    - "@ autocomplete works for prefixed directories"
   failure_signals:
     - Root pollution (many related items at root)
     - Pure nesting without prefixes (ambiguous autocomplete)
@@ -37,7 +37,7 @@ routing:
       - nested_prefixed
       - root_cleanliness
       - autocomplete
-      - "@_selector"
+      - at_selector
       - self-documenting_names
       - directory_naming
       - folder_structure

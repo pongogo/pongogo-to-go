@@ -203,8 +203,31 @@ install_pongogo_cli() {
 
 # Docker-based installation
 install_docker_based() {
-    info "Pulling Pongogo Docker image..."
-    docker pull ghcr.io/pongogo/pongogo-server:latest
+    # Check if image already exists locally
+    image_existed=false
+    if docker image inspect pongogo.azurecr.io/pongogo:stable &>/dev/null; then
+        image_existed=true
+        info "Checking for updates..."
+    else
+        info "Downloading Pongogo Docker image..."
+    fi
+
+    # Capture docker pull output to show friendlier message
+    pull_output=$(docker pull pongogo.azurecr.io/pongogo:stable 2>&1)
+    pull_exit_code=$?
+
+    if [ $pull_exit_code -ne 0 ]; then
+        error "Failed to pull Docker image: $pull_output"
+    fi
+
+    # Parse Docker's output to show appropriate message
+    if echo "$pull_output" | grep -q "Image is up to date"; then
+        info "Docker image is up to date"
+    elif [ "$image_existed" = true ]; then
+        info "Updated to latest Docker image"
+    else
+        info "Docker image downloaded"
+    fi
 
     info "Configuring Claude Code..."
 
@@ -235,7 +258,7 @@ config["mcpServers"]["pongogo-knowledge"] = {
     "args": [
         "run", "-i", "--rm",
         "-v", "${workspaceFolder}/.pongogo:/project/.pongogo:ro",
-        "ghcr.io/pongogo/pongogo-server:latest"
+        "pongogo.azurecr.io/pongogo:stable"
     ]
 }
 
@@ -252,7 +275,7 @@ PYTHON
       "args": [
         "run", "-i", "--rm",
         "-v", "${workspaceFolder}/.pongogo:/project/.pongogo:ro",
-        "ghcr.io/pongogo/pongogo-server:latest"
+        "pongogo.azurecr.io/pongogo:stable"
       ]
     }
   }
