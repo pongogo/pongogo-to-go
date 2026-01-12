@@ -277,10 +277,19 @@ jobs:
                 if [ -f "$HOME/.claude.json" ]; then
                   MOUNT_ARGS="$MOUNT_ARGS -v $HOME/.claude.json:/root/.claude.json:z"
                 fi
-                docker run --rm $MOUNT_ARGS -w /project \
-                  --entrypoint pongogo-cleanup \
-                  pongogo.azurecr.io/pongogo:stable \
-                  cleanup $CLEANUP_ARGS 2>/dev/null || true
+                # Run as host user to ensure file permission compatibility
+                # Show errors in debug mode, suppress otherwise for cleaner output
+                if $DEBUG; then
+                  docker run --rm --user "$(id -u):$(id -g)" $MOUNT_ARGS -w /project \
+                    --entrypoint pongogo-cleanup \
+                    pongogo.azurecr.io/pongogo:stable \
+                    cleanup $CLEANUP_ARGS || true
+                else
+                  docker run --rm --user "$(id -u):$(id -g)" $MOUNT_ARGS -w /project \
+                    --entrypoint pongogo-cleanup \
+                    pongogo.azurecr.io/pongogo:stable \
+                    cleanup $CLEANUP_ARGS 2>/dev/null || true
+                fi
               else
                 echo "⚠ Docker image not found, skipping config cleanup"
                 echo "  Manually remove 'pongogo-knowledge' from .mcp.json and .claude/ configs"

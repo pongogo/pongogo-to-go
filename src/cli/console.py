@@ -89,7 +89,7 @@ def print_info(message: str) -> None:
 
 def print_panel(title: str, content: str, style: str = "blue") -> None:
     """Print content in a panel/box."""
-    if RICH_AVAILABLE and Panel:
+    if RICH_AVAILABLE and Panel is not None:
         console.print(Panel(content, title=title, border_style=style))
     else:
         width = max(len(title) + 4, max(len(line) for line in content.split("\n")) + 4)
@@ -104,7 +104,7 @@ def print_panel(title: str, content: str, style: str = "blue") -> None:
 
 def create_table(title: str = "") -> Any:
     """Create a table object (rich Table or plain dict collector)."""
-    if RICH_AVAILABLE and Table:
+    if RICH_AVAILABLE and Table is not None:
         return Table(title=title) if title else Table()
     else:
         return PlainTable(title)

@@ -59,14 +59,13 @@ from datetime import datetime as _datetime
 from pathlib import Path
 from typing import Any
 
+from mcp_server.instruction_handler import InstructionHandler
 from mcp_server.routing_engine import (
     FeatureSpec,
     RoutingEngine,
     register_engine,
     set_default_engine,
 )
-
-from mcp_server.instruction_handler import InstructionHandler
 
 try:
     from mcp_server.lexicon_db import DEFAULT_DB_PATH, LexiconDB
