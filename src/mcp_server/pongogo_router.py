@@ -1153,6 +1153,47 @@ ADHERENCE_WEIGHTS = {
 
 
 # =============================================================================
+# Hedging/Uncertainty Indicators (suppress implicit guidance detection)
+# =============================================================================
+# When these words/phrases are present, suppress IMPLICIT guidance detection.
+# Rationale: "maybe we should..." is a suggestion for discussion, not a rule.
+# Explicit guidance (e.g., "always do X") is still detected even with hedging.
+
+HEDGING_INDICATORS = {
+    # Uncertainty modals
+    "maybe",
+    "might",
+    "possibly",
+    "perhaps",
+    "potentially",
+    # Conditional/tentative
+    "could be",
+    "might be",
+    "what if",
+    "i wonder",
+    "wondering if",
+    "not sure if",
+    "not certain",
+    # Questions as suggestions
+    "should we",
+    "could we",
+    "what do you think",
+    "would it make sense",
+}
+
+# Compile hedging pattern for efficient matching
+COMPILED_HEDGING_PATTERN = _re.compile(
+    "|".join(rf"\b{_re.escape(h)}\b" for h in HEDGING_INDICATORS),
+    _re.IGNORECASE,
+)
+
+
+def _contains_hedging(message: str) -> bool:
+    """Check if message contains hedging/uncertainty language."""
+    return bool(COMPILED_HEDGING_PATTERN.search(message))
+
+
+# =============================================================================
 # Phase 9: Action Request Patterns (Issue #390)
 # =============================================================================
 
@@ -3340,6 +3381,25 @@ class RuleBasedRouter(RoutingEngine):
             }
 
         guidance_info = self._detect_user_guidance(message)
+
+        # Suppress implicit guidance when hedging/uncertainty language detected
+        # "maybe we should..." is a suggestion for discussion, not a behavioral rule
+        if (
+            guidance_info["detected"]
+            and guidance_info["guidance_type"] == "implicit"
+            and _contains_hedging(message)
+        ):
+            logger.info(
+                f"Hedging detected - suppressing implicit guidance: {message[:50]}..."
+            )
+            guidance_info = {
+                "detected": False,
+                "guidance_type": None,
+                "signals": guidance_info.get("signals", [])
+                + ["suppressed:hedging_detected"],
+                "content": None,
+                "hedging_suppressed": True,
+            }
 
         # Generate guidance_action directive if guidance detected and feature enabled
         guidance_action = None
