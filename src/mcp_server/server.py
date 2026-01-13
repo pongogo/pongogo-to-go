@@ -1214,8 +1214,16 @@ def _check_consistency():
                     return
                 time.sleep(1)
 
-            # Count instruction files on disk
-            disk_count = sum(1 for _ in KNOWLEDGE_BASE_PATH.rglob("*.instructions.md"))
+            # Count instruction files on disk (user + core)
+            user_disk_count = sum(
+                1 for _ in KNOWLEDGE_BASE_PATH.rglob("*.instructions.md")
+            )
+            core_disk_count = (
+                sum(1 for _ in CORE_INSTRUCTIONS_PATH.rglob("*.instructions.md"))
+                if CORE_INSTRUCTIONS_PATH and CORE_INSTRUCTIONS_PATH.exists()
+                else 0
+            )
+            disk_count = user_disk_count + core_disk_count
 
             # Count cached instructions
             cache_count = len(instruction_handler.instructions)
