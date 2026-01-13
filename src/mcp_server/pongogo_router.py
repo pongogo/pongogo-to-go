@@ -2416,7 +2416,9 @@ class RuleBasedRouter(RoutingEngine):
                 guidance_action = pre_check_result["guidance_action"]
                 analysis["guidance_action"] = guidance_action
                 analysis["guidance_pre_check"] = True  # Mark that pre-check was used
-            elif pre_check_result is not None and guidance_info.get("hedging_suppressed"):
+            elif pre_check_result is not None and guidance_info.get(
+                "hedging_suppressed"
+            ):
                 # IMP-020: Record hedging suppression in analysis
                 analysis["guidance_pre_check"] = {
                     "hedging_suppressed": True,

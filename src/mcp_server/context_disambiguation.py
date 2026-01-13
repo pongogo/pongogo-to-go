@@ -454,7 +454,7 @@ def compute_hedging_penalty(
         effective = abs(p) * damping
         # Clamp effective penalty to [0, 1] to prevent math errors
         effective = min(1.0, max(0.0, effective))
-        product *= (1.0 - effective)
+        product *= 1.0 - effective
 
     # Final penalty is -(1 - product)
     return -(1.0 - product)

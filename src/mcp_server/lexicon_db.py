@@ -185,7 +185,9 @@ class LexiconDB:
         3. Drop old table
         4. Rename new table
         """
-        logger.info("Migrating lexicon_entries from v1 to v2 (adding 'hedging' type)...")
+        logger.info(
+            "Migrating lexicon_entries from v1 to v2 (adding 'hedging' type)..."
+        )
 
         # Check if old table exists and has data
         cursor = conn.execute(
@@ -236,11 +238,21 @@ class LexiconDB:
             conn.execute("ALTER TABLE lexicon_entries_v2 RENAME TO lexicon_entries")
 
             # Recreate indexes
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_lexicon_type ON lexicon_entries(lexicon_type)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_lexicon_category ON lexicon_entries(category)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_lexicon_sub_type ON lexicon_entries(sub_type)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_lexicon_enabled ON lexicon_entries(enabled)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_lexicon_source ON lexicon_entries(source)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_lexicon_type ON lexicon_entries(lexicon_type)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_lexicon_category ON lexicon_entries(category)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_lexicon_sub_type ON lexicon_entries(sub_type)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_lexicon_enabled ON lexicon_entries(enabled)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_lexicon_source ON lexicon_entries(source)"
+            )
 
             conn.commit()
             logger.info("Migration v1->v2 complete: 'hedging' type now supported")
