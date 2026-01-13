@@ -23,6 +23,13 @@ Run comprehensive diagnostics to verify Pongogo installation and generate a supp
 - Execute each check silently, then aggregate results into the final report
 - The user should see ONLY the formatted "## Pongogo Diagnostic Report" output below
 
+**CRITICAL: Use MCP tools directly - do NOT parse cached files**
+
+- Call MCP tools (e.g., `route_instructions()`, `get_health_status()`) and use the response directly
+- Do NOT use `jq`, `cat`, or bash to read files from `.claude/projects/*/tool-results/`
+- Do NOT try to parse cached MCP tool result files - they may be in unexpected formats
+- Extract values directly from the MCP tool response object (e.g., `response.count`, `response.guidance_action`)
+
 Run all diagnostic checks and generate a formatted report. This report can be shared with support.
 
 ### Diagnostic Checks
