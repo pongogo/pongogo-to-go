@@ -181,7 +181,12 @@ def check_event_capture() -> dict[str, Any]:
 
         # Calculate time since last event
         now = datetime.now(timezone.utc)
-        last_event_dt = datetime.fromisoformat(last_event.replace("Z", "+00:00"))
+        # Handle both offset-naive (no TZ) and offset-aware timestamps
+        last_event_str = last_event.replace("Z", "+00:00")
+        last_event_dt = datetime.fromisoformat(last_event_str)
+        # If timestamp has no timezone info, assume UTC
+        if last_event_dt.tzinfo is None:
+            last_event_dt = last_event_dt.replace(tzinfo=timezone.utc)
         delta = now - last_event_dt
 
         # Human-readable time ago

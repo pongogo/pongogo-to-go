@@ -71,9 +71,16 @@ Use MCP tools to verify connection and get comprehensive health status:
   - `events`: Event capture activity
   - `config`: Configuration validity
 
-**Get routing engine version**:
+**Get routing engine version (MCP server)**:
 - Call `get_routing_info()` via MCP
-- Extract `engine` from response (e.g., "durian-0.6.1")
+- Extract `engine` from response (e.g., "durian-0.6.5")
+- This is the version running in the Docker container
+
+**Get routing engine version (CLI/pip package)**:
+- Run via Bash: `python -c "from mcp_server.pongogo_router import DURIAN_VERSION; print(DURIAN_VERSION)" 2>/dev/null || echo "unknown"`
+- This is the version bundled in the locally installed pip package
+- **Compare CLI vs MCP versions** - they should match
+- If versions differ, it indicates the Docker container is stale or the pip package needs updating
 
 **Get pongogo package version and check for updates**:
 - Call `check_for_updates()` via MCP
@@ -148,7 +155,8 @@ Generate a copyable diagnostic report:
 **Generated**: [timestamp]
 **Pongogo Version**: [current_version from check_for_updates]
 **Latest Version**: [latest_version from check_for_updates] [⚠️ Update available if update_available=true]
-**Routing Engine**: [from get_routing_info MCP tool, e.g., durian-0.6.1]
+**Routing Engine (MCP)**: [from get_routing_info MCP tool, e.g., durian-0.6.5]
+**Routing Engine (CLI)**: [from python import, e.g., durian-0.6.5] [⚠️ VERSION MISMATCH if different from MCP]
 
 ### Environment
 - **OS**: [uname output]
@@ -211,6 +219,7 @@ Issues detected. To get help:
 | Issue | Fix |
 |-------|-----|
 | MCP not connected | Restart Claude Code, allow MCP server when prompted |
+| Router version mismatch | `pongogo upgrade` then restart Claude Code to sync CLI and container |
 | Image not found | `pongogo upgrade` or `docker pull pongogo.azurecr.io/pongogo:stable` |
 | Config invalid | `pongogo init --force` |
 | No instructions | `pongogo init` |
