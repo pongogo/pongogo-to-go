@@ -188,8 +188,10 @@ class InstructionHandler:
                     f"Error loading instruction file {file_path}: {e}", exc_info=True
                 )
 
-        logger.info(f"Loaded {count} instruction files total")
-        return count
+        # Return actual dict size, not count (handles ID collisions)
+        actual_count = len(self.instructions)
+        logger.info(f"Loaded {actual_count} instruction files total")
+        return actual_count
 
     def _parse_instruction_file(self, file_path: Path) -> InstructionFile | None:
         """
